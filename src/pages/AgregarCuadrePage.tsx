@@ -9,7 +9,7 @@ const AgregarCuadrePage: React.FC = () => {
     return (
         <div>
             <h1>Agregar Cuadre</h1>
-            <AgregarCuadreModal open={modalOpen} onClose={handleClose} />
+            <AgregarCuadreModal dia='2025-05-21' farmacia='01' open={modalOpen} onClose={handleClose} />
         </div>
     );
 };

@@ -8,6 +8,8 @@ import RegisterPage from '@/pages/RegisterPage';
 import PrivateRoute from './PrivateRoute';
 import PermissionRoute from './PermissionRoute';
 import AgregarCuadrePage from '@/pages/AgregarCuadrePage';
+import ListaCuadresFarmacia from '@/components/ListaCuadresFarmacia';
+import ResumenFarmaciasVentas from '@/pages/ResumenFarmaciasVentas';
 
 const AppRouter = () => (
     <Routes>
@@ -15,7 +17,9 @@ const AppRouter = () => (
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/" element={<HomePage />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/ver/cuadre" element={<ListaCuadresFarmacia farmaciaId='01' />} />
         <Route path="/agregarcuadre" element={<AgregarCuadrePage />} />
+        <Route path="/resumenfarmacias" element={<ResumenFarmaciasVentas />} />
         <Route
             path="/admin"
             element={

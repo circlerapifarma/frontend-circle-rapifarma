@@ -48,7 +48,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
         return "";
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
         setSuccess("");
@@ -70,7 +70,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
             puntoDebitoBs,
             puntoCreditoBs,
             efectivoBs,
-            totalBs: totalBsIngresados, // puedes guardar el total de Bs ingresados
+            totalBs: totalBsIngresados,
             totalBsEnUsd: Number(totalBsEnUsd.toFixed(2)),
             efectivoUsd,
             zelleUsd,
@@ -78,14 +78,31 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
             diferenciaUsd,
             delete: false,
         };
-        addCuadreCaja(farmacia, cuadre);
-        setSuccess("¡Cuadre guardado exitosamente!");
-        setError("");
-        // Imprime el resumen en consola
-        console.log("Resumen Cuadre Guardado:", JSON.stringify(cuadre, null, 2));
-        setTimeout(() => {
-            onClose();
-        }, 1200);
+
+        try {
+            const token = localStorage.getItem("token");
+            const response = await fetch(`http://localhost:8000/cuadres/${farmacia}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                },
+                body: JSON.stringify(cuadre),
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.detail || "Error al guardar el cuadre");
+            }
+            setSuccess("¡Cuadre guardado exitosamente!");
+            setError("");
+            // Opcional: puedes actualizar el contexto si lo necesitas
+            // addCuadreCaja(farmacia, cuadre);
+            setTimeout(() => {
+                onClose();
+            }, 1200);
+        } catch (err: any) {
+            setError(err.message);
+        }
     };
 
     return (
@@ -104,7 +121,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                         ×
                     </button>
                     <h2 className="text-xl font-bold mb-4 text-blue-800 text-center">
-                        Agregar Cuadre - {farmacia}
+                        Agregar Cuadre
                     </h2>
                     {error && <div className="mb-2 text-red-600 text-sm">{error}</div>}
                     {success && <div className="mb-2 text-green-600 text-sm">{success}</div>}
