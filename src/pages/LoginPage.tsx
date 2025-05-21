@@ -1,20 +1,43 @@
 import React, { useState } from "react";
-import { useUserContext } from "@/context/UserContext";
 import { useNavigate } from "react-router";
 
 const LoginPage: React.FC = () => {
-    const { login } = useUserContext();
     const [correo, setCorreo] = useState("");
     const [contraseña, setContraseña] = useState("");
     const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (login(correo, contraseña)) {
+        setError("");
+        setLoading(true);
+
+        try {
+            const response = await fetch("http://localhost:8000/auth/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ correo, contraseña }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.detail || "Error al iniciar sesión");
+            }
+
+            // Guardar el token en localStorage
+            localStorage.setItem("token", data.access_token);
+
+            // Navegar a la página principal
             navigate("/admin");
-        } else {
-            setError("Correo o contraseña incorrectos");
+
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -39,8 +62,12 @@ const LoginPage: React.FC = () => {
                     required
                 />
                 {error && <p className="text-red-500 mb-2">{error}</p>}
-                <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
-                    Ingresar
+                <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+                >
+                    {loading ? "Cargando..." : "Ingresar"}
                 </button>
             </form>
         </div>

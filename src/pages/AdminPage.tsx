@@ -4,9 +4,10 @@ import AgregarCuadreModal from "@/components/AgregarCuadreModal";
 import React, { useState } from 'react';
 import { useDataFarmaciaContext } from '@/context/DataFarmaciaContext';
 import { useUserContext } from '@/context/UserContext';
+import { useCuadres } from '@/hooks/useCuadres';
 
 const AdminPage: React.FC = () => {
-    const { farmacias, getCuadreCajasByFarmaciaAndDia, getAllCuadreCajasByFarmaciaAndDia } = useDataFarmaciaContext();
+    const { farmacias, getAllCuadreCajasByFarmaciaAndDia } = useDataFarmaciaContext();
     const { usuario } = useUserContext();
     const [dia, setDia] = useState<string>('2025-05-18');
     const [detalleFarmacia, setDetalleFarmacia] = useState<string | null>(null);
@@ -43,7 +44,8 @@ const AdminPage: React.FC = () => {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl">
                     {farmaciasFiltradas.map((farmacia) => {
-                        const data = getCuadreCajasByFarmaciaAndDia(farmacia, dia);
+                        const { data: cuadres = [] } = useCuadres(farmacia, dia);
+
                         return (
                             <div
                                 key={farmacia}
@@ -51,14 +53,13 @@ const AdminPage: React.FC = () => {
                             >
                                 <ResumeCardFarmacia
                                     farmacia={farmacia}
-                                    totalDia={data.reduce((acc, item) => acc + item.totalBs, 0)}
-                                    DiferenciaDia={data.reduce((acc, item) => acc + item.diferenciaUsd, 0)}
+                                    totalDia={cuadres.reduce((acc, item) => acc + item.totalBs, 0)}
+                                    DiferenciaDia={cuadres.reduce((acc, item) => acc + item.diferenciaUsd, 0)}
                                 />
-                                {/* Botón Agregar Cuadre */}
                                 <button
                                     className="mt-4 px-4 py-2 bg-gradient-to-r from-green-500 to-green-700 text-white font-semibold rounded shadow hover:from-green-600 hover:to-green-800 transition z-20 relative"
                                     onClick={e => {
-                                        e.stopPropagation(); // Evita que el clic llegue al div de fondo
+                                        e.stopPropagation();
                                         handleAgregarCuadre(farmacia);
                                     }}
                                 >
@@ -73,6 +74,7 @@ const AdminPage: React.FC = () => {
                             </div>
                         );
                     })}
+
                 </div>
             )}
             {/* Modal para agregar cuadre */}

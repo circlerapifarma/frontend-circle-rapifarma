@@ -7,6 +7,7 @@ import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
 import PrivateRoute from './PrivateRoute';
 import PermissionRoute from './PermissionRoute';
+import AgregarCuadrePage from '@/pages/AgregarCuadrePage';
 
 const AppRouter = () => (
     <Routes>
@@ -14,6 +15,7 @@ const AppRouter = () => (
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/" element={<HomePage />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/agregarcuadre" element={<AgregarCuadrePage />} />
         <Route
             path="/admin"
             element={
