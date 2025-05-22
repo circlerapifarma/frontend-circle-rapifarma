@@ -8,20 +8,56 @@ import RegisterPage from '@/pages/RegisterPage';
 import PrivateRoute from './PrivateRoute';
 import PermissionRoute from './PermissionRoute';
 import AgregarCuadrePage from '@/pages/AgregarCuadrePage';
-import ListaCuadresFarmacia from '@/components/ListaCuadresFarmacia';
 import ResumenFarmaciasVentas from '@/pages/ResumenFarmaciasVentas';
 import VerificacionCuadresPage from '@/pages/VerificacionCuadresPage';
+import CuadresPorFarmaciaPage from '@/pages/CuadresPorFarmaciaPage';
+import ResumenFarmaciasPorDia from '@/pages/ResumenFarmaciasPorDia';
 
 const AppRouter = () => (
     <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/" element={<HomePage />} />
+        <Route
+            path="/"
+            element={
+                <PrivateRoute>
+                    <HomePage />
+                </PrivateRoute>
+            }
+        />
         <Route path="/about" element={<AboutPage />} />
-        <Route path="/ver/cuadre" element={<ListaCuadresFarmacia farmaciaId='01' />} />
-        <Route path="/agregarcuadre" element={<AgregarCuadrePage />} />
-        <Route path="/resumenfarmacias" element={<ResumenFarmaciasVentas />} />
-        <Route path="/verificacion-cuadres" element={<VerificacionCuadresPage />} />
+
+        <Route
+            path="/agregarcuadre"
+            element={
+                <PrivateRoute>
+                    <AgregarCuadrePage />
+                </PrivateRoute>
+            }
+        />
+        <Route
+            path="/resumenfarmacias"
+            element={
+                <PrivateRoute>
+                    <ResumenFarmaciasVentas />
+                </PrivateRoute>
+            }
+        />
+        <Route
+            path="/verificacion-cuadres"
+            element={
+                <PrivateRoute>
+                    <VerificacionCuadresPage />
+                </PrivateRoute>
+            }
+        />
+        <Route
+            path="/ver-cuadres-dia"
+            element={
+                <PrivateRoute>
+                    <CuadresPorFarmaciaPage />
+                </PrivateRoute>
+            }
+        />
         <Route
             path="/admin"
             element={
@@ -38,6 +74,14 @@ const AppRouter = () => (
                     {/* Aquí tu componente de eliminar */}
                     <AdminPage />
                 </PermissionRoute>
+            }
+        />
+        <Route
+            path="/resumenfarmacias-dia"
+            element={
+                <PrivateRoute>
+                    <ResumenFarmaciasPorDia />
+                </PrivateRoute>
             }
         />
         <Route path="*" element={<NotFoundPage />} />

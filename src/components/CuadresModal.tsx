@@ -1,0 +1,200 @@
+import React, { useState, useEffect } from "react";
+import { Card } from "@/components/ui/card";
+
+interface Cuadre {
+  dia: string;
+  cajaNumero: number;
+  turno: string;
+  cajero: string;
+  totalCajaSistemaBs: number;
+  recargaBs: number;
+  pagomovilBs: number;
+  puntosVenta?: Array<{ banco: string; puntoDebito: number; puntoCredito: number }>;
+  efectivoBs: number;
+  efectivoUsd: number;
+  zelleUsd: number;
+  totalGeneralUsd: number;
+  diferenciaUsd: number;
+  sobranteUsd?: number;
+  faltanteUsd?: number;
+  estado?: string;
+}
+
+interface Cajero {
+  _id: string;
+  NOMBRE: string;
+  ID: string;
+  FARMACIAS: Record<string, string>;
+}
+
+interface CuadresModalProps {
+  open: boolean;
+  onClose: () => void;
+  farmaciaId: string;
+  farmaciaNombre: string;
+}
+
+const CuadresModal: React.FC<CuadresModalProps> = ({ open, onClose, farmaciaId, farmaciaNombre }) => {
+  const [cuadres, setCuadres] = useState<Cuadre[]>([]);
+  const [cajeros, setCajeros] = useState<Cajero[]>([]);
+  const [nuevoCajero, setNuevoCajero] = useState<string>("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [fechaInicio, setFechaInicio] = useState("");
+  const [fechaFin, setFechaFin] = useState("");
+
+  const fetchCuadres = async (fechaInicioParam?: string, fechaFinParam?: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      let url = `http://localhost:8000/cuadres/${farmaciaId}`;
+      const params: string[] = [];
+      if (fechaInicioParam) params.push(`fecha_inicio=${fechaInicioParam}`);
+      if (fechaFinParam) params.push(`fecha_fin=${fechaFinParam}`);
+      if (params.length) url += `?${params.join("&")}`;
+      const res = await fetch(url);
+      let data = await res.json();
+      // Filtrado manual por si el backend no filtra
+      if (fechaInicioParam && fechaFinParam) {
+        data = data.filter((c: any) => c.dia >= fechaInicioParam && c.dia <= fechaFinParam);
+      }
+      setCuadres(data);
+    } catch {
+      setError("Error al obtener cuadres");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (open && farmaciaId) {
+      fetchCuadres();
+      // Fetch cajeros solo si hay farmacia seleccionada
+      fetch(`http://localhost:8000/cajeros`)
+        .then(res => res.json())
+        .then(data => {
+          // Filtrar cajeros que tengan la farmacia seleccionada
+          const filtrados = data.filter((c: Cajero) => c.FARMACIAS && c.FARMACIAS[farmaciaId]);
+          setCajeros(filtrados);
+        })
+        .catch(() => setCajeros([]));
+    }
+    // eslint-disable-next-line
+  }, [open, farmaciaId]);
+
+  const handleBuscar = () => {
+    if (fechaInicio && fechaFin) {
+      fetchCuadres(fechaInicio, fechaFin);
+    }
+  };
+
+  // Cambia el cajero de un cuadre y lo actualiza en el backend
+  const handleCajeroChange = async (cuadreIdx: number, nuevoNombre: string) => {
+    const cuadre = cuadres[cuadreIdx];
+    if (!cuadre) return;
+    try {
+      // Actualiza en backend
+      await fetch(`http://localhost:8000/cuadres/${farmaciaId}/${cuadre.dia}/${cuadre.cajaNumero}/cajero`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cajero: nuevoNombre }),
+      });
+      // Actualiza en frontend
+      setCuadres(prev => prev.map((c, idx) => idx === cuadreIdx ? { ...c, cajero: nuevoNombre } : c));
+    } catch {
+      alert("No se pudo actualizar el cajero en el cuadre");
+    }
+  };
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 bg-opacity-40 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl shadow-lg p-6 max-w-2xl w-full relative max-h-[90vh] overflow-auto">
+        <button
+          className="absolute top-2 right-4 text-2xl text-gray-400 hover:text-red-500"
+          onClick={onClose}
+          aria-label="Cerrar"
+        >
+          ×
+        </button>
+        <h2 className="text-xl font-bold mb-4 text-blue-800">Cuadres de {farmaciaNombre}</h2>
+        <div className="flex flex-col md:flex-row gap-2 mb-4 items-end">
+          <div>
+            <label className="block text-xs text-gray-600">Desde</label>
+            <input type="date" value={fechaInicio} onChange={e => setFechaInicio(e.target.value)} className="border rounded p-1" />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-600">Hasta</label>
+            <input type="date" value={fechaFin} onChange={e => setFechaFin(e.target.value)} className="border rounded p-1" />
+          </div>
+          <button
+            className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+            onClick={handleBuscar}
+            disabled={!fechaInicio || !fechaFin}
+          >Buscar</button>
+        </div>
+        {loading ? (
+          <div className="text-center py-8">Cargando...</div>
+        ) : error ? (
+          <div className="text-center text-red-500">{error}</div>
+        ) : cuadres.length === 0 ? (
+          <div className="text-center text-gray-500">No hay cuadres registrados para esta farmacia.</div>
+        ) : (
+          <div className="space-y-4">
+            {cuadres
+              .sort((a, b) => b.dia.localeCompare(a.dia))
+              .map((c, idx) => (
+                <div key={idx} className="border rounded-lg p-4 bg-blue-50">
+                  <div className="font-semibold text-blue-700">Día: {c.dia}</div>
+                  <div className="text-sm">Caja: <b>{c.cajaNumero}</b> | Turno: <b>{c.turno}</b></div>
+                  {/* Selector de cajero */}
+                  <div className="text-sm mb-2">
+                    Cajero: {cajeros.length > 0 ? (
+                      <select
+                        className="border rounded p-1 ml-2"
+                        value={c.cajero || ""}
+                        onChange={e => handleCajeroChange(idx, e.target.value)}
+                      >
+                        <option value="">Seleccionar cajero</option>
+                        {cajeros.map(cj => (
+                          <option key={cj._id} value={cj.NOMBRE}>{cj.NOMBRE}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <b>{c.cajero}</b>
+                    )}
+                  </div>
+                  <div className="text-sm">Total Caja Sistema Bs: <b>{c.totalCajaSistemaBs}</b></div>
+                  <div className="text-sm">Recarga Bs: <b>{c.recargaBs}</b></div>
+                  <div className="text-sm">Pago Móvil Bs: <b>{c.pagomovilBs}</b></div>
+                  <div className="text-sm">Efectivo Bs: <b>{c.efectivoBs}</b></div>
+                  <div className="text-sm">Efectivo USD: <b>{c.efectivoUsd}</b></div>
+                  <div className="text-sm">Zelle USD: <b>{c.zelleUsd}</b></div>
+                  <div className="text-sm">Total General USD: <b>{c.totalGeneralUsd}</b></div>
+                  <div className="text-sm">Diferencia USD: <b>{c.diferenciaUsd}</b></div>
+                  <div className="text-sm">Sobrante USD: <b>{c.sobranteUsd}</b></div>
+                  <div className="text-sm">Faltante USD: <b>{c.faltanteUsd}</b></div>
+                  <div className="text-sm">Estado: <b>{c.estado}</b></div>
+                  {c.puntosVenta && c.puntosVenta.length > 0 && (
+                    <div className="text-sm mt-2">
+                      <b>Puntos de Venta:</b>
+                      <ul className="ml-4 list-disc">
+                        {c.puntosVenta.map((pv, i) => (
+                          <li key={i}>
+                            Banco: <b>{pv.banco}</b>, Débito: <b>{pv.puntoDebito}</b>, Crédito: <b>{pv.puntoCredito}</b>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default CuadresModal;

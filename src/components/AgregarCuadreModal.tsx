@@ -1,10 +1,17 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useDataFarmaciaContext } from "@/context/DataFarmaciaContext";
 
 interface Props {
     farmacia: string;
     dia: string;
     onClose: () => void;
+}
+
+interface Cajero {
+    _id: string;
+    NOMBRE: string;
+    ID: string;
+    FARMACIAS: Record<string, string>;
 }
 
 const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
@@ -32,6 +39,8 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
     const [puntosVenta, setPuntosVenta] = useState<Array<{ banco: string; puntoDebito: number; puntoCredito: number }>>([
         { banco: '', puntoDebito: 0, puntoCredito: 0 }
     ]);
+
+    const [cajeros, setCajeros] = useState<Cajero[]>([]);
 
     // Cálculos automáticos
     const totalBsIngresados = recargaBs + pagomovilBs + puntosVenta.reduce((acc, pv) => acc + Number(pv.puntoDebito || 0), 0) + puntosVenta.reduce((acc, pv) => acc + Number(pv.puntoCredito || 0), 0) + efectivoBs;
@@ -128,6 +137,17 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
         onClose();
     };
 
+    useEffect(() => {
+        // Obtener cajeros asociados a la farmacia seleccionada
+        fetch(`http://localhost:8000/cajeros`)
+            .then(res => res.json())
+            .then(data => {
+                const filtrados = data.filter((c: Cajero) => c.FARMACIAS && c.FARMACIAS[farmacia]);
+                setCajeros(filtrados);
+            })
+            .catch(() => setCajeros([]));
+    }, [farmacia]);
+
     return (
         <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50">
             <div className="overflow-auto max-h-[90vh] w-full max-w-lg p-0 relative">
@@ -171,7 +191,19 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                         </div>
                         <div className="md:col-span-2">
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Cajero</label>
-                            <input type="text" value={cajero} onChange={e => setCajero(e.target.value)} className="w-full border rounded-lg p-2" required />
+                            <select
+                                value={cajero}
+                                onChange={e => setCajero(e.target.value)}
+                                className="w-full border rounded-lg p-2"
+                                required
+                            >
+                                <option value="">Seleccionar cajero</option>
+                                {cajeros.map(cj => (
+                                    <option key={cj._id} value={cj.NOMBRE}>
+                                        {cj.NOMBRE} ({cj.ID})
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                     </div>
                     <hr className="my-5 border-blue-100" />

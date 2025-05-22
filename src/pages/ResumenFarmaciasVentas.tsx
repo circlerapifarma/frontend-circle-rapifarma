@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState} from "react";
 import ResumeCardFarmacia from "@/components/ResumeCardFarmacia";
 
 type VentasFarmacia = {
@@ -21,6 +21,8 @@ const ResumenFarmaciasVentas: React.FC = () => {
         const now = new Date();
         return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     });
+    const [detallesVisibles, setDetallesVisibles] = useState<{ [key: string]: boolean }>({});
+    const [cuadresPorFarmacia, setCuadresPorFarmacia] = useState<{ [key: string]: any[] }>({});
 
     useEffect(() => {
         const fetchFarmacias = async () => {
@@ -41,77 +43,126 @@ const ResumenFarmaciasVentas: React.FC = () => {
         fetchFarmacias();
     }, []);
 
+    // Un solo fetch para todos los cuadres por farmacia
     useEffect(() => {
-        const fetchVentas = async () => {
+        const fetchAllCuadres = async () => {
             setLoading(true);
             try {
-                const ventasPorFarmacia: { [key: string]: VentasFarmacia } = {};
+                const result: { [key: string]: any[] } = {};
                 await Promise.all(
                     farmacias.map(async (farm) => {
                         const res = await fetch(`http://localhost:8000/cuadres/${farm.id}`);
                         const data = await res.json();
-                        const [anioSel, mesSel] = mes.split("-");
-                        let totalBs = 0;
-                        let totalUsd = 0;
-                        let totalGeneral = 0;
-                        let efectivoUsd = 0;
-                        let zelleUsd = 0;
-                        let faltantes = 0;
-                        let sobrantes = 0;
-                        data.forEach((c: any) => {
-                            if (!c.dia || c.estado !== "verified") return;
-                            const [anio, mesDb] = c.dia.split("-");
-                            if (anio === anioSel && mesDb === mesSel) {
-                                // Sumar Bs
-                                let sumaBs = Number(c.recargaBs || 0) + Number(c.pagomovilBs || 0) + Number(c.efectivoBs || 0);
-                                if (Array.isArray(c.puntosVenta)) {
-                                    sumaBs += c.puntosVenta.reduce((acc: number, pv: any) => acc + Number(pv.puntoDebito || 0) + Number(pv.puntoCredito || 0), 0);
-                                }
-                                sumaBs -= Number(c.devolucionesBs || 0);
-                                totalBs += sumaBs;
-                                // Sumar USD
-                                const sumaUsd = Number(c.efectivoUsd || 0) + Number(c.zelleUsd || 0);
-                                totalUsd += sumaUsd;
-                                efectivoUsd += Number(c.efectivoUsd || 0);
-                                zelleUsd += Number(c.zelleUsd || 0);
-                                // Total general (USD directo + Bs convertidos a USD por tasa de ese cuadre)
-                                const tasa = Number(c.tasa || 0);
-                                if (tasa > 0) {
-                                    totalGeneral += sumaUsd + (sumaBs / tasa);
-                                } else {
-                                    totalGeneral += sumaUsd;
-                                }
-                                faltantes += Number(c.faltanteUsd || 0);
-                                sobrantes += Number(c.sobranteUsd || 0);
-                            }
-                        });
-                        ventasPorFarmacia[farm.id] = {
-                            totalVentas: Number(totalGeneral.toFixed(2)),
-                            totalBs: Number(totalBs.toFixed(2)),
-                            totalBsEnUsd: 0, // No se usa en este nuevo cálculo
-                            totalUsd: Number(totalUsd.toFixed(2)),
-                            efectivoUsd: Number(efectivoUsd.toFixed(2)),
-                            zelleUsd: Number(zelleUsd.toFixed(2)),
-                            faltantes: Number(faltantes.toFixed(2)),
-                            sobrantes: Number(sobrantes.toFixed(2)),
-                        };
+                        result[farm.id] = data;
                     })
                 );
-                setVentas(ventasPorFarmacia);
+                setCuadresPorFarmacia(result);
             } catch (err) {
-                setError("Error al cargar ventas");
+                setError("Error al cargar cuadres");
             } finally {
                 setLoading(false);
             }
         };
-        if (farmacias.length > 0) fetchVentas();
+        if (farmacias.length > 0) fetchAllCuadres();
     }, [farmacias, mes]);
+
+    useEffect(() => {
+        // Calcular ventas a partir de cuadresPorFarmacia
+        const ventasPorFarmacia: { [key: string]: VentasFarmacia } = {};
+        farmacias.forEach((farm) => {
+            const data = cuadresPorFarmacia[farm.id] || [];
+            const [anioSel, mesSel] = mes.split("-");
+            let totalBs = 0;
+            let totalUsd = 0;
+            let totalGeneral = 0;
+            let efectivoUsd = 0;
+            let zelleUsd = 0;
+            let faltantes = 0;
+            let sobrantes = 0;
+            data.forEach((c: any) => {
+                if (!c.dia || c.estado !== "verified") return;
+                const [anio, mesDb] = c.dia.split("-");
+                if (anio === anioSel && mesDb === mesSel) {
+                    let sumaBs = Number(c.recargaBs || 0) + Number(c.pagomovilBs || 0) + Number(c.efectivoBs || 0);
+                    if (Array.isArray(c.puntosVenta)) {
+                        sumaBs += c.puntosVenta.reduce((acc: number, pv: any) => acc + Number(pv.puntoDebito || 0) + Number(pv.puntoCredito || 0), 0);
+                    }
+                    sumaBs -= Number(c.devolucionesBs || 0);
+                    totalBs += sumaBs;
+                    const sumaUsd = Number(c.efectivoUsd || 0) + Number(c.zelleUsd || 0);
+                    totalUsd += sumaUsd;
+                    efectivoUsd += Number(c.efectivoUsd || 0);
+                    zelleUsd += Number(c.zelleUsd || 0);
+                    const tasa = Number(c.tasa || 0);
+                    if (tasa > 0) {
+                        totalGeneral += sumaUsd + (sumaBs / tasa);
+                    } else {
+                        totalGeneral += sumaUsd;
+                    }
+                    faltantes += Number(c.faltanteUsd || 0);
+                    sobrantes += Number(c.sobranteUsd || 0);
+                }
+            });
+            ventasPorFarmacia[farm.id] = {
+                totalVentas: Number(totalGeneral.toFixed(2)),
+                totalBs: Number(totalBs.toFixed(2)),
+                totalBsEnUsd: 0,
+                totalUsd: Number(totalUsd.toFixed(2)),
+                efectivoUsd: Number(efectivoUsd.toFixed(2)),
+                zelleUsd: Number(zelleUsd.toFixed(2)),
+                faltantes: Number(faltantes.toFixed(2)),
+                sobrantes: Number(sobrantes.toFixed(2)),
+            };
+        });
+        setVentas(ventasPorFarmacia);
+    }, [cuadresPorFarmacia, farmacias, mes]);
 
     const sortedFarmacias = [...farmacias].sort((a, b) => {
       const ventasA = ventas[a.id]?.totalVentas || 0;
       const ventasB = ventas[b.id]?.totalVentas || 0;
       return ventasB - ventasA;
     });
+
+    const calcularDetalles = (farmId: string) => {
+        const ventasFarm = ventas[farmId];
+        if (!ventasFarm) return null;
+        const [anioSel, mesSel] = mes.split("-");
+        const cuadresFarmacia = cuadresPorFarmacia[farmId] || [];
+        let sumaRecargaBs = 0, sumaPagomovilBs = 0, sumaEfectivoBs = 0, sumaPuntoDebito = 0, sumaPuntoCredito = 0, sumaDevolucionesBs = 0;
+        if (cuadresFarmacia.length) {
+            cuadresFarmacia.forEach((c: any) => {
+                if (!c.dia || c.estado !== "verified") return;
+                const [anio, mesDb] = c.dia.split("-");
+                if (anio === anioSel && mesDb === mesSel) {
+                    sumaRecargaBs += Number(c.recargaBs || 0);
+                    sumaPagomovilBs += Number(c.pagomovilBs || 0);
+                    sumaEfectivoBs += Number(c.efectivoBs || 0);
+                    sumaDevolucionesBs += Number(c.devolucionesBs || 0);
+                    if (Array.isArray(c.puntosVenta)) {
+                        sumaPuntoDebito += c.puntosVenta.reduce((acc: number, pv: any) => acc + Number(pv.puntoDebito || 0), 0);
+                        sumaPuntoCredito += c.puntosVenta.reduce((acc: number, pv: any) => acc + Number(pv.puntoCredito || 0), 0);
+                    }
+                }
+            });
+        }
+        return (
+            <div className="bg-blue-50 border border-blue-200 rounded p-3 mt-2 text-sm">
+                <div><b>Total Bs:</b> {ventasFarm.totalBs}</div>
+                <div><b>Total USD:</b> {ventasFarm.totalUsd}</div>
+                <div><b>Efectivo USD:</b> {ventasFarm.efectivoUsd}</div>
+                <div><b>Zelle USD:</b> {ventasFarm.zelleUsd}</div>
+                <div><b>Faltantes USD:</b> {ventasFarm.faltantes}</div>
+                <div><b>Sobrantes USD:</b> {ventasFarm.sobrantes}</div>
+                <hr className="my-2" />
+                <div><b>Recarga Bs:</b> {sumaRecargaBs}</div>
+                <div><b>Pago Móvil Bs:</b> {sumaPagomovilBs}</div>
+                <div><b>Efectivo Bs:</b> {sumaEfectivoBs}</div>
+                <div><b>Punto de Venta Débito Bs:</b> {sumaPuntoDebito}</div>
+                <div><b>Punto de Venta Crédito Bs:</b> {sumaPuntoCredito}</div>
+                <div><b>Devoluciones Bs:</b> {sumaDevolucionesBs}</div>
+            </div>
+        );
+    };
 
     if (loading) return <div className="text-center py-10">Cargando...</div>;
     if (error) return <div className="text-center text-red-600 py-10">{error}</div>;
@@ -139,19 +190,28 @@ const ResumenFarmaciasVentas: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                     {sortedFarmacias.map((farm, idx) => (
-                        <ResumeCardFarmacia
-                            key={farm.id}
-                            nombre={farm.nombre}
-                            totalVentas={ventas[farm.id]?.totalVentas || 0}
-                            totalBs={ventas[farm.id]?.totalBs || 0}
-                            totalBsEnUsd={ventas[farm.id]?.totalBsEnUsd || 0}
-                            totalUsd={ventas[farm.id]?.totalUsd || 0}
-                            efectivoUsd={ventas[farm.id]?.efectivoUsd || 0}
-                            zelleUsd={ventas[farm.id]?.zelleUsd || 0}
-                            faltantes={ventas[farm.id]?.faltantes || 0}
-                            sobrantes={ventas[farm.id]?.sobrantes || 0}
-                            top={idx < 3}
-                        />
+                        <div key={farm.id}>
+                            <ResumeCardFarmacia
+                                nombre={farm.nombre}
+                                totalVentas={ventas[farm.id]?.totalVentas || 0}
+                                totalBs={ventas[farm.id]?.totalBs || 0}
+                                totalBsEnUsd={ventas[farm.id]?.totalBsEnUsd || 0}
+                                totalUsd={ventas[farm.id]?.totalUsd || 0}
+                                efectivoUsd={ventas[farm.id]?.efectivoUsd || 0}
+                                zelleUsd={ventas[farm.id]?.zelleUsd || 0}
+                                faltantes={ventas[farm.id]?.faltantes || 0}
+                                sobrantes={ventas[farm.id]?.sobrantes || 0}
+                                top={idx < 3}
+                            />
+
+                            <button
+                                className="mt-2 text-blue-700 underline text-sm"
+                                onClick={() => setDetallesVisibles(v => ({ ...v, [farm.id]: !v[farm.id] }))}
+                            >
+                                {detallesVisibles && detallesVisibles[farm.id] ? "Ocultar detalles" : "Ver detalles"}
+                            </button>
+                            {detallesVisibles && detallesVisibles[farm.id] ? calcularDetalles(farm.id) : null}
+                        </div>
                     ))}
                 </div>
             </div>
