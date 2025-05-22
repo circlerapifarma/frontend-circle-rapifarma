@@ -8,30 +8,35 @@ export const farmacias: string[] = [
     'san ignacio',
     'rapifarma'
 ];
+export interface PuntoVenta {
+  banco: string;
+  puntoDebito: number;
+  puntoCredito: number;
+}
+
 export interface CuadreCaja {
     dia: string; // formato: 'YYYY-MM-DD'
     cajaNumero: number;
     tasa: number; // tasa de cambio BS a USD
     turno: string;
     cajero: string;
-
     totalCajaSistemaBs: number;
-
     devolucionesBs: number;
     recargaBs: number;
     pagomovilBs: number;
-    puntoDebitoBs: number;
-    puntoCreditoBs: number;
+    puntosVenta?: PuntoVenta[];
     efectivoBs: number;
     totalBs: number;
     totalBsEnUsd: number;
-
     efectivoUsd: number;
     zelleUsd: number;
-
     totalGeneralUsd: number;
     diferenciaUsd: number;
+    sobranteUsd?: number;
+    faltanteUsd?: number;
     delete: boolean; // <--- NUEVO CAMPO
+    estado?: string;
+    nombreFarmacia?: string;
 }
 
 // Ejemplo de data
@@ -46,8 +51,10 @@ export const cuadreCajasSantaElena: CuadreCaja[] = [
         devolucionesBs: 500,
         recargaBs: 1000,
         pagomovilBs: 5000,
-        puntoDebitoBs: 8000,
-        puntoCreditoBs: 2000,
+        puntosVenta: [
+            { banco: 'Banco1', puntoDebito: 8000, puntoCredito: 2000 },
+            { banco: 'Banco2', puntoDebito: 7000, puntoCredito: 1500 }
+        ],
         efectivoBs: 24000,
         totalBs: 40500,
         totalBsEnUsd: 1000,
@@ -67,8 +74,10 @@ export const cuadreCajasSantaElena: CuadreCaja[] = [
         devolucionesBs: 1000,
         recargaBs: 2000,
         pagomovilBs: 7000,
-        puntoDebitoBs: 9000,
-        puntoCreditoBs: 3000,
+        puntosVenta: [
+            { banco: 'Banco1', puntoDebito: 9000, puntoCredito: 3000 },
+            { banco: 'Banco2', puntoDebito: 8000, puntoCredito: 2000 }
+        ],
         efectivoBs: 28000,
         totalBs: 50000,
         totalBsEnUsd: 1219.51,
@@ -76,6 +85,8 @@ export const cuadreCajasSantaElena: CuadreCaja[] = [
         zelleUsd: 900,
         totalGeneralUsd: 1200,
         diferenciaUsd: -19.51,
+        sobranteUsd: 0,
+        faltanteUsd: 19.51,
         delete: false
     },
     {
@@ -89,8 +100,10 @@ export const cuadreCajasSantaElena: CuadreCaja[] = [
         devolucionesBs: 300,
         recargaBs: 800,
         pagomovilBs: 4000,
-        puntoDebitoBs: 6000,
-        puntoCreditoBs: 1200,
+        puntosVenta: [
+            { banco: 'Banco1', puntoDebito: 6000, puntoCredito: 1200 },
+            { banco: 'Banco2', puntoDebito: 5000, puntoCredito: 1000 }
+        ],
         efectivoBs: 19700,
         totalBs: 32000,
         totalBsEnUsd: 804.02,
@@ -100,6 +113,8 @@ export const cuadreCajasSantaElena: CuadreCaja[] = [
 
         totalGeneralUsd: 800,
         diferenciaUsd: -4.02,
+        sobranteUsd: 0,
+        faltanteUsd: 4.02,
         delete: false
     },
     {
@@ -113,8 +128,10 @@ export const cuadreCajasSantaElena: CuadreCaja[] = [
         devolucionesBs: 600,
         recargaBs: 1500,
         pagomovilBs: 6000,
-        puntoDebitoBs: 10000,
-        puntoCreditoBs: 2500,
+        puntosVenta: [
+            { banco: 'Banco1', puntoDebito: 10000, puntoCredito: 2500 },
+            { banco: 'Banco2', puntoDebito: 9000, puntoCredito: 2000 }
+        ],
         efectivoBs: 24400,
         totalBs: 45000,
         totalBsEnUsd: 1125,
@@ -124,6 +141,8 @@ export const cuadreCajasSantaElena: CuadreCaja[] = [
 
         totalGeneralUsd: 1100,
         diferenciaUsd: -25,
+        sobranteUsd: 0,
+        faltanteUsd: 25,
         delete: false
     }
 ];
@@ -139,8 +158,10 @@ export const cuadreCajasMilagroNorte: CuadreCaja[] = [
         devolucionesBs: 400,
         recargaBs: 900,
         pagomovilBs: 4500,
-        puntoDebitoBs: 7000,
-        puntoCreditoBs: 1800,
+        puntosVenta: [
+            { banco: 'Banco1', puntoDebito: 7000, puntoCredito: 1800 },
+            { banco: 'Banco2', puntoDebito: 6000, puntoCredito: 1500 }
+        ],
         efectivoBs: 23800,
         totalBs: 38000,
         totalBsEnUsd: 933.66,
@@ -148,6 +169,8 @@ export const cuadreCajasMilagroNorte: CuadreCaja[] = [
         zelleUsd: 780,
         totalGeneralUsd: 930,
         diferenciaUsd: -3.66,
+        sobranteUsd: 0,
+        faltanteUsd: 3.66,
         delete: false
     },
     {
@@ -162,8 +185,10 @@ export const cuadreCajasMilagroNorte: CuadreCaja[] = [
         devolucionesBs: 700,
         recargaBs: 1200,
         pagomovilBs: 5200,
-        puntoDebitoBs: 8200,
-        puntoCreditoBs: 2100,
+        puntosVenta: [
+            { banco: 'Banco1', puntoDebito: 8200, puntoCredito: 2100 },
+            { banco: 'Banco2', puntoDebito: 7000, puntoCredito: 1500 }
+        ],
         efectivoBs: 25300,
         totalBs: 42000,
         totalBsEnUsd: 1019.42,
@@ -173,6 +198,8 @@ export const cuadreCajasMilagroNorte: CuadreCaja[] = [
 
         totalGeneralUsd: 1020,
         diferenciaUsd: 0.58,
+        sobranteUsd: 0.58,
+        faltanteUsd: 0,
         delete: false
     }
 ];

@@ -80,6 +80,23 @@ const ResumenCuadreFarmacia: React.FC<Props> = ({ farmacia, cuadreCajas, onClose
                                                 <div><span className="font-medium">Tasa:</span> {c.tasa}</div>
                                             </div>
                                         </div>
+                                        {/* Puntos de Venta */}
+                                        {c.puntosVenta && c.puntosVenta.length > 0 && (
+                                            <div className="mt-2">
+                                                <div className="font-semibold text-blue-700">Puntos de Venta:</div>
+                                                {c.puntosVenta.map((pv, i) => (
+                                                    <div key={i} className="flex gap-2 text-xs ml-2">
+                                                        <span className="font-medium">{pv.banco}:</span>
+                                                        <span>Débito Bs: {pv.puntoDebito}</span>
+                                                        <span>Crédito Bs: {pv.puntoCredito}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                        {/* Estado */}
+                                        {c.estado && (
+                                            <div className="mt-1 text-xs text-gray-500">Estado: <span className="font-bold">{c.estado}</span></div>
+                                        )}
                                         {/* Totales abajo */}
                                         <div className="mt-4 border-t pt-2 flex flex-col gap-1">
                                             <div className="flex justify-between">
@@ -91,6 +108,12 @@ const ResumenCuadreFarmacia: React.FC<Props> = ({ farmacia, cuadreCajas, onClose
                                                 <span className="font-bold">{c.totalGeneralUsd}</span>
                                             </div>
                                             <div className="flex justify-between"><span className="font-medium">Diferencia USD:</span> {c.diferenciaUsd}</div>
+                                            {(c.faltanteUsd ?? 0) > 0 && (
+                                                <div className="flex justify-between"><span className="font-medium text-red-600">Faltante USD:</span> <span className="text-red-600">{c.faltanteUsd}</span></div>
+                                            )}
+                                            {(c.sobranteUsd ?? 0) > 0 && (
+                                                <div className="flex justify-between"><span className="font-medium text-green-600">Sobrante USD:</span> <span className="text-green-600">{c.sobranteUsd}</span></div>
+                                            )}
                                         </div>
                                         <Button
                                             variant="destructive"

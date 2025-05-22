@@ -10,6 +10,7 @@ import PermissionRoute from './PermissionRoute';
 import AgregarCuadrePage from '@/pages/AgregarCuadrePage';
 import ListaCuadresFarmacia from '@/components/ListaCuadresFarmacia';
 import ResumenFarmaciasVentas from '@/pages/ResumenFarmaciasVentas';
+import VerificacionCuadresPage from '@/pages/VerificacionCuadresPage';
 
 const AppRouter = () => (
     <Routes>
@@ -20,6 +21,7 @@ const AppRouter = () => (
         <Route path="/ver/cuadre" element={<ListaCuadresFarmacia farmaciaId='01' />} />
         <Route path="/agregarcuadre" element={<AgregarCuadrePage />} />
         <Route path="/resumenfarmacias" element={<ResumenFarmaciasVentas />} />
+        <Route path="/verificacion-cuadres" element={<VerificacionCuadresPage />} />
         <Route
             path="/admin"
             element={

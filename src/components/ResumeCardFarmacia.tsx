@@ -1,88 +1,46 @@
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
-import { useCuadresFarmacia } from "@/hooks/useCuadresFarmacia";
+import React from "react";
 
 interface ResumeCardFarmaciaProps {
-    farmaciaId: string;
-    farmaciaNombre: string;
-    dia: string; // formato: "YYYY-MM-DD"
-    onDetalle?: (farmaciaId: string, dia: string) => void;
+  nombre: string;
+  totalVentas: number; // Monto real de la venta (totalGeneralUsd)
+  totalBs: number;     // Total en Bs (sin conversión)
+  totalBsEnUsd: number; // Total Bs convertido a USD
+  efectivoUsd: number;  // Solo USD efectivo
+  zelleUsd: number;     // Solo USD zelle
+  totalUsd: number;    // Total en USD directo (efectivoUsd + zelleUsd)
+  faltantes: number;   // Suma de diferencias negativas (faltantes)
+  sobrantes: number;   // Suma de diferencias positivas (sobrantes)
+  top?: boolean;       // Si es top 3
 }
 
-const ResumeCardFarmacia = ({
-    farmaciaId,
-    farmaciaNombre,
-    dia,
-    onDetalle,
-}: ResumeCardFarmaciaProps) => {
-    const { data: cuadres, isLoading, error } = useCuadresFarmacia(farmaciaId);
-
-    // Filtrar cuadres del día
-    const cuadresDia = cuadres?.filter((c: any) => c.dia === dia) || [];
-
-    // Calcular totales
-    const totalDia = cuadresDia.reduce(
-        (sum: number, c: any) => sum + (c.totalBsEnUsd || 0) + (c.efectivoUsd || 0) + (c.zelleUsd || 0),
-        0
-    );
-    const diferenciaDia = cuadresDia.reduce((sum: number, c: any) => sum + (c.diferenciaUsd || 0), 0);
-
-    return (
-        <Card className="shadow-lg border-2 border-blue-200 hover:border-blue-400 transition-all duration-200">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <div>
-                    <CardTitle className="text-blue-900 text-xl font-bold">{farmaciaNombre}</CardTitle>
-                    <CardDescription className="text-blue-700">Día: {dia}</CardDescription>
-                </div>
-            </CardHeader>
-            <CardContent>
-                <div className="flex flex-col gap-2">
-                    <div className="flex items-center justify-between">
-                        <span className="text-gray-700 font-medium">Venta del día:</span>
-                        <span className="text-2xl font-bold text-green-700">
-                            {totalDia.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
-                        </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                        <span className="text-gray-700 font-medium">Diferencia:</span>
-                        <span className={`text-2xl font-bold ${diferenciaDia === 0 ? "text-gray-500" : diferenciaDia > 0 ? "text-green-600" : "text-red-600"}`}>
-                            {diferenciaDia.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
-                        </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                        <span className="text-gray-700 font-medium">Cuadres registrados:</span>
-                        <span className="text-blue-800 font-semibold">{cuadresDia.length}</span>
-                    </div>
-                </div>
-            </CardContent>
-            <CardFooter className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                <div>
-                    {isLoading ? (
-                        <span className="text-blue-600">Cargando...</span>
-                    ) : error ? (
-                        <span className="text-red-600">Error al cargar datos</span>
-                    ) : cuadresDia.length === 0 ? (
-                        <span className="text-gray-500">No hay cuadres para este día.</span>
-                    ) : (
-                        <span className="text-green-700 font-medium">Datos actualizados</span>
-                    )}
-                </div>
-                <button
-                    className="mt-2 md:mt-0 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-                    onClick={() => onDetalle?.(farmaciaId, dia)}
-                    disabled={isLoading || !!error || cuadresDia.length === 0}
-                >
-                    Ver detalles
-                </button>
-            </CardFooter>
-        </Card>
-    );
+const ResumeCardFarmacia: React.FC<ResumeCardFarmaciaProps> = ({ nombre, totalVentas, totalBs, totalBsEnUsd, efectivoUsd, zelleUsd, totalUsd, faltantes, sobrantes, top }) => {
+  return (
+    <div className={`bg-white rounded-xl shadow-md p-6 border flex flex-col items-center transition hover:shadow-lg ${top ? 'border-yellow-400 ring-2 ring-yellow-300' : 'border-blue-100'}`}>
+      {top && (
+        <div className="flex items-center mb-2">
+          <span className="material-icons text-yellow-500 mr-1">emoji_events</span>
+          <span className="text-yellow-600 font-bold text-sm">TOP</span>
+        </div>
+      )}
+      <h3 className={`text-lg font-bold mb-2 text-center ${top ? 'text-yellow-700' : 'text-blue-700'}`}>{nombre}</h3>
+      <div className={`text-2xl font-extrabold mb-1 ${top ? 'text-yellow-700' : 'text-green-700'}`}>${totalVentas.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+      <div className="flex flex-col gap-1 text-sm text-gray-700 w-full mt-2">
+        <div className="flex justify-between w-full"><span>Solo Bs:</span><span>{totalBs.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs</span></div>
+        <div className="flex justify-between w-full"><span>Solo USD Efectivo:</span><span>${efectivoUsd.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+        <div className="flex justify-between w-full"><span>Solo USD Zelle:</span><span>${zelleUsd.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+        <div className="flex justify-between w-full"><span>Solo USD:</span><span>${totalUsd.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+        <div className="flex justify-between w-full font-bold"><span>Total General:</span><span>${(totalBsEnUsd + totalUsd).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+        {faltantes > 0 && (
+          <div className="flex justify-between w-full"><span>Faltantes:</span><span className="text-red-600">${faltantes.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+        )}
+        {sobrantes > 0 && (
+          <div className="flex justify-between w-full"><span>Sobrante:</span><span className="text-green-600">${sobrantes.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+        )}
+      </div>
+      <span className="text-xs text-gray-500 mt-2">Venta mensual</span>
+    </div>
+  );
 };
 
 export default ResumeCardFarmacia;
+// Si quieres mostrar el estado general de los cuadres, puedes agregarlo aquí. Si no, omite este cambio.

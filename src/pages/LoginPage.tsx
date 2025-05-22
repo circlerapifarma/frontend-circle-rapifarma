@@ -28,8 +28,9 @@ const LoginPage: React.FC = () => {
                 throw new Error(data.detail || "Error al iniciar sesión");
             }
 
-            // Guardar el token en localStorage
+            // Guardar el token y el usuario en localStorage
             localStorage.setItem("token", data.access_token);
+            localStorage.setItem("usuario", JSON.stringify(data.usuario));
 
             // Navegar a la página principal
             navigate("/admin");

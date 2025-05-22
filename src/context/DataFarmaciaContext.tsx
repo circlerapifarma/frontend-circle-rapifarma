@@ -87,3 +87,5 @@ export function useDataFarmaciaContext() {
     }
     return context;
 }
+
+// Asegúrate de que el tipo CuadreCaja en este archivo incluya puntosVenta y estado.

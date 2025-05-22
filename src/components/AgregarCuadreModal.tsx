@@ -20,10 +20,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
     const [devolucionesBs, setDevolucionesBs] = useState<number>(0);
     const [recargaBs, setRecargaBs] = useState<number>(0);
     const [pagomovilBs, setPagomovilBs] = useState<number>(0);
-    const [puntoDebitoBs, setPuntoDebitoBs] = useState<number>(0);
-    const [puntoCreditoBs, setPuntoCreditoBs] = useState<number>(0);
     const [efectivoBs, setEfectivoBs] = useState<number>(0);
-    const [totalBs, setTotalBs] = useState<number>(0);
 
     const [efectivoUsd, setEfectivoUsd] = useState<number>(0);
     const [zelleUsd, setZelleUsd] = useState<number>(0);
@@ -31,8 +28,13 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
     const [error, setError] = useState<string>("");
     const [success, setSuccess] = useState<string>("");
 
+    // Nuevo estado para puntos de venta
+    const [puntosVenta, setPuntosVenta] = useState<Array<{ banco: string; puntoDebito: number; puntoCredito: number }>>([
+        { banco: '', puntoDebito: 0, puntoCredito: 0 }
+    ]);
+
     // Cálculos automáticos
-    const totalBsIngresados = recargaBs + pagomovilBs + puntoDebitoBs + puntoCreditoBs + efectivoBs;
+    const totalBsIngresados = recargaBs + pagomovilBs + puntosVenta.reduce((acc, pv) => acc + Number(pv.puntoDebito || 0), 0) + puntosVenta.reduce((acc, pv) => acc + Number(pv.puntoCredito || 0), 0) + efectivoBs;
     const totalBsEnUsd = tasa > 0 ? (totalBsIngresados - devolucionesBs) / tasa : 0;
     const totalGeneralUsd = totalBsEnUsd + efectivoUsd + zelleUsd;
     const diferenciaUsd = tasa > 0 ? Number((totalGeneralUsd - (totalCajaSistemaBs / tasa)).toFixed(2)) : 0;
@@ -43,7 +45,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
         if (cajaNumero <= 0) return "El número de caja debe ser mayor a 0.";
         if (tasa <= 0) return "La tasa debe ser mayor a 0.";
         if (totalCajaSistemaBs < 0 || devolucionesBs < 0 || recargaBs < 0 || pagomovilBs < 0 ||
-            puntoDebitoBs < 0 || puntoCreditoBs < 0 || efectivoBs < 0 || totalBs < 0 ||
+            efectivoBs < 0 ||
             efectivoUsd < 0 || zelleUsd < 0) return "Los montos no pueden ser negativos.";
         return "";
     };
@@ -67,21 +69,35 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
             devolucionesBs,
             recargaBs,
             pagomovilBs,
-            puntoDebitoBs,
-            puntoCreditoBs,
+            puntosVenta, // array de puntos de venta
             efectivoBs,
-            totalBs: totalBsIngresados,
+            totalBs: totalBsIngresados - devolucionesBs, // Ahora es la suma de todos los bolívares menos devoluciones
             totalBsEnUsd: Number(totalBsEnUsd.toFixed(2)),
             efectivoUsd,
             zelleUsd,
             totalGeneralUsd: Number(totalGeneralUsd.toFixed(2)),
             diferenciaUsd,
+            sobranteUsd: diferenciaUsd > 0 ? diferenciaUsd : 0,
+            faltanteUsd: diferenciaUsd < 0 ? Math.abs(diferenciaUsd) : 0,
             delete: false,
+            estado: 'wait',
+            nombreFarmacia: (() => {
+                const usuario = (() => {
+                    try {
+                        const raw = localStorage.getItem("usuario");
+                        return raw ? JSON.parse(raw) : null;
+                    } catch {
+                        return null;
+                    }
+                })();
+                const farmacias = usuario?.farmacias || {};
+                return farmacias[farmacia] || '';
+            })()
         };
 
         try {
             const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8000/cuadres/${farmacia}`, {
+            const response = await fetch(`http://localhost:8000/agg/cuadre/${farmacia}`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -105,119 +121,182 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
         }
     };
 
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-            <div className="overflow-auto max-h-[90vh]">
+    // Limpia mensajes al cerrar el modal
+    const handleClose = () => {
+        setSuccess("");
+        setError("");
+        onClose();
+    };
 
+    return (
+        <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50">
+            <div className="overflow-auto max-h-[90vh] w-full max-w-lg p-0 relative">
+                <button
+                    type="button"
+                    onClick={handleClose}
+                    className="absolute top-4 right-4 text-2xl text-gray-400 hover:text-red-500 transition-colors z-10"
+                    aria-label="Cerrar"
+                >
+                    ×
+                </button>
                 <form
                     onSubmit={handleSubmit}
-                    className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative"
+                    className="bg-white rounded-2xl shadow-2xl p-8 w-full relative border border-blue-200 animate-fade-in"
                 >
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="absolute top-2 right-2 text-xl text-gray-500 hover:text-red-500"
-                    >
-                        ×
-                    </button>
-                    <h2 className="text-xl font-bold mb-4 text-blue-800 text-center">
+                    <h2 className="text-2xl font-extrabold mb-6 text-blue-700 text-center tracking-tight drop-shadow-sm">
                         Agregar Cuadre
                     </h2>
-                    {error && <div className="mb-2 text-red-600 text-sm">{error}</div>}
-                    {success && <div className="mb-2 text-green-600 text-sm">{success}</div>}
-                    <div className="mb-2">
-                        <label className="block text-sm">Día</label>
-                        <input type="text" value={dia} readOnly className="w-full border rounded p-2 bg-gray-100" />
+                    {error && <div className="mb-3 text-red-600 text-sm font-semibold text-center bg-red-50 border border-red-200 rounded p-2">{error}</div>}
+                    {success && <div className="mb-3 text-green-600 text-sm font-semibold text-center bg-green-50 border border-green-200 rounded p-2">{success}</div>}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">Día</label>
+                            <input type="text" value={dia} readOnly className="w-full border rounded-lg p-2 bg-gray-100 text-gray-700" />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">Caja #</label>
+                            <input type="number" value={cajaNumero} onChange={e => setCajaNumero(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={1} />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">Tasa</label>
+                            <input type="number" value={tasa} onChange={e => setTasa(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0.01} step="0.01" />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">Turno</label>
+                            <select value={turno} onChange={e => setTurno(e.target.value)} className="w-full border rounded-lg p-2">
+                                <option value="Mañana">Mañana</option>
+                                <option value="Tarde">Tarde</option>
+                                <option value="Noche">Noche</option>
+                            </select>
+                        </div>
+                        <div className="md:col-span-2">
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">Cajero</label>
+                            <input type="text" value={cajero} onChange={e => setCajero(e.target.value)} className="w-full border rounded-lg p-2" required />
+                        </div>
                     </div>
-                    <div className="mb-2">
-                        <label className="block text-sm">Caja #</label>
-                        <input type="number" value={cajaNumero} onChange={e => setCajaNumero(Number(e.target.value))} className="w-full border rounded p-2" required min={1} />
+                    <hr className="my-5 border-blue-100" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">Total Caja Sistema Bs</label>
+                            <input type="number" value={totalCajaSistemaBs} onChange={e => setTotalCajaSistemaBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">Devoluciones Bs</label>
+                            <input type="number" value={devolucionesBs} onChange={e => setDevolucionesBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">Recarga Bs</label>
+                            <input type="number" value={recargaBs} onChange={e => setRecargaBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">Pago Móvil Bs</label>
+                            <input type="number" value={pagomovilBs} onChange={e => setPagomovilBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
+                        </div>
+                        <div className="col-span-2">
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">Puntos de Venta</label>
+                            {puntosVenta.map((pv, idx) => (
+                                <div key={idx} className="flex gap-2 mb-2 items-end">
+                                    <input
+                                        type="text"
+                                        placeholder="Banco"
+                                        value={pv.banco}
+                                        onChange={e => {
+                                            const arr = [...puntosVenta];
+                                            arr[idx].banco = e.target.value;
+                                            setPuntosVenta(arr);
+                                        }}
+                                        className="border rounded-lg p-2 flex-1"
+                                        required
+                                    />
+                                    <div className="flex flex-col">
+                                        <label className="text-xs text-gray-500 mb-0.5">Débito Bs</label>
+                                        <input
+                                            type="number"
+                                            placeholder="Débito Bs"
+                                            value={pv.puntoDebito}
+                                            onChange={e => {
+                                                const arr = [...puntosVenta];
+                                                arr[idx].puntoDebito = Number(e.target.value);
+                                                setPuntosVenta(arr);
+                                            }}
+                                            className="border rounded-lg p-2 w-28"
+                                            min={0}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <label className="text-xs text-gray-500 mb-0.5">Crédito Bs</label>
+                                        <input
+                                            type="number"
+                                            placeholder="Crédito Bs"
+                                            value={pv.puntoCredito}
+                                            onChange={e => {
+                                                const arr = [...puntosVenta];
+                                                arr[idx].puntoCredito = Number(e.target.value);
+                                                setPuntosVenta(arr);
+                                            }}
+                                            className="border rounded-lg p-2 w-28"
+                                            min={0}
+                                            required
+                                        />
+                                    </div>
+                                    {puntosVenta.length > 1 && (
+                                        <button type="button" className="text-red-500 font-bold ml-1" onClick={() => setPuntosVenta(puntosVenta.filter((_, i) => i !== idx))}>×</button>
+                                    )}
+                                </div>
+                            ))}
+                            <button type="button" className="text-blue-600 underline text-xs mt-1" onClick={() => setPuntosVenta([...puntosVenta, { banco: '', puntoDebito: 0, puntoCredito: 0 }])}>+ Agregar punto de venta</button>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">Efectivo Bs</label>
+                            <input type="number" value={efectivoBs} onChange={e => setEfectivoBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">Total Bs</label>
+                            <input
+                                type="number"
+                                value={totalBsIngresados - devolucionesBs}
+                                readOnly
+                                className="w-full border rounded-lg p-2 bg-gray-100 text-gray-700"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">Total Bs en $ (calculado)</label>
+                            <input
+                                type="number"
+                                value={Number(totalBsEnUsd.toFixed(2))}
+                                readOnly
+                                className="w-full border rounded-lg p-2 bg-gray-100 text-gray-700"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">Efectivo $</label>
+                            <input type="number" value={efectivoUsd} onChange={e => setEfectivoUsd(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">Zelle $</label>
+                            <input type="number" value={zelleUsd} onChange={e => setZelleUsd(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">Total General $ (calculado)</label>
+                            <input
+                                type="number"
+                                value={Number(totalGeneralUsd.toFixed(2))}
+                                readOnly
+                                className="w-full border rounded-lg p-2 bg-gray-100 text-gray-700"
+                            />
+                        </div>
+                        <div className="md:col-span-2">
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">Diferencia $ (calculado)</label>
+                            <input
+                                type="number"
+                                value={diferenciaUsd}
+                                readOnly
+                                className="w-full border rounded-lg p-2 bg-gray-100 text-gray-700"
+                            />
+                        </div>
                     </div>
-                    <div className="mb-2">
-                        <label className="block text-sm">Tasa</label>
-                        <input type="number" value={tasa} onChange={e => setTasa(Number(e.target.value))} className="w-full border rounded p-2" required min={0.01} step="0.01" />
-                    </div>
-                    <div className="mb-2">
-                        <label className="block text-sm">Turno</label>
-                        <select value={turno} onChange={e => setTurno(e.target.value)} className="w-full border rounded p-2">
-                            <option value="Mañana">Mañana</option>
-                            <option value="Tarde">Tarde</option>
-                            <option value="Noche">Noche</option>
-                        </select>
-                    </div>
-                    <div className="mb-2">
-                        <label className="block text-sm">Cajero</label>
-                        <input type="text" value={cajero} onChange={e => setCajero(e.target.value)} className="w-full border rounded p-2" required />
-                    </div>
-                    <hr className="my-3" />
-                    <div className="mb-2">
-                        <label className="block text-sm">Total Caja Sistema Bs</label>
-                        <input type="number" value={totalCajaSistemaBs} onChange={e => setTotalCajaSistemaBs(Number(e.target.value))} className="w-full border rounded p-2" required min={0} />
-                    </div>
-                    <div className="mb-2">
-                        <label className="block text-sm">Devoluciones Bs</label>
-                        <input type="number" value={devolucionesBs} onChange={e => setDevolucionesBs(Number(e.target.value))} className="w-full border rounded p-2" required min={0} />
-                    </div>
-                    <div className="mb-2">
-                        <label className="block text-sm">Recarga Bs</label>
-                        <input type="number" value={recargaBs} onChange={e => setRecargaBs(Number(e.target.value))} className="w-full border rounded p-2" required min={0} />
-                    </div>
-                    <div className="mb-2">
-                        <label className="block text-sm">Pago Móvil Bs</label>
-                        <input type="number" value={pagomovilBs} onChange={e => setPagomovilBs(Number(e.target.value))} className="w-full border rounded p-2" required min={0} />
-                    </div>
-                    <div className="mb-2">
-                        <label className="block text-sm">Punto Débito Bs</label>
-                        <input type="number" value={puntoDebitoBs} onChange={e => setPuntoDebitoBs(Number(e.target.value))} className="w-full border rounded p-2" required min={0} />
-                    </div>
-                    <div className="mb-2">
-                        <label className="block text-sm">Punto Crédito Bs</label>
-                        <input type="number" value={puntoCreditoBs} onChange={e => setPuntoCreditoBs(Number(e.target.value))} className="w-full border rounded p-2" required min={0} />
-                    </div>
-                    <div className="mb-2">
-                        <label className="block text-sm">Efectivo Bs</label>
-                        <input type="number" value={efectivoBs} onChange={e => setEfectivoBs(Number(e.target.value))} className="w-full border rounded p-2" required min={0} />
-                    </div>
-                    <div className="mb-2">
-                        <label className="block text-sm">Total Bs</label>
-                        <input type="number" value={totalBs} onChange={e => setTotalBs(Number(e.target.value))} className="w-full border rounded p-2" required min={0} />
-                    </div>
-                    <div className="mb-2">
-                        <label className="block text-sm">Total Bs en $ (calculado)</label>
-                        <input
-                            type="number"
-                            value={Number(totalBsEnUsd.toFixed(2))}
-                            readOnly
-                            className="w-full border rounded p-2 bg-gray-100"
-                        />
-                    </div>
-                    <div className="mb-2">
-                        <label className="block text-sm">Efectivo $</label>
-                        <input type="number" value={efectivoUsd} onChange={e => setEfectivoUsd(Number(e.target.value))} className="w-full border rounded p-2" required min={0} />
-                    </div>
-                    <div className="mb-4">
-                        <label className="block text-sm">Zelle $</label>
-                        <input type="number" value={zelleUsd} onChange={e => setZelleUsd(Number(e.target.value))} className="w-full border rounded p-2" required min={0} />
-                    </div>
-                    <div className="mb-4">
-                        <label className="block text-sm">Total General $ (calculado)</label>
-                        <input
-                            type="number"
-                            value={Number(totalGeneralUsd.toFixed(2))}
-                            readOnly
-                            className="w-full border rounded p-2 bg-gray-100"
-                        />
-                    </div>
-                    <div className="mb-4">
-                        <label className="block text-sm">Diferencia $ (calculado)</label>
-                        <input
-                            type="number"
-                            value={diferenciaUsd}
-                            readOnly
-                            className="w-full border rounded p-2 bg-gray-100"
-                        />
-                    </div>
-                    <button type="submit" className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">
+                    <button type="submit" className="w-full mt-6 bg-gradient-to-r from-green-500 to-green-700 text-white py-3 rounded-xl font-bold text-lg shadow-md hover:from-green-600 hover:to-green-800 transition-all">
                         Guardar
                     </button>
                 </form>
