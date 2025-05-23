@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router';
+import { Routes, Route } from 'react-router';
 import AboutPage from "@/pages/AboutPage";
 import HomePage from "@/pages/HomePage";
 import NotFoundPage from "@/pages/NotFoundPage";

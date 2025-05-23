@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { useDataFarmaciaContext } from "@/context/DataFarmaciaContext";
 
 interface Props {
     farmacia: string;
@@ -14,9 +13,9 @@ interface Cajero {
     FARMACIAS: Record<string, string>;
 }
 
-const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
-    const { addCuadreCaja } = useDataFarmaciaContext();
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
     // Estados para los campos del cuadre
     const [cajaNumero, setCajaNumero] = useState<number>(1);
     const [turno, setTurno] = useState<string>("Mañana");
@@ -109,7 +108,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
 
         try {
             const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8000/agg/cuadre/${farmacia}`, {
+            const response = await fetch(`${API_BASE_URL}/agg/cuadre/${farmacia}`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -142,7 +141,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
 
     useEffect(() => {
         // Obtener cajeros asociados a la farmacia seleccionada
-        fetch(`http://localhost:8000/cajeros`)
+        fetch(`${API_BASE_URL}/cajeros`)
             .then(res => res.json())
             .then(data => {
                 const filtrados = data.filter((c: Cajero) => c.FARMACIAS && c.FARMACIAS[farmacia]);

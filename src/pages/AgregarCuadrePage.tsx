@@ -59,7 +59,7 @@ const AgregarCuadrePage: React.FC = () => {
                     <option value="">Seleccione una farmacia</option>
                     {Object.entries(farmacias).map(([codigo, nombre]) => (
                         <option key={codigo} value={codigo}>
-                            {nombre} ({codigo})
+                            {String(nombre)} ({String(codigo)})
                         </option>
                     ))}
                 </select>

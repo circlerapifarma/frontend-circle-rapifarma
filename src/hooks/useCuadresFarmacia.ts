@@ -1,10 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 export function useCuadresFarmacia(farmaciaId: string) {
     return useQuery({
         queryKey: ["cuadres", farmaciaId],
         queryFn: async () => {
-            const res = await fetch(`http://localhost:8000/cuadres/${farmaciaId}`, {
+            const res = await fetch(`${API_BASE_URL}/cuadres/${farmaciaId}`, {
                 method: "GET",
             });
             if (!res.ok) throw new Error("Error al obtener cuadres");

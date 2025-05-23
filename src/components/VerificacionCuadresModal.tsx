@@ -36,6 +36,8 @@ interface Props {
   farmaciaNombre: string;
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const VerificacionCuadresModal: React.FC<Props> = ({ open, onClose, farmaciaId, farmaciaNombre }) => {
   const [cuadres, setCuadres] = useState<CuadreCaja[]>([]);
   const [loading, setLoading] = useState(false);
@@ -45,7 +47,7 @@ const VerificacionCuadresModal: React.FC<Props> = ({ open, onClose, farmaciaId, 
     if (!open || !farmaciaId) return;
     setLoading(true);
     setError(null);
-    fetch(`http://localhost:8000/cuadres/${farmaciaId}`)
+    fetch(`${API_BASE_URL}/cuadres/${farmaciaId}`)
       .then(res => res.json())
       .then(data => {
         // Solo pendientes de verificación
@@ -58,7 +60,7 @@ const VerificacionCuadresModal: React.FC<Props> = ({ open, onClose, farmaciaId, 
   const actualizarEstado = async (cuadre: CuadreCaja, nuevoEstado: "verified" | "denied") => {
     if (!farmaciaId || !cuadre._id) return;
     try {
-      const res = await fetch(`http://localhost:8000/cuadres/${farmaciaId}/${cuadre._id}/estado`, {
+      const res = await fetch(`${API_BASE_URL}/cuadres/${farmaciaId}/${cuadre._id}/estado`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ estado: nuevoEstado }),

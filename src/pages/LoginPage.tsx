@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const LoginPage: React.FC = () => {
     const [correo, setCorreo] = useState("");
     const [contraseña, setContraseña] = useState("");
@@ -14,7 +16,7 @@ const LoginPage: React.FC = () => {
         setLoading(true);
 
         try {
-            const response = await fetch("http://localhost:8000/auth/login", {
+            const response = await fetch(`${API_BASE_URL}/auth/login`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

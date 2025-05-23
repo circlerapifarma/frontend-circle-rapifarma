@@ -37,6 +37,8 @@ export interface CuadreCaja {
     delete: boolean; // <--- NUEVO CAMPO
     estado?: string;
     nombreFarmacia?: string;
+    puntoDebitoBs?: number; // Propiedad opcional para punto débito en bolívares
+    puntoCreditoBs?: number; // Propiedad opcional para punto crédito en bolívares
 }
 
 // Ejemplo de data

@@ -12,6 +12,8 @@ type VentasFarmacia = {
     sobrantes: number;
 };
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const ResumenFarmaciasVentas: React.FC = () => {
     const [farmacias, setFarmacias] = useState<{ id: string; nombre: string }[]>([]);
     const [ventas, setVentas] = useState<{ [key: string]: VentasFarmacia }>({});
@@ -27,7 +29,7 @@ const ResumenFarmaciasVentas: React.FC = () => {
     useEffect(() => {
         const fetchFarmacias = async () => {
             try {
-                const res = await fetch("http://localhost:8000/farmacias");
+                const res = await fetch(`${API_BASE_URL}/farmacias`);
                 if (!res.ok) throw new Error("Error al obtener farmacias");
                 const data = await res.json();
                 const lista = data.farmacias

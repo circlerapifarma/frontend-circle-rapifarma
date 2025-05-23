@@ -41,11 +41,13 @@ const CuadresModal: React.FC<CuadresModalProps> = ({ open, onClose, farmaciaId, 
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
 
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
   const fetchCuadres = async (fechaInicioParam?: string, fechaFinParam?: string) => {
     setLoading(true);
     setError(null);
     try {
-      let url = `http://localhost:8000/cuadres/${farmaciaId}`;
+      let url = `${API_BASE_URL}/cuadres/${farmaciaId}`;
       const params: string[] = [];
       if (fechaInicioParam) params.push(`fecha_inicio=${fechaInicioParam}`);
       if (fechaFinParam) params.push(`fecha_fin=${fechaFinParam}`);
@@ -68,7 +70,7 @@ const CuadresModal: React.FC<CuadresModalProps> = ({ open, onClose, farmaciaId, 
     if (open && farmaciaId) {
       fetchCuadres();
       // Fetch cajeros solo si hay farmacia seleccionada
-      fetch(`http://localhost:8000/cajeros`)
+      fetch(`${API_BASE_URL}/cajeros`)
         .then(res => res.json())
         .then(data => {
           // Filtrar cajeros que tengan la farmacia seleccionada

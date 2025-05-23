@@ -19,6 +19,8 @@ const cardVariants = {
   },
 };
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const TotalGeneralFarmaciasPage: React.FC = () => {
   const [totalGeneral, setTotalGeneral] = useState<number | null>(null);
   const [totalSobrantes, setTotalSobrantes] = useState<number | null>(null);
@@ -29,7 +31,7 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
   useEffect(() => {
     const fetchTotalGeneral = async () => {
       try {
-        const response = await fetch("http://localhost:8000/cuadres/all");
+        const response = await fetch(`${API_BASE_URL}/cuadres/all`);
         const data = await response.json();
         const verifiedData = data.filter((cuadre: any) => cuadre.estado === "verified");
         const total = verifiedData.reduce((acc: number, cuadre: any) => acc + cuadre.totalGeneralUsd, 0);

@@ -3,37 +3,19 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import CuadresModal from "@/components/CuadresModal";
 
-interface Cuadre {
-  dia: string;
-  cajaNumero: number;
-  turno: string;
-  cajero: string;
-  totalCajaSistemaBs: number;
-  recargaBs: number;
-  pagomovilBs: number;
-  puntosVenta?: Array<{ banco: string; puntoDebito: number; puntoCredito: number }>;
-  efectivoBs: number;
-  efectivoUsd: number;
-  zelleUsd: number;
-  totalGeneralUsd: number;
-  diferenciaUsd: number;
-  sobranteUsd?: number;
-  faltanteUsd?: number;
-  estado?: string;
-}
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const CuadresPorFarmaciaPage: React.FC = () => {
   const [farmacias, setFarmacias] = useState<{ id: string; nombre: string }[]>([]);
   const [modalAbierto, setModalAbierto] = useState(false);
   const [farmaciaSeleccionada, setFarmaciaSeleccionada] = useState<string>("");
   const [farmaciaNombreSeleccionada, setFarmaciaNombreSeleccionada] = useState<string>("");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchFarmacias = async () => {
       try {
-        const res = await fetch("http://localhost:8000/farmacias");
+        const res = await fetch(`${API_BASE_URL}/farmacias`);
         const data = await res.json();
         const lista = data.farmacias
           ? Object.entries(data.farmacias).map(([id, nombre]) => ({ id, nombre: String(nombre) }))

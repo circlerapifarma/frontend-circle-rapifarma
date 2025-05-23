@@ -3,6 +3,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import VerificacionCuadresModal from "@/components/VerificacionCuadresModal";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const VerificacionCuadresPage: React.FC = () => {
   const [farmacias, setFarmacias] = useState<{ id: string; nombre: string }[]>([]);
   const [cuadresPorFarmacia, setCuadresPorFarmacia] = useState<Record<string, number>>({});
@@ -16,7 +18,7 @@ const VerificacionCuadresPage: React.FC = () => {
     const fetchFarmacias = async () => {
       setLoading(true);
       try {
-        const res = await fetch("http://localhost:8000/farmacias");
+        const res = await fetch(`${API_BASE_URL}/farmacias`);
         const data = await res.json();
         const lista = data.farmacias
           ? Object.entries(data.farmacias).map(([id, nombre]) => ({ id, nombre: String(nombre) }))
@@ -34,7 +36,7 @@ const VerificacionCuadresPage: React.FC = () => {
   useEffect(() => {
     const fetchCuadresPorFarmacia = async () => {
       try {
-        const response = await fetch("http://localhost:8000/cuadres/all");
+        const response = await fetch(`${API_BASE_URL}/cuadres/all`);
         const data = await response.json();
         const cuadresCount = data.reduce((acc: Record<string, number>, cuadre: any) => {
           if (cuadre.estado === "wait") {

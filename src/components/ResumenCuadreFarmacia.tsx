@@ -66,8 +66,8 @@ const ResumenCuadreFarmacia: React.FC<Props> = ({ farmacia, cuadreCajas, onClose
                                                 <div><span className="font-medium">Total Caja Sistema:</span> {c.totalCajaSistemaBs.toLocaleString()}</div>
                                                 <div><span className="font-medium">Efectivo:</span> {c.efectivoBs.toLocaleString()}</div>
                                                 <div><span className="font-medium">Pago Móvil:</span> {c.pagomovilBs.toLocaleString()}</div>
-                                                <div><span className="font-medium">Punto Débito:</span> {c.puntoDebitoBs.toLocaleString()}</div>
-                                                <div><span className="font-medium">Punto Crédito:</span> {c.puntoCreditoBs.toLocaleString()}</div>
+                                                <div><span className="font-medium">Punto Débito:</span> {c.puntoDebitoBs?.toLocaleString() || 'N/A'}</div>
+                                                <div><span className="font-medium">Punto Crédito:</span> {c.puntoCreditoBs?.toLocaleString() || 'N/A'}</div>
                                                 <div><span className="font-medium">Recarga:</span> {c.recargaBs.toLocaleString()}</div>
                                                 <div><span className="font-medium">Devoluciones:</span> {c.devolucionesBs.toLocaleString()}</div>
                                             </div>

@@ -17,6 +17,8 @@ function isInRange(dia: string, inicio: string, fin: string) {
   return (!inicio || dia >= inicio) && (!fin || dia <= fin);
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const ResumenFarmaciasPorDia: React.FC = () => {
   const [farmacias, setFarmacias] = useState<{ id: string; nombre: string }[]>([]);
   const [ventas, setVentas] = useState<{ [key: string]: VentasFarmacia }>({});
@@ -30,7 +32,7 @@ const ResumenFarmaciasPorDia: React.FC = () => {
   useEffect(() => {
     const fetchFarmacias = async () => {
       try {
-        const res = await fetch("http://localhost:8000/farmacias");
+        const res = await fetch(`${API_BASE_URL}/farmacias`);
         if (!res.ok) throw new Error("Error al obtener farmacias");
         const data = await res.json();
         const lista = data.farmacias
