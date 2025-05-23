@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
+console.log("API_BASE_URL", API_BASE_URL);
 const LoginPage: React.FC = () => {
     const [correo, setCorreo] = useState("");
     const [contraseña, setContraseña] = useState("");

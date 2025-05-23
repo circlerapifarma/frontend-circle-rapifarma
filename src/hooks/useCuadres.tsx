@@ -1,12 +1,14 @@
 // src/hooks/useCuadres.ts
 import { useQuery } from "@tanstack/react-query";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 export const useCuadres = (farmacia: string, dia: string) => {
     return useQuery({
         queryKey: ["cuadres", farmacia, dia],
         queryFn: async () => {
             const res = await fetch(
-                `/api/cuadres?farmacia=${farmacia}&dia=${dia}`
+                `${API_BASE_URL}/cuadres?farmacia=${farmacia}&dia=${dia}`
             );
             if (!res.ok) throw new Error("Error al obtener cuadres");
             const data = await res.json();

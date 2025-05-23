@@ -55,7 +55,7 @@ const ResumenFarmaciasPorDia: React.FC = () => {
         const result: { [key: string]: any[] } = {};
         await Promise.all(
           farmacias.map(async (farm) => {
-            const res = await fetch(`http://localhost:8000/cuadres/${farm.id}`);
+            const res = await fetch(`${API_BASE_URL}/cuadres/${farm.id}`);
             const data = await res.json();
             result[farm.id] = data;
           })
