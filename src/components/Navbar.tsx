@@ -32,7 +32,7 @@ const Navbar = () => {
   return (
     <nav className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm sticky top-0 z-50">
       <div className="flex items-center justify-between">
-        <div className="text-lg font-semibold text-gray-800">RF</div>
+        <div className="text-lg font-semibold text-gray-800">RAPIFARMA</div>
 
         <button
           className="sm:hidden text-gray-700 focus:outline-none"

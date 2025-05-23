@@ -13,12 +13,6 @@ const HomePage: React.FC = () => {
                 <li>Filtrar y analizar sobrantes/faltantes por sucursal.</li>
                 <li>Acceso seguro y controlado para administradores y cajeros.</li>
             </ul>
-            <div className="flex flex-wrap gap-4 justify-center">
-                <a href="/agregarcuadre" className="bg-blue-700 text-white px-4 py-2 rounded shadow hover:bg-blue-800">Agregar Cuadre</a>
-                <a href="/verificacion-cuadres" className="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700">Verificar Cuadres</a>
-                <a href="/resumenfarmacias" className="bg-indigo-600 text-white px-4 py-2 rounded shadow hover:bg-indigo-700">Resumen Mensual</a>
-                <a href="/resumenfarmacias-dia" className="bg-purple-600 text-white px-4 py-2 rounded shadow hover:bg-purple-700">Resumen por Día</a>
-            </div>
         </div>
     );
 };
