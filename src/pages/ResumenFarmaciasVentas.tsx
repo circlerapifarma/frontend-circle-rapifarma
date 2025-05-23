@@ -1,15 +1,15 @@
-import React, { useEffect, useState} from "react";
+import React, { useEffect, useState } from "react";
 import ResumeCardFarmacia from "@/components/ResumeCardFarmacia";
 
 type VentasFarmacia = {
-  totalVentas: number;
-  totalBs: number;
-  totalBsEnUsd: number;
-  totalUsd: number;
-  efectivoUsd: number;
-  zelleUsd: number;
-  faltantes: number;
-  sobrantes: number;
+    totalVentas: number;
+    totalBs: number;
+    totalBsEnUsd: number;
+    totalUsd: number;
+    efectivoUsd: number;
+    zelleUsd: number;
+    faltantes: number;
+    sobrantes: number;
 };
 
 const ResumenFarmaciasVentas: React.FC = () => {
@@ -43,7 +43,6 @@ const ResumenFarmaciasVentas: React.FC = () => {
         fetchFarmacias();
     }, []);
 
-    // Un solo fetch para todos los cuadres por farmacia
     useEffect(() => {
         const fetchAllCuadres = async () => {
             setLoading(true);
@@ -57,7 +56,7 @@ const ResumenFarmaciasVentas: React.FC = () => {
                     })
                 );
                 setCuadresPorFarmacia(result);
-            } catch (err) {
+            } catch {
                 setError("Error al cargar cuadres");
             } finally {
                 setLoading(false);
@@ -67,25 +66,31 @@ const ResumenFarmaciasVentas: React.FC = () => {
     }, [farmacias, mes]);
 
     useEffect(() => {
-        // Calcular ventas a partir de cuadresPorFarmacia
         const ventasPorFarmacia: { [key: string]: VentasFarmacia } = {};
         farmacias.forEach((farm) => {
             const data = cuadresPorFarmacia[farm.id] || [];
             const [anioSel, mesSel] = mes.split("-");
-            let totalBs = 0;
-            let totalUsd = 0;
-            let totalGeneral = 0;
-            let efectivoUsd = 0;
-            let zelleUsd = 0;
-            let faltantes = 0;
-            let sobrantes = 0;
+            let totalBs = 0,
+                totalUsd = 0,
+                totalGeneral = 0,
+                efectivoUsd = 0,
+                zelleUsd = 0,
+                faltantes = 0,
+                sobrantes = 0;
             data.forEach((c: any) => {
                 if (!c.dia || c.estado !== "verified") return;
                 const [anio, mesDb] = c.dia.split("-");
                 if (anio === anioSel && mesDb === mesSel) {
-                    let sumaBs = Number(c.recargaBs || 0) + Number(c.pagomovilBs || 0) + Number(c.efectivoBs || 0);
+                    let sumaBs =
+                        Number(c.recargaBs || 0) +
+                        Number(c.pagomovilBs || 0) +
+                        Number(c.efectivoBs || 0);
                     if (Array.isArray(c.puntosVenta)) {
-                        sumaBs += c.puntosVenta.reduce((acc: number, pv: any) => acc + Number(pv.puntoDebito || 0) + Number(pv.puntoCredito || 0), 0);
+                        sumaBs += c.puntosVenta.reduce(
+                            (acc: number, pv: any) =>
+                                acc + Number(pv.puntoDebito || 0) + Number(pv.puntoCredito || 0),
+                            0
+                        );
                     }
                     sumaBs -= Number(c.devolucionesBs || 0);
                     totalBs += sumaBs;
@@ -95,7 +100,7 @@ const ResumenFarmaciasVentas: React.FC = () => {
                     zelleUsd += Number(c.zelleUsd || 0);
                     const tasa = Number(c.tasa || 0);
                     if (tasa > 0) {
-                        totalGeneral += sumaUsd + (sumaBs / tasa);
+                        totalGeneral += sumaUsd + sumaBs / tasa;
                     } else {
                         totalGeneral += sumaUsd;
                     }
@@ -118,9 +123,9 @@ const ResumenFarmaciasVentas: React.FC = () => {
     }, [cuadresPorFarmacia, farmacias, mes]);
 
     const sortedFarmacias = [...farmacias].sort((a, b) => {
-      const ventasA = ventas[a.id]?.totalVentas || 0;
-      const ventasB = ventas[b.id]?.totalVentas || 0;
-      return ventasB - ventasA;
+        const ventasA = ventas[a.id]?.totalVentas || 0;
+        const ventasB = ventas[b.id]?.totalVentas || 0;
+        return ventasB - ventasA;
     });
 
     const calcularDetalles = (farmId: string) => {
@@ -128,7 +133,13 @@ const ResumenFarmaciasVentas: React.FC = () => {
         if (!ventasFarm) return null;
         const [anioSel, mesSel] = mes.split("-");
         const cuadresFarmacia = cuadresPorFarmacia[farmId] || [];
-        let sumaRecargaBs = 0, sumaPagomovilBs = 0, sumaEfectivoBs = 0, sumaPuntoDebito = 0, sumaPuntoCredito = 0, sumaDevolucionesBs = 0;
+        let sumaRecargaBs = 0,
+            sumaPagomovilBs = 0,
+            sumaEfectivoBs = 0,
+            sumaPuntoDebito = 0,
+            sumaPuntoCredito = 0,
+            sumaDevolucionesBs = 0;
+
         if (cuadresFarmacia.length) {
             cuadresFarmacia.forEach((c: any) => {
                 if (!c.dia || c.estado !== "verified") return;
@@ -139,56 +150,75 @@ const ResumenFarmaciasVentas: React.FC = () => {
                     sumaEfectivoBs += Number(c.efectivoBs || 0);
                     sumaDevolucionesBs += Number(c.devolucionesBs || 0);
                     if (Array.isArray(c.puntosVenta)) {
-                        sumaPuntoDebito += c.puntosVenta.reduce((acc: number, pv: any) => acc + Number(pv.puntoDebito || 0), 0);
-                        sumaPuntoCredito += c.puntosVenta.reduce((acc: number, pv: any) => acc + Number(pv.puntoCredito || 0), 0);
+                        sumaPuntoDebito += c.puntosVenta.reduce(
+                            (acc: number, pv: any) => acc + Number(pv.puntoDebito || 0),
+                            0
+                        );
+                        sumaPuntoCredito += c.puntosVenta.reduce(
+                            (acc: number, pv: any) => acc + Number(pv.puntoCredito || 0),
+                            0
+                        );
                     }
                 }
             });
         }
+
         return (
-            <div className="bg-blue-50 border border-blue-200 rounded p-3 mt-2 text-sm">
-                <div><b>Total Bs:</b> {ventasFarm.totalBs}</div>
-                <div><b>Total USD:</b> {ventasFarm.totalUsd}</div>
-                <div><b>Efectivo USD:</b> {ventasFarm.efectivoUsd}</div>
-                <div><b>Zelle USD:</b> {ventasFarm.zelleUsd}</div>
-                <div><b>Faltantes USD:</b> {ventasFarm.faltantes}</div>
-                <div><b>Sobrantes USD:</b> {ventasFarm.sobrantes}</div>
-                <hr className="my-2" />
-                <div><b>Recarga Bs:</b> {sumaRecargaBs}</div>
-                <div><b>Pago Móvil Bs:</b> {sumaPagomovilBs}</div>
-                <div><b>Efectivo Bs:</b> {sumaEfectivoBs}</div>
-                <div><b>Punto de Venta Débito Bs:</b> {sumaPuntoDebito}</div>
-                <div><b>Punto de Venta Crédito Bs:</b> {sumaPuntoCredito}</div>
-                <div><b>Devoluciones Bs:</b> {sumaDevolucionesBs}</div>
+            <div className="bg-white border border-gray-200 rounded p-3 mt-3 text-sm shadow-sm">
+                <div className="mb-1"><strong>Total Bs:</strong> {ventasFarm.totalBs}</div>
+                <div className="mb-1"><strong>Total USD:</strong> {ventasFarm.totalUsd}</div>
+                <div className="mb-1"><strong>Efectivo USD:</strong> {ventasFarm.efectivoUsd}</div>
+                <div className="mb-1"><strong>Zelle USD:</strong> {ventasFarm.zelleUsd}</div>
+                <div className="mb-1"><strong>Faltantes USD:</strong> {ventasFarm.faltantes}</div>
+                <div className="mb-3"><strong>Sobrantes USD:</strong> {ventasFarm.sobrantes}</div>
+                <hr className="border-gray-300 mb-3" />
+                <div className="mb-1"><strong>Recarga Bs:</strong> {sumaRecargaBs}</div>
+                <div className="mb-1"><strong>Pago Móvil Bs:</strong> {sumaPagomovilBs}</div>
+                <div className="mb-1"><strong>Efectivo Bs:</strong> {sumaEfectivoBs}</div>
+                <div className="mb-1"><strong>Punto de Venta Débito Bs:</strong> {sumaPuntoDebito}</div>
+                <div className="mb-1"><strong>Punto de Venta Crédito Bs:</strong> {sumaPuntoCredito}</div>
+                <div><strong>Devoluciones Bs:</strong> {sumaDevolucionesBs}</div>
             </div>
         );
     };
 
-    if (loading) return <div className="text-center py-10">Cargando...</div>;
-    if (error) return <div className="text-center text-red-600 py-10">{error}</div>;
+    if (loading)
+        return <div className="text-center py-10 text-gray-600">Cargando...</div>;
+    if (error)
+        return (
+            <div className="text-center py-10 text-red-600 font-semibold">{error}</div>
+        );
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-200 p-6">
+        <div className="min-h-screen bg-gray-50 p-6">
             <div className="max-w-5xl mx-auto">
-                <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-8">
+                <header className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
                     <div>
-                        <h1 className="text-3xl font-bold text-blue-900 mb-2">Resumen de Ventas Mensuales por Farmacia</h1>
-                        <p className="text-gray-600">Consulta el resumen de ventas mensuales por farmacia.</p>
+                        <h1 className="text-2xl font-semibold text-gray-900 mb-1">
+                            Resumen de Ventas Mensuales por Farmacia
+                        </h1>
+                        <p className="text-gray-600 text-sm">
+                            Consulta el resumen de ventas mensuales por farmacia.
+                        </p>
                     </div>
                     <div className="mt-4 md:mt-0">
-                        <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="mes">
+                        <label
+                            htmlFor="mes"
+                            className="block text-sm font-medium text-gray-700 mb-1"
+                        >
                             Selecciona un mes:
                         </label>
                         <input
                             id="mes"
                             type="month"
                             value={mes}
-                            onChange={e => setMes(e.target.value)}
-                            className="border rounded p-2"
+                            onChange={(e) => setMes(e.target.value)}
+                            className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
                         />
                     </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                </header>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
                     {sortedFarmacias.map((farm, idx) => (
                         <div key={farm.id}>
                             <ResumeCardFarmacia
@@ -205,12 +235,13 @@ const ResumenFarmaciasVentas: React.FC = () => {
                             />
 
                             <button
-                                className="mt-2 text-blue-700 underline text-sm"
-                                onClick={() => setDetallesVisibles(v => ({ ...v, [farm.id]: !v[farm.id] }))}
+                                className="mt-2 text-gray-700 underline text-sm hover:text-gray-900"
+                                onClick={() =>
+                                    setDetallesVisibles((v) => ({ ...v, [farm.id]: !v[farm.id] }))
+                                }
                             >
-                                {detallesVisibles && detallesVisibles[farm.id] ? "Ocultar detalles" : "Ver detalles"}
-                            </button>
-                            {detallesVisibles && detallesVisibles[farm.id] ? calcularDetalles(farm.id) : null}
+                                {detallesVisibles[farm.id] ? "Ocultar detalles" : "Mostrar detalles"}
+                            </button>          {detallesVisibles[farm.id] && calcularDetalles(farm.id)}
                         </div>
                     ))}
                 </div>

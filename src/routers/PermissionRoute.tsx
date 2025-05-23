@@ -1,6 +1,5 @@
 import React from "react";
 import { Navigate } from "react-router";
-import { useUserContext } from "@/context/UserContext";
 
 interface Props {
     permiso: string;
@@ -8,9 +7,11 @@ interface Props {
 }
 
 const PermissionRoute: React.FC<Props> = ({ permiso, children }) => {
-    const { usuario } = useUserContext();
+    const usuario = JSON.parse(localStorage.getItem("usuario") || "null");
+
     if (!usuario) return <Navigate to="/login" replace />;
-    if (!usuario.permisos.includes(permiso)) return <Navigate to="/" replace />;
+    if (!usuario.permisos || !usuario.permisos.includes(permiso)) return <Navigate to="/" replace />;
+
     return <>{children}</>;
 };
 

@@ -5,6 +5,7 @@ import VerificacionCuadresModal from "@/components/VerificacionCuadresModal";
 
 const VerificacionCuadresPage: React.FC = () => {
   const [farmacias, setFarmacias] = useState<{ id: string; nombre: string }[]>([]);
+  const [cuadresPorFarmacia, setCuadresPorFarmacia] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalAbierto, setModalAbierto] = useState(false);
@@ -30,6 +31,26 @@ const VerificacionCuadresPage: React.FC = () => {
     fetchFarmacias();
   }, []);
 
+  useEffect(() => {
+    const fetchCuadresPorFarmacia = async () => {
+      try {
+        const response = await fetch("http://localhost:8000/cuadres/all");
+        const data = await response.json();
+        const cuadresCount = data.reduce((acc: Record<string, number>, cuadre: any) => {
+          if (cuadre.estado === "wait") {
+            acc[cuadre.codigoFarmacia] = (acc[cuadre.codigoFarmacia] || 0) + 1;
+          }
+          return acc;
+        }, {});
+        setCuadresPorFarmacia(cuadresCount);
+      } catch (err) {
+        console.error("Error al obtener cuadres por farmacia", err);
+      }
+    };
+
+    fetchCuadresPorFarmacia();
+  }, []);
+
   const abrirModal = (id: string, nombre: string) => {
     setFarmaciaSeleccionada(id);
     setFarmaciaNombreSeleccionada(nombre);
@@ -41,18 +62,35 @@ const VerificacionCuadresPage: React.FC = () => {
     setFarmaciaNombreSeleccionada("");
   };
 
-  if (loading) return <div className="text-center py-10">Cargando...</div>;
-  if (error) return <div className="text-center text-red-600 py-10">{error}</div>;
+  if (loading) return <div className="text-center py-10 text-lg text-gray-600">Cargando...</div>;
+  if (error) return <div className="text-center text-red-600 py-10 text-lg">{error}</div>;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-200 p-6">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-blue-900 mb-6 text-center">Verificación de Cuadres</h1>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+      <div className="max-w-6xl mx-auto">
+        <h1 className="text-4xl font-extrabold text-blue-900 mb-10 text-center tracking-tight">
+          Verificación de Cuadres
+        </h1>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {farmacias.map(farm => (
-            <Card key={farm.id} className="p-6 flex flex-col items-center">
-              <div className="font-bold text-blue-700 text-lg mb-2 text-center">{farm.nombre}</div>
-              <Button onClick={() => abrirModal(farm.id, farm.nombre)} className="mt-2">Ver cuadres pendientes</Button>
+            <Card
+              key={farm.id}
+              className="relative bg-white p-6 rounded-2xl shadow-xl transition-transform transform hover:scale-[1.02]"
+            >
+              <div className="text-center text-xl font-semibold text-blue-800 mb-4">
+                {farm.nombre}
+              </div>
+              {cuadresPorFarmacia[farm.id] && (
+                <span className="absolute top-3 right-3 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow">
+                  {cuadresPorFarmacia[farm.id]}
+                </span>
+              )}
+              <Button
+                onClick={() => abrirModal(farm.id, farm.nombre)}
+                className="w-full bg-blue-700 hover:bg-blue-800 text-white font-semibold py-2 mt-4 rounded-lg"
+              >
+                Ver cuadres pendientes
+              </Button>
             </Card>
           ))}
         </div>

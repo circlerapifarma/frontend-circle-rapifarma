@@ -74,6 +74,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
             tasa,
             turno,
             cajero,
+            cajeroId: cajeros.find(c => c.NOMBRE === cajero)?.ID || '', // Add the ID of the selected cashier
             totalCajaSistemaBs,
             devolucionesBs,
             recargaBs,
@@ -103,6 +104,8 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                 return farmacias[farmacia] || '';
             })()
         };
+
+        console.log("Cuadre object being sent:", cuadre); // Log the cuadre object
 
         try {
             const token = localStorage.getItem("token");

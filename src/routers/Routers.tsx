@@ -4,7 +4,6 @@ import HomePage from "@/pages/HomePage";
 import NotFoundPage from "@/pages/NotFoundPage";
 import AdminPage from '@/pages/AdminPage';
 import LoginPage from '@/pages/LoginPage';
-import RegisterPage from '@/pages/RegisterPage';
 import PrivateRoute from './PrivateRoute';
 import PermissionRoute from './PermissionRoute';
 import AgregarCuadrePage from '@/pages/AgregarCuadrePage';
@@ -12,6 +11,7 @@ import ResumenFarmaciasVentas from '@/pages/ResumenFarmaciasVentas';
 import VerificacionCuadresPage from '@/pages/VerificacionCuadresPage';
 import CuadresPorFarmaciaPage from '@/pages/CuadresPorFarmaciaPage';
 import ResumenFarmaciasPorDia from '@/pages/ResumenFarmaciasPorDia';
+import TotalGeneralFarmaciasPage from '@/pages/TotalGeneralFarmaciasPage';
 
 const AppRouter = () => (
     <Routes>
@@ -29,41 +29,41 @@ const AppRouter = () => (
         <Route
             path="/agregarcuadre"
             element={
-                <PrivateRoute>
+                <PermissionRoute permiso="agregar_cuadre">
                     <AgregarCuadrePage />
-                </PrivateRoute>
+                </PermissionRoute>
             }
         />
         <Route
             path="/resumenfarmacias"
             element={
-                <PrivateRoute>
+                <PermissionRoute permiso="ver_resumen_mensual">
                     <ResumenFarmaciasVentas />
-                </PrivateRoute>
+                </PermissionRoute>
             }
         />
         <Route
             path="/verificacion-cuadres"
             element={
-                <PrivateRoute>
+                <PermissionRoute permiso="verificar_cuadres">
                     <VerificacionCuadresPage />
-                </PrivateRoute>
+                </PermissionRoute>
             }
         />
         <Route
             path="/ver-cuadres-dia"
             element={
-                <PrivateRoute>
+                <PermissionRoute permiso="ver_cuadres_dia">
                     <CuadresPorFarmaciaPage />
-                </PrivateRoute>
+                </PermissionRoute>
             }
         />
         <Route
             path="/admin"
             element={
-                <PrivateRoute>
+                <PermissionRoute permiso="acceso_admin">
                     <AdminPage />
-                </PrivateRoute>
+                </PermissionRoute>
             }
         />
         {/* Ejemplo: solo usuarios con permiso eliminar_cuadres pueden acceder */}
@@ -79,9 +79,17 @@ const AppRouter = () => (
         <Route
             path="/resumenfarmacias-dia"
             element={
-                <PrivateRoute>
+                <PermissionRoute permiso="ver_resumen_dia">
                     <ResumenFarmaciasPorDia />
-                </PrivateRoute>
+                </PermissionRoute>
+            }
+        />
+        <Route
+            path="/ventatotal"
+            element={
+                <PermissionRoute permiso="ver_ventas_totales">
+                    <TotalGeneralFarmaciasPage />
+                </PermissionRoute>
             }
         />
         <Route path="*" element={<NotFoundPage />} />

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { Card } from "@/components/ui/card";
 
 interface Cuadre {
   dia: string;
@@ -37,7 +36,6 @@ interface CuadresModalProps {
 const CuadresModal: React.FC<CuadresModalProps> = ({ open, onClose, farmaciaId, farmaciaNombre }) => {
   const [cuadres, setCuadres] = useState<Cuadre[]>([]);
   const [cajeros, setCajeros] = useState<Cajero[]>([]);
-  const [nuevoCajero, setNuevoCajero] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fechaInicio, setFechaInicio] = useState("");
@@ -88,24 +86,6 @@ const CuadresModal: React.FC<CuadresModalProps> = ({ open, onClose, farmaciaId, 
     }
   };
 
-  // Cambia el cajero de un cuadre y lo actualiza en el backend
-  const handleCajeroChange = async (cuadreIdx: number, nuevoNombre: string) => {
-    const cuadre = cuadres[cuadreIdx];
-    if (!cuadre) return;
-    try {
-      // Actualiza en backend
-      await fetch(`http://localhost:8000/cuadres/${farmaciaId}/${cuadre.dia}/${cuadre.cajaNumero}/cajero`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cajero: nuevoNombre }),
-      });
-      // Actualiza en frontend
-      setCuadres(prev => prev.map((c, idx) => idx === cuadreIdx ? { ...c, cajero: nuevoNombre } : c));
-    } catch {
-      alert("No se pudo actualizar el cajero en el cuadre");
-    }
-  };
-
   if (!open) return null;
 
   return (
@@ -148,22 +128,9 @@ const CuadresModal: React.FC<CuadresModalProps> = ({ open, onClose, farmaciaId, 
                 <div key={idx} className="border rounded-lg p-4 bg-blue-50">
                   <div className="font-semibold text-blue-700">Día: {c.dia}</div>
                   <div className="text-sm">Caja: <b>{c.cajaNumero}</b> | Turno: <b>{c.turno}</b></div>
-                  {/* Selector de cajero */}
+                  {/* Mostrar nombre y cédula del cajero */}
                   <div className="text-sm mb-2">
-                    Cajero: {cajeros.length > 0 ? (
-                      <select
-                        className="border rounded p-1 ml-2"
-                        value={c.cajero || ""}
-                        onChange={e => handleCajeroChange(idx, e.target.value)}
-                      >
-                        <option value="">Seleccionar cajero</option>
-                        {cajeros.map(cj => (
-                          <option key={cj._id} value={cj.NOMBRE}>{cj.NOMBRE}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <b>{c.cajero}</b>
-                    )}
+                    Cajero: <b>{c.cajero}</b> (Cédula: <b>{cajeros.find(cj => cj.NOMBRE === c.cajero)?.ID || 'N/A'}</b>)
                   </div>
                   <div className="text-sm">Total Caja Sistema Bs: <b>{c.totalCajaSistemaBs}</b></div>
                   <div className="text-sm">Recarga Bs: <b>{c.recargaBs}</b></div>

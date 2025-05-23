@@ -35,6 +35,10 @@ const LoginPage: React.FC = () => {
             // Navegar a la página principal
             navigate("/admin");
 
+            // Recargar la página para reflejar los cambios
+            setTimeout(() => {
+                window.location.reload();
+            }, 100);
         } catch (err: any) {
             setError(err.message);
         } finally {
