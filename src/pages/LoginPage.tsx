@@ -35,7 +35,7 @@ const LoginPage: React.FC = () => {
             localStorage.setItem("usuario", JSON.stringify(data.usuario));
 
             // Navegar a la página principal
-            navigate("/admin");
+            navigate("/");
 
             // Recargar la página para reflejar los cambios
             setTimeout(() => {
