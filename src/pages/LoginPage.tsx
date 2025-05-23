@@ -48,6 +48,7 @@ const LoginPage: React.FC = () => {
         }
     };
 
+    
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-blue-100">
             <form onSubmit={handleSubmit} className="bg-white p-6 rounded shadow w-full max-w-sm">
