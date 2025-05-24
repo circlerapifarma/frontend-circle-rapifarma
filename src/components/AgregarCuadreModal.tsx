@@ -177,7 +177,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                     </h2>
                     {error && <div className="mb-3 text-red-600 text-sm font-semibold text-center bg-red-50 border border-red-200 rounded p-2">{error}</div>}
                     {success && <div className="mb-3 text-green-600 text-sm font-semibold text-center bg-green-50 border border-green-200 rounded p-2">{success}</div>}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-4">
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Día</label>
                             <input type="text" value={dia} readOnly className="w-full border rounded-lg p-2 bg-gray-100 text-gray-700" />
@@ -216,7 +216,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                         </div>
                     </div>
                     <hr className="my-5 border-blue-100" />
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-4">
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Total Caja Sistema Bs</label>
                             <input type="number" value={totalCajaSistemaBs} onChange={e => setTotalCajaSistemaBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
