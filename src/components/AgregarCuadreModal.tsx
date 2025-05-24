@@ -184,11 +184,11 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Caja #</label>
-                            <input type="number" value={cajaNumero} onChange={e => setCajaNumero(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={1} />
+                            <input type="number" step="any" value={cajaNumero} onChange={e => setCajaNumero(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={1} />
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Tasa</label>
-                            <input type="number" value={tasa} onChange={e => setTasa(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0.01} step="0.01" />
+                            <input type="number" step="any" value={tasa} onChange={e => setTasa(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0.01} />
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Turno</label>
@@ -219,19 +219,19 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-4">
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Total Caja Sistema Bs</label>
-                            <input type="number" value={totalCajaSistemaBs} onChange={e => setTotalCajaSistemaBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
+                            <input type="number" step="any" value={totalCajaSistemaBs} onChange={e => setTotalCajaSistemaBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Devoluciones Bs</label>
-                            <input type="number" value={devolucionesBs} onChange={e => setDevolucionesBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
+                            <input type="number" step="any" value={devolucionesBs} onChange={e => setDevolucionesBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Recarga Bs</label>
-                            <input type="number" value={recargaBs} onChange={e => setRecargaBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
+                            <input type="number" step="any" value={recargaBs} onChange={e => setRecargaBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Pago Móvil Bs</label>
-                            <input type="number" value={pagomovilBs} onChange={e => setPagomovilBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
+                            <input type="number" step="any" value={pagomovilBs} onChange={e => setPagomovilBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
                         </div>
                         <div className="col-span-1">
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Puntos de Venta</label>
@@ -253,6 +253,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                                         <label className="text-xs text-gray-500 mb-0.5">Débito Bs</label>
                                         <input
                                             type="number"
+                                            step="any"
                                             placeholder="Débito Bs"
                                             value={pv.puntoDebito}
                                             onChange={e => {
@@ -269,6 +270,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                                         <label className="text-xs text-gray-500 mb-0.5">Crédito Bs</label>
                                         <input
                                             type="number"
+                                            step="any"
                                             placeholder="Crédito Bs"
                                             value={pv.puntoCredito}
                                             onChange={e => {
@@ -290,7 +292,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Efectivo Bs</label>
-                            <input type="number" value={efectivoBs} onChange={e => setEfectivoBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
+                            <input type="number" step="any" value={efectivoBs} onChange={e => setEfectivoBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Total Bs</label>
@@ -312,11 +314,11 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Efectivo $</label>
-                            <input type="number" value={efectivoUsd} onChange={e => setEfectivoUsd(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
+                            <input type="number" step="any" value={efectivoUsd} onChange={e => setEfectivoUsd(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Zelle $</label>
-                            <input type="number" value={zelleUsd} onChange={e => setZelleUsd(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
+                            <input type="number" step="any" value={zelleUsd} onChange={e => setZelleUsd(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Total General $ (calculado)</label>
