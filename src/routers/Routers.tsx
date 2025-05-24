@@ -20,7 +20,7 @@ const AppRouter = () => (
             path="/"
             element={
                 <PrivateRoute>
-                    <HomePage />
+                    <AdminPage />
                 </PrivateRoute>
             }
         />

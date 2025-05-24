@@ -131,7 +131,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
             // addCuadreCaja(farmacia, cuadre);
             setTimeout(() => {
                 onClose();
-            }, 1200);
+            }, 300);
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -337,9 +337,16 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                             />
                         </div>
                     </div>
-                    <button type="submit" disabled={loading} className="w-full mt-6 bg-gradient-to-r from-green-500 to-green-700 text-white py-3 rounded-xl font-bold text-lg shadow-md hover:from-green-600 hover:to-green-800 transition-all disabled:opacity-60 disabled:cursor-not-allowed">
+                    <button
+                        type="submit"
+                        className={`mt-6 w-full py-2 px-4 font-semibold rounded-lg shadow-md text-white transition-colors duration-200 ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+                            }`}
+                        disabled={loading}
+                        aria-disabled={loading}
+                    >
                         {loading ? "Guardando..." : "Guardar"}
                     </button>
+
                 </form>
             </div>
         </div>
