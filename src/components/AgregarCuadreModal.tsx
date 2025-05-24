@@ -233,7 +233,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Pago Móvil Bs</label>
                             <input type="number" step="any" value={pagomovilBs} onChange={e => setPagomovilBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
                         </div>
-                        <div className="col-span-1">
+                        <div className="col-span-1 sm:col-span-3">
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Puntos de Venta</label>
                             <div className="flex flex-col gap-3">
                                 {puntosVenta.map((pv, idx) => (
