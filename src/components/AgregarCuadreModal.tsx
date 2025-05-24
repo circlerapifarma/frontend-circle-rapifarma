@@ -170,14 +170,14 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                 </button>
                 <form
                     onSubmit={handleSubmit}
-                    className="p-4 sm:p-8 w-full relative"
+                    className="p-2 xs:p-4 sm:p-8 w-full relative"
                 >
                     <h2 className="text-2xl font-extrabold mb-6 text-blue-700 text-center tracking-tight drop-shadow-sm">
                         Agregar Cuadre
                     </h2>
                     {error && <div className="mb-3 text-red-600 text-sm font-semibold text-center bg-red-50 border border-red-200 rounded p-2">{error}</div>}
                     {success && <div className="mb-3 text-green-600 text-sm font-semibold text-center bg-green-50 border border-green-200 rounded p-2">{success}</div>}
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-4">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Día</label>
                             <input type="text" value={dia} readOnly className="w-full border rounded-lg p-2 bg-gray-100 text-gray-700" />
@@ -216,7 +216,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                         </div>
                     </div>
                     <hr className="my-5 border-blue-100" />
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-4">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Total Caja Sistema Bs</label>
                             <input type="number" step="any" value={totalCajaSistemaBs} onChange={e => setTotalCajaSistemaBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
@@ -235,60 +235,80 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                         </div>
                         <div className="col-span-1">
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Puntos de Venta</label>
-                            {puntosVenta.map((pv, idx) => (
-                                <div key={idx} className="flex gap-2 mb-2 items-end">
-                                    <input
-                                        type="text"
-                                        placeholder="Banco"
-                                        value={pv.banco}
-                                        onChange={e => {
-                                            const arr = [...puntosVenta];
-                                            arr[idx].banco = e.target.value;
-                                            setPuntosVenta(arr);
-                                        }}
-                                        className="border rounded-lg p-2 flex-1"
-                                        required
-                                    />
-                                    <div className="flex flex-col">
-                                        <label className="text-xs text-gray-500 mb-0.5">Débito Bs</label>
-                                        <input
-                                            type="number"
-                                            step="any"
-                                            placeholder="Débito Bs"
-                                            value={pv.puntoDebito}
-                                            onChange={e => {
-                                                const arr = [...puntosVenta];
-                                                arr[idx].puntoDebito = Number(e.target.value);
-                                                setPuntosVenta(arr);
-                                            }}
-                                            className="border rounded-lg p-2 w-28"
-                                            min={0}
-                                            required
-                                        />
+                            <div className="flex flex-col gap-3">
+                                {puntosVenta.map((pv, idx) => (
+                                    <div
+                                        key={idx}
+                                        className="relative bg-blue-50 border border-blue-200 rounded-xl shadow-sm p-3 flex flex-col md:flex-row md:items-end gap-2 md:gap-4"
+                                    >
+                                        <button
+                                            type="button"
+                                            className="absolute top-2 right-2 text-red-500 text-lg font-bold hover:bg-red-100 rounded-full w-7 h-7 flex items-center justify-center transition-colors"
+                                            style={{ display: puntosVenta.length > 1 ? 'block' : 'none' }}
+                                            onClick={() => setPuntosVenta(puntosVenta.filter((_, i) => i !== idx))}
+                                            aria-label="Eliminar punto de venta"
+                                        >
+                                            ×
+                                        </button>
+                                        <div className="flex-1 flex flex-col min-w-[120px]">
+                                            <label className="text-xs text-gray-500 mb-0.5">Banco</label>
+                                            <input
+                                                type="text"
+                                                placeholder="Banco"
+                                                value={pv.banco}
+                                                onChange={e => {
+                                                    const arr = [...puntosVenta];
+                                                    arr[idx].banco = e.target.value;
+                                                    setPuntosVenta(arr);
+                                                }}
+                                                className="border rounded-lg p-2 w-full"
+                                                required
+                                            />
+                                        </div>
+                                        <div className="flex-1 flex flex-col min-w-[120px]">
+                                            <label className="text-xs text-gray-500 mb-0.5">Débito Bs</label>
+                                            <input
+                                                type="number"
+                                                step="any"
+                                                placeholder="Débito Bs"
+                                                value={pv.puntoDebito}
+                                                onChange={e => {
+                                                    const arr = [...puntosVenta];
+                                                    arr[idx].puntoDebito = Number(e.target.value);
+                                                    setPuntosVenta(arr);
+                                                }}
+                                                className="border rounded-lg p-2 w-full"
+                                                min={0}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="flex-1 flex flex-col min-w-[120px]">
+                                            <label className="text-xs text-gray-500 mb-0.5">Crédito Bs</label>
+                                            <input
+                                                type="number"
+                                                step="any"
+                                                placeholder="Crédito Bs"
+                                                value={pv.puntoCredito}
+                                                onChange={e => {
+                                                    const arr = [...puntosVenta];
+                                                    arr[idx].puntoCredito = Number(e.target.value);
+                                                    setPuntosVenta(arr);
+                                                }}
+                                                className="border rounded-lg p-2 w-full"
+                                                min={0}
+                                                required
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="flex flex-col">
-                                        <label className="text-xs text-gray-500 mb-0.5">Crédito Bs</label>
-                                        <input
-                                            type="number"
-                                            step="any"
-                                            placeholder="Crédito Bs"
-                                            value={pv.puntoCredito}
-                                            onChange={e => {
-                                                const arr = [...puntosVenta];
-                                                arr[idx].puntoCredito = Number(e.target.value);
-                                                setPuntosVenta(arr);
-                                            }}
-                                            className="border rounded-lg p-2 w-28"
-                                            min={0}
-                                            required
-                                        />
-                                    </div>
-                                    {puntosVenta.length > 1 && (
-                                        <button type="button" className="text-red-500 font-bold ml-1" onClick={() => setPuntosVenta(puntosVenta.filter((_, i) => i !== idx))}>×</button>
-                                    )}
-                                </div>
-                            ))}
-                            <button type="button" className="text-blue-600 underline text-xs mt-1" onClick={() => setPuntosVenta([...puntosVenta, { banco: '', puntoDebito: 0, puntoCredito: 0 }])}>+ Agregar punto de venta</button>
+                                ))}
+                            </div>
+                            <button
+                                type="button"
+                                className="mt-3 text-blue-700 font-semibold underline text-sm hover:text-blue-900 transition-colors"
+                                onClick={() => setPuntosVenta([...puntosVenta, { banco: '', puntoDebito: 0, puntoCredito: 0 }])}
+                            >
+                                + Agregar punto de venta
+                            </button>
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Efectivo Bs</label>
