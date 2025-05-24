@@ -43,7 +43,8 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
     const [cajeros, setCajeros] = useState<Cajero[]>([]);
 
     // Cálculos automáticos
-    const totalBsIngresados = recargaBs + pagomovilBs + puntosVenta.reduce((acc, pv) => acc + Number(pv.puntoDebito || 0), 0) + puntosVenta.reduce((acc, pv) => acc + Number(pv.puntoCredito || 0), 0) + efectivoBs;
+    // Recarga Bs es solo visual, no afecta los totales
+    const totalBsIngresados = pagomovilBs + puntosVenta.reduce((acc, pv) => acc + Number(pv.puntoDebito || 0), 0) + puntosVenta.reduce((acc, pv) => acc + Number(pv.puntoCredito || 0), 0) + efectivoBs;
     const totalBsEnUsd = tasa > 0 ? (totalBsIngresados - devolucionesBs) / tasa : 0;
     const totalGeneralUsd = totalBsEnUsd + efectivoUsd + zelleUsd;
     const diferenciaUsd = tasa > 0 ? Number((totalGeneralUsd - (totalCajaSistemaBs / tasa)).toFixed(2)) : 0;
