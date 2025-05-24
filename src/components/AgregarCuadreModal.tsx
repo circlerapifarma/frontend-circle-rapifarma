@@ -61,11 +61,14 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (loading) return; // Evita doble submit por toque rápido
         setError("");
         setSuccess("");
+        setLoading(true); // Activar loading lo antes posible
         const errorMsg = validar();
         if (errorMsg) {
             setError(errorMsg);
+            setLoading(false);
             return;
         }
         const cuadre = {
