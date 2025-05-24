@@ -158,8 +158,8 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
     }, [farmacia]);
 
     return (
-        <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50">
-            <div className="overflow-auto max-h-[90vh] w-full max-w-lg p-0 relative">
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-2 sm:p-4">
+            <div className="overflow-auto max-h-[95vh] w-full max-w-lg sm:max-w-xl md:max-w-2xl p-0 relative rounded-2xl shadow-2xl bg-white border border-blue-200 animate-fade-in">
                 <button
                     type="button"
                     onClick={handleClose}
@@ -170,7 +170,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                 </button>
                 <form
                     onSubmit={handleSubmit}
-                    className="bg-white rounded-2xl shadow-2xl p-8 w-full relative border border-blue-200 animate-fade-in"
+                    className="p-4 sm:p-8 w-full relative"
                 >
                     <h2 className="text-2xl font-extrabold mb-6 text-blue-700 text-center tracking-tight drop-shadow-sm">
                         Agregar Cuadre
@@ -339,14 +339,12 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                     </div>
                     <button
                         type="submit"
-                        className={`mt-6 w-full py-2 px-4 font-semibold rounded-lg shadow-md text-white transition-colors duration-200 ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
-                            }`}
+                        className={`mt-6 w-full py-2 px-4 font-semibold rounded-lg shadow-md text-white transition-colors duration-200 ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
                         disabled={loading}
                         aria-disabled={loading}
                     >
                         {loading ? "Guardando..." : "Guardar"}
                     </button>
-
                 </form>
             </div>
         </div>
