@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 
 const allLinks = [
-  { to: '/agregarcuadre', label: 'Agregar Cuadre', permiso: 'agregar_cuadre' },
   { to: '/resumenfarmacias', label: 'Resumen Mensual', permiso: 'ver_resumen_mensual' },
-  { to: '/verificacion-cuadres', label: 'Verificación Cuadres', permiso: 'verificar_cuadres' },
-  { to: '/ver-cuadres-dia', label: 'Cuadres por Día', permiso: 'ver_cuadres_dia' },
   { to: '/resumenfarmacias-dia', label: 'Resumen por Día', permiso: 'ver_resumen_dia' },
   { to: '/ventatotal', label: 'Venta Total', permiso: 'ver_ventas_totales' },
+  { to: '/agregarcuadre', label: 'Agregar Cuadre', permiso: 'agregar_cuadre' },
+  { to: '/verificacion-cuadres', label: 'Verificación Cuadres', permiso: 'verificar_cuadres' },
+  { to: '/ver-cuadres-dia', label: 'Cuadres por Día', permiso: 'ver_cuadres_dia' },
 ];
 
 const Navbar = () => {

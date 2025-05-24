@@ -2,10 +2,10 @@ import React from 'react';
 
 const AdminPage: React.FC = () => {
     return (
-        <div className="flex flex-col items-center min-h-screen bg-gradient-to-br from-gray-100 to-gray-300 py-8 px-4">
+        <div className="flex flex-col items-center min-h-screen bg-gradient-to-br from-slate-900 to-green-800 py-8 px-4">
             <div className="w-full max-w-4xl mb-8">
-                <h1 className="text-5xl font-extrabold text-center text-gray-800 mb-4 drop-shadow-lg tracking-tight">Panel de Administración</h1>
-                <p className="text-center text-gray-600 mb-6 text-lg">Bienvenido al panel de administración. Aquí puedes gestionar las operaciones de la farmacia.</p>
+                <h1 className="text-5xl font-extrabold text-center text-white mb-4 drop-shadow-lg tracking-tight">Gestion Administrativa</h1>
+                <p className="text-center text-gray-100 mb-6 text-lg">Bienvenido al panel de administración. Aquí puedes gestionar las operaciones de la farmacia.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full max-w-6xl">
