@@ -329,7 +329,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Total Bs</label>
                             <input
                                 type="number"
-                                value={totalBsMenosVales}
+                                value={totalBsMenosVales.toFixed(4)}
                                 readOnly
                                 className="w-full border rounded-lg p-2 bg-gray-100 text-gray-700"
                             />
@@ -338,7 +338,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Total Caja Sistema Bs - Vales</label>
                             <input
                                 type="number"
-                                value={totalCajaSistemaMenosVales}
+                                value={totalCajaSistemaMenosVales.toFixed(4)}
                                 readOnly
                                 className="w-full border rounded-lg p-2 bg-gray-100 text-gray-700"
                             />
@@ -347,7 +347,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Total Bs en $ (calculado)</label>
                             <input
                                 type="number"
-                                value={Number(totalBsEnUsd.toFixed(2))}
+                                value={totalBsEnUsd.toFixed(4)}
                                 readOnly
                                 className="w-full border rounded-lg p-2 bg-gray-100 text-gray-700"
                             />
@@ -373,7 +373,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Diferencia $ (calculado)</label>
                             <input
                                 type="number"
-                                value={diferenciaUsd}
+                                value={diferenciaUsd.toFixed(4)}
                                 readOnly
                                 className="w-full border rounded-lg p-2 bg-gray-100 text-gray-700"
                             />
