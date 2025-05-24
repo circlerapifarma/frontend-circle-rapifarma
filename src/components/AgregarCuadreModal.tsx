@@ -31,6 +31,8 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
     const [efectivoUsd, setEfectivoUsd] = useState<number>(0);
     const [zelleUsd, setZelleUsd] = useState<number>(0);
 
+    const [valesBs, setValesBs] = useState<number>(0);
+
     const [error, setError] = useState<string>("");
     const [success, setSuccess] = useState<string>("");
     const [loading, setLoading] = useState<boolean>(false); // Nuevo estado para controlar el loading
@@ -45,9 +47,11 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
     // Cálculos automáticos
     // Recarga Bs es solo visual, no afecta los totales
     const totalBsIngresados = pagomovilBs + puntosVenta.reduce((acc, pv) => acc + Number(pv.puntoDebito || 0), 0) + puntosVenta.reduce((acc, pv) => acc + Number(pv.puntoCredito || 0), 0) + efectivoBs;
-    const totalBsEnUsd = tasa > 0 ? (totalBsIngresados - devolucionesBs) / tasa : 0;
+    const totalBsMenosVales = totalBsIngresados - devolucionesBs;
+    const totalCajaSistemaMenosVales = totalCajaSistemaBs - valesBs;
+    const totalBsEnUsd = tasa > 0 ? totalBsMenosVales / tasa : 0;
     const totalGeneralUsd = totalBsEnUsd + efectivoUsd + zelleUsd;
-    const diferenciaUsd = tasa > 0 ? Number((totalGeneralUsd - (totalCajaSistemaBs / tasa)).toFixed(2)) : 0;
+    const diferenciaUsd = tasa > 0 ? Number((totalGeneralUsd - (totalCajaSistemaMenosVales / tasa)).toFixed(2)) : 0;
 
     const validar = () => {
         if (!cajero.trim()) return "El campo 'Cajero' es obligatorio.";
@@ -85,8 +89,10 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
             pagomovilBs,
             puntosVenta, // array de puntos de venta
             efectivoBs,
-            totalBs: totalBsIngresados - devolucionesBs, // Ahora es la suma de todos los bolívares menos devoluciones
+            valesBs,
+            totalBs: totalBsMenosVales, // Ahora es la suma de todos los bolívares menos devoluciones
             totalBsEnUsd: Number(totalBsEnUsd.toFixed(2)),
+            totalCajaSistemaMenosVales, // Se envía el total caja sistema menos vales
             efectivoUsd,
             zelleUsd,
             totalGeneralUsd: Number(totalGeneralUsd.toFixed(2)),
@@ -234,7 +240,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Pago Móvil Bs</label>
                             <input type="number" step="any" value={pagomovilBs} onChange={e => setPagomovilBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
                         </div>
-                        <div className="col-span-1 sm:col-span-3">
+                        <div className="md:col-span-2">
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Puntos de Venta</label>
                             <div className="flex flex-col gap-3">
                                 {puntosVenta.map((pv, idx) => (
@@ -316,10 +322,23 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                             <input type="number" step="any" value={efectivoBs} onChange={e => setEfectivoBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
                         </div>
                         <div>
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">Vales Bs</label>
+                            <input type="number" step="any" value={valesBs} onChange={e => setValesBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
+                        </div>
+                        <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Total Bs</label>
                             <input
                                 type="number"
-                                value={totalBsIngresados - devolucionesBs}
+                                value={totalBsMenosVales}
+                                readOnly
+                                className="w-full border rounded-lg p-2 bg-gray-100 text-gray-700"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">Total Caja Sistema Bs - Vales</label>
+                            <input
+                                type="number"
+                                value={totalCajaSistemaMenosVales}
                                 readOnly
                                 className="w-full border rounded-lg p-2 bg-gray-100 text-gray-700"
                             />
