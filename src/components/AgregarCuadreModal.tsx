@@ -33,6 +33,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
 
     const [error, setError] = useState<string>("");
     const [success, setSuccess] = useState<string>("");
+    const [loading, setLoading] = useState<boolean>(false); // Nuevo estado para controlar el loading
 
     // Nuevo estado para puntos de venta
     const [puntosVenta, setPuntosVenta] = useState<Array<{ banco: string; puntoDebito: number; puntoCredito: number }>>([
@@ -107,6 +108,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
         console.log("Cuadre object being sent:", cuadre); // Log the cuadre object
 
         try {
+            setLoading(true); // Activar loading
             const token = localStorage.getItem("token");
             const response = await fetch(`${API_BASE_URL}/agg/cuadre/${farmacia}`, {
                 method: "POST",
@@ -129,6 +131,8 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
             }, 1200);
         } catch (err: any) {
             setError(err.message);
+        } finally {
+            setLoading(false); // Desactivar loading
         }
     };
 
@@ -330,8 +334,8 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                             />
                         </div>
                     </div>
-                    <button type="submit" className="w-full mt-6 bg-gradient-to-r from-green-500 to-green-700 text-white py-3 rounded-xl font-bold text-lg shadow-md hover:from-green-600 hover:to-green-800 transition-all">
-                        Guardar
+                    <button type="submit" disabled={loading} className="w-full mt-6 bg-gradient-to-r from-green-500 to-green-700 text-white py-3 rounded-xl font-bold text-lg shadow-md hover:from-green-600 hover:to-green-800 transition-all disabled:opacity-60 disabled:cursor-not-allowed">
+                        {loading ? "Guardando..." : "Guardar"}
                     </button>
                 </form>
             </div>
