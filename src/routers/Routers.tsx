@@ -1,6 +1,5 @@
 import { Routes, Route } from 'react-router';
 import AboutPage from "@/pages/AboutPage";
-import HomePage from "@/pages/HomePage";
 import NotFoundPage from "@/pages/NotFoundPage";
 import AdminPage from '@/pages/AdminPage';
 import LoginPage from '@/pages/LoginPage';
