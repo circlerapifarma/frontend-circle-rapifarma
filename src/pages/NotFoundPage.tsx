@@ -1,8 +1,7 @@
 const NotFoundPage: React.FC = () => {
     return (
         <div style={{ padding: '2rem' }}>
-            <h1>Admin Page</h1>
-            <p>Welcome to the admin dashboard.</p>
+            <p>PAGINA NO ENCONTRADA</p>
         </div>
     );
 };

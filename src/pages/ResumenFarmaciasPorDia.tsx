@@ -180,8 +180,8 @@ const ResumenFarmaciasPorDia: React.FC = () => {
       <div className="max-w-5xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-blue-900 mb-2">Resumen de Ventas por Farmacia (Rango de Días)</h1>
-            <p className="text-gray-600">Consulta el resumen de ventas por farmacia en un rango de días.</p>
+            <h1 className="text-3xl font-bold text-blue-900 mb-2">Resumen de Ventas por dias</h1>
+            <p className="text-gray-600">Consulta el resumen de ventas en un rango de días.</p>
           </div>
           <div className="mt-4 md:mt-0 flex gap-2 items-end">
             <div>

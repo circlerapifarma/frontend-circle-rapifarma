@@ -35,14 +35,11 @@ const Navbar = () => {
   return (
     <nav className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm sticky top-0 z-50">
       <div className="flex items-center justify-between">
-      <div className="flex items-center space-x-3">
-        <div className="">
-          <img src="/logo.png" alt="Logo" className="h-9 w-9 rounded-full bg-white" />
+        <div className="flex items-center space-x-3">
+          <span className="text-xl font-bold bg-gradient-to-r from-green-600 via-blue-500 to-blue-700 bg-clip-text text-transparent tracking-wide">
+            CIRCLE
+          </span>
         </div>
-        <span className="text-xl font-bold bg-gradient-to-r from-green-600 via-blue-500 to-blue-700 bg-clip-text text-transparent tracking-wide">
-          GRUPO DROCOLVEN
-        </span>
-      </div>
 
         <button
           className="sm:hidden text-gray-700 focus:outline-none"

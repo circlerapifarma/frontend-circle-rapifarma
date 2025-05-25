@@ -215,10 +215,10 @@ const ResumenFarmaciasVentas: React.FC = () => {
                 <header className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
                     <div>
                         <h1 className="text-2xl font-semibold text-gray-900 mb-1">
-                            Resumen de Ventas Mensuales por Farmacia
+                            Resumen de Ventas Mensuales
                         </h1>
                         <p className="text-gray-600 text-sm">
-                            Consulta el resumen de ventas mensuales por farmacia.
+                            Consulta el resumen de ventas mensuales
                         </p>
                     </div>
                     <div className="mt-4 md:mt-0">
