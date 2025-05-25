@@ -332,10 +332,9 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                             <input
                                 type="number"
                                 step="any"
-                                value={valesUsd ?? ''} // Mostrar vacío si es undefined
+                                value={valesUsd ?? 0} // Mostrar vacío si es undefined
                                 onChange={e => handleNumericInput(e.target.value, setValesUsd)}
                                 className="w-full border rounded-lg p-2"
-                                required
                                 min={0}
                             /> {/* Cambiado de valesBs a valesUsd */}
                         </div>
