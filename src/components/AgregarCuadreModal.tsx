@@ -45,10 +45,10 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
     const [cajeros, setCajeros] = useState<Cajero[]>([]);
 
     // Cálculos automáticos
-    // Recarga Bs es solo visual, no afecta los totales
+    // Recarga Bs y Devoluciones Bs son solo visuales, no afectan los totales
     const totalBsIngresados = pagomovilBs + puntosVenta.reduce((acc, pv) => acc + Number(pv.puntoDebito || 0), 0) + puntosVenta.reduce((acc, pv) => acc + Number(pv.puntoCredito || 0), 0) + efectivoBs;
-    const totalBsMenosVales = totalBsIngresados - devolucionesBs;
-    const totalCajaSistemaMenosVales = totalCajaSistemaBs - (valesUsd ? valesUsd * tasa : 0); // Ajuste para vales en dólares
+    const totalBsMenosVales = totalBsIngresados; // Ya no se resta devolucionesBs
+    const totalCajaSistemaMenosVales = totalCajaSistemaBs - (valesUsd ? valesUsd * tasa : 0);
     const totalBsEnUsd = tasa > 0 ? totalBsMenosVales / tasa : 0;
     const totalGeneralUsd = totalBsEnUsd + efectivoUsd + zelleUsd;
     const diferenciaUsd = tasa > 0 ? Number((totalGeneralUsd - (totalCajaSistemaMenosVales / tasa)).toFixed(2)) : 0;
@@ -235,7 +235,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                             <input type="number" step="any" value={totalCajaSistemaBs} onChange={e => setTotalCajaSistemaBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-gray-600 mb-1">Devoluciones Bs</label>
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">Devoluciones Bs (solo visual)</label>
                             <input type="number" step="any" value={devolucionesBs} onChange={e => setDevolucionesBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
                         </div>
                         <div>
