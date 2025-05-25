@@ -356,6 +356,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Efectivo $</label>
                             <input type="number" step="any" value={efectivoUsd} onChange={e => setEfectivoUsd(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
                         </div>
+                        
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Zelle $</label>
                             <input type="number" step="any" value={zelleUsd} onChange={e => setZelleUsd(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
