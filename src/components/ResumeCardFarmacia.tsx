@@ -12,6 +12,7 @@ interface ResumeCardFarmaciaProps {
   sobrantes: number;   // Suma de diferencias positivas (sobrantes)
   top?: boolean;       // Si es top 3
   totalGeneralSinRecargas: number; // Total General sin incluir recargas
+  valesUsd: number;    // Agregar vales en USD
 }
 
 const ResumeCardFarmacia: React.FC<ResumeCardFarmaciaProps> = ({
@@ -25,6 +26,7 @@ const ResumeCardFarmacia: React.FC<ResumeCardFarmaciaProps> = ({
   faltantes = 0, // Valor predeterminado
   sobrantes = 0, // Valor predeterminado
   totalGeneralSinRecargas = 0, // Valor predeterminado
+  valesUsd = 0, // Valor predeterminado
   top,
 }) => {
   return (
@@ -43,6 +45,7 @@ const ResumeCardFarmacia: React.FC<ResumeCardFarmaciaProps> = ({
         <div className="flex justify-between w-full"><span>Solo USD Efectivo:</span><span>${efectivoUsd.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
         <div className="flex justify-between w-full"><span>Solo USD Zelle:</span><span>${zelleUsd.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
         <div className="flex justify-between w-full"><span>Solo USD:</span><span>${totalUsd.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+        <div className="flex justify-between w-full"><span>Vales USD:</span><span>${valesUsd.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
         <div className="flex justify-between w-full font-bold"><span>Total General:</span><span>${(totalBsEnUsd + totalUsd).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
         {faltantes > 0 && (
           <div className="flex justify-between w-full"><span>Faltantes:</span><span className="text-red-600">${faltantes.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>

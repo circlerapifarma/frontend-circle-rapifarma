@@ -11,6 +11,7 @@ type VentasFarmacia = {
   faltantes: number;
   sobrantes: number;
   totalGeneralSinRecargas: number; // Mantener
+  valesUsd: number; // Agregar vales en USD
 };
 
 function isInRange(dia: string, inicio: string, fin: string) {
@@ -84,6 +85,7 @@ const ResumenFarmaciasPorDia: React.FC = () => {
       let zelleUsd = 0;
       let faltantes = 0;
       let sobrantes = 0;
+      let valesUsd = 0; // Inicializar vales en USD
       data.forEach((c: any) => {
         if (!c.dia || c.estado !== "verified") return;
         if (!isInRange(c.dia, fechaInicio, fechaFin)) return;
@@ -97,6 +99,7 @@ const ResumenFarmaciasPorDia: React.FC = () => {
         totalUsd += sumaUsd;
         efectivoUsd += Number(c.efectivoUsd || 0);
         zelleUsd += Number(c.zelleUsd || 0);
+        valesUsd += Number(c.valesUsd || 0); // Sumar vales en USD
         const tasa = Number(c.tasa || 0);
         if (tasa > 0) {
           totalGeneral += sumaUsd + (sumaBs / tasa);
@@ -118,6 +121,7 @@ const ResumenFarmaciasPorDia: React.FC = () => {
         faltantes: Number(faltantes.toFixed(2)),
         sobrantes: Number(sobrantes.toFixed(2)),
         totalGeneralSinRecargas: Number(totalGeneralSinRecargas.toFixed(2)), // Añadir al estado
+        valesUsd: Number(valesUsd.toFixed(2)), // Agregar vales en USD al objeto de ventas
       };
     });
     setVentas(ventasPorFarmacia);
@@ -220,6 +224,7 @@ const ResumenFarmaciasPorDia: React.FC = () => {
                 faltantes={ventas[farm.id]?.faltantes || 0}
                 sobrantes={ventas[farm.id]?.sobrantes || 0}
                 totalGeneralSinRecargas={ventas[farm.id]?.totalGeneralSinRecargas || 0} // Mantener
+                valesUsd={ventas[farm.id]?.valesUsd || 0} // Agregar vales en USD
                 top={idx < 3}
               />
               <button

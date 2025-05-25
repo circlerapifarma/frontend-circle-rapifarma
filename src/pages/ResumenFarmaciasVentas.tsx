@@ -12,6 +12,7 @@ type VentasFarmacia = {
     sobrantes: number;
     totalGeneralSinRecargas: number; // Nuevo campo
     totalUsdSinRecargas: number; // Nuevo campo
+    valesUsd: number; // Agregar vales en USD
 };
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -82,7 +83,8 @@ const ResumenFarmaciasVentas: React.FC = () => {
                 zelleUsd = 0,
                 faltantes = 0,
                 sobrantes = 0,
-                totalGeneralSinRecargas = 0;
+                totalGeneralSinRecargas = 0,
+                valesUsd = 0; // Inicializar vales en USD
 
             data.forEach((c: any) => {
                 if (!c.dia || c.estado !== "verified") return;
@@ -118,6 +120,7 @@ const ResumenFarmaciasVentas: React.FC = () => {
 
                     faltantes += Number(c.faltanteUsd || 0);
                     sobrantes += Number(c.sobranteUsd || 0);
+                    valesUsd += Number(c.valesUsd || 0); // Sumar vales en USD
                 }
             });
 
@@ -132,6 +135,7 @@ const ResumenFarmaciasVentas: React.FC = () => {
                 sobrantes: Number(sobrantes.toFixed(2)),
                 totalGeneralSinRecargas: Number(totalGeneralSinRecargas.toFixed(2)),
                 totalUsdSinRecargas: 0, // Añadir propiedad faltante con valor predeterminado
+                valesUsd: Number(valesUsd.toFixed(2)), // Agregar vales en USD al objeto de ventas
             };
         });
 
@@ -248,6 +252,7 @@ const ResumenFarmaciasVentas: React.FC = () => {
                                 faltantes={ventas[farm.id]?.faltantes || 0}
                                 sobrantes={ventas[farm.id]?.sobrantes || 0}
                                 totalGeneralSinRecargas={ventas[farm.id]?.totalGeneralSinRecargas || 0} // Añadido para corregir el error
+                                valesUsd={ventas[farm.id]?.valesUsd || 0} // Agregar vales en USD
                                 top={idx < 3} // Restaurar el uso de `idx` para determinar los top 3
                             />
 

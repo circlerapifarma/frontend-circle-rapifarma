@@ -31,7 +31,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
     const [efectivoUsd, setEfectivoUsd] = useState<number>(0);
     const [zelleUsd, setZelleUsd] = useState<number>(0);
 
-    const [valesBs, setValesBs] = useState<number>(0);
+    const [valesUsd, setValesUsd] = useState<number | undefined>(undefined); // Inicialmente vacío
 
     const [error, setError] = useState<string>("");
     const [success, setSuccess] = useState<string>("");
@@ -48,7 +48,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
     // Recarga Bs es solo visual, no afecta los totales
     const totalBsIngresados = pagomovilBs + puntosVenta.reduce((acc, pv) => acc + Number(pv.puntoDebito || 0), 0) + puntosVenta.reduce((acc, pv) => acc + Number(pv.puntoCredito || 0), 0) + efectivoBs;
     const totalBsMenosVales = totalBsIngresados - devolucionesBs;
-    const totalCajaSistemaMenosVales = totalCajaSistemaBs - valesBs;
+    const totalCajaSistemaMenosVales = totalCajaSistemaBs - (valesUsd ? valesUsd * tasa : 0); // Ajuste para vales en dólares
     const totalBsEnUsd = tasa > 0 ? totalBsMenosVales / tasa : 0;
     const totalGeneralUsd = totalBsEnUsd + efectivoUsd + zelleUsd;
     const diferenciaUsd = tasa > 0 ? Number((totalGeneralUsd - (totalCajaSistemaMenosVales / tasa)).toFixed(2)) : 0;
@@ -89,7 +89,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
             pagomovilBs,
             puntosVenta, // array de puntos de venta
             efectivoBs,
-            valesBs,
+            valesUsd: valesUsd ?? 0, // Enviar 0 si está vacío
             totalBs: totalBsMenosVales, // Ahora es la suma de todos los bolívares menos devoluciones
             totalBsEnUsd: Number(totalBsEnUsd.toFixed(2)),
             totalCajaSistemaMenosVales, // Se envía el total caja sistema menos vales
@@ -116,6 +116,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
         };
 
         console.log("Cuadre object being sent:", cuadre); // Log the cuadre object
+        console.log("Valor de valesUsd antes de enviar:", valesUsd); // Log adicional para depuración
 
         try {
             setLoading(true); // Activar loading
@@ -163,6 +164,11 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
             })
             .catch(() => setCajeros([]));
     }, [farmacia]);
+
+    const handleNumericInput = (value: string, setter: (val: number | undefined) => void) => {
+        const numericValue = value.replace(/^0+(?!\.)/, ''); // Eliminar ceros iniciales excepto si es un número decimal
+        setter(numericValue === '' ? undefined : Number(numericValue));
+    };
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-2 sm:p-4">
@@ -322,8 +328,16 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                             <input type="number" step="any" value={efectivoBs} onChange={e => setEfectivoBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-gray-600 mb-1">Vales Bs</label>
-                            <input type="number" step="any" value={valesBs} onChange={e => setValesBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">Vales $</label>
+                            <input
+                                type="number"
+                                step="any"
+                                value={valesUsd ?? ''} // Mostrar vacío si es undefined
+                                onChange={e => handleNumericInput(e.target.value, setValesUsd)}
+                                className="w-full border rounded-lg p-2"
+                                required
+                                min={0}
+                            /> {/* Cambiado de valesBs a valesUsd */}
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Total Bs</label>
