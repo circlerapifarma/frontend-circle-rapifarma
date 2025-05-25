@@ -20,7 +20,6 @@ interface CuadreCaja {
   efectivoUsd: number;
   zelleUsd: number;
   valesUsd?: number;
-  valesBs?: number;
   totalGeneralUsd: number;
   diferenciaUsd: number;
   sobranteUsd?: number;
@@ -107,7 +106,6 @@ const VerificacionCuadresModal: React.FC<Props> = ({ open, onClose, farmaciaId, 
                   <div><b>Efectivo USD:</b> {c.efectivoUsd}</div>
                   <div><b>Zelle USD:</b> {c.zelleUsd}</div>
                   <div><b>Vales USD:</b> {typeof c.valesUsd !== 'undefined' ? c.valesUsd : '-'}</div>
-                  <div><b>Vales Bs:</b> {typeof c.valesBs !== 'undefined' ? c.valesBs : '-'}</div>
                   <div><b>Total Bs en USD:</b> {c.totalBsEnUsd}</div>
                   <div><b>Total General USD:</b> {c.totalGeneralUsd}</div>
                   <div><b>Diferencia USD:</b> {c.diferenciaUsd}</div>
