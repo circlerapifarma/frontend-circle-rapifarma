@@ -10,6 +10,8 @@ type VentasFarmacia = {
     zelleUsd: number;
     faltantes: number;
     sobrantes: number;
+    totalGeneralSinRecargas: number; // Nuevo campo
+    totalUsdSinRecargas: number; // Nuevo campo
 };
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -68,7 +70,8 @@ const ResumenFarmaciasVentas: React.FC = () => {
     }, [farmacias, mes]);
 
     useEffect(() => {
-        const ventasPorFarmacia: { [key: string]: VentasFarmacia } = {};
+        const ventasPorFarmacia: { [key: string]: VentasFarmacia } = {}; // Declarar correctamente
+
         farmacias.forEach((farm) => {
             const data = cuadresPorFarmacia[farm.id] || [];
             const [anioSel, mesSel] = mes.split("-");
@@ -78,7 +81,9 @@ const ResumenFarmaciasVentas: React.FC = () => {
                 efectivoUsd = 0,
                 zelleUsd = 0,
                 faltantes = 0,
-                sobrantes = 0;
+                sobrantes = 0,
+                totalGeneralSinRecargas = 0;
+
             data.forEach((c: any) => {
                 if (!c.dia || c.estado !== "verified") return;
                 const [anio, mesDb] = c.dia.split("-");
@@ -96,20 +101,26 @@ const ResumenFarmaciasVentas: React.FC = () => {
                     }
                     sumaBs -= Number(c.devolucionesBs || 0);
                     totalBs += sumaBs;
+
                     const sumaUsd = Number(c.efectivoUsd || 0) + Number(c.zelleUsd || 0);
                     totalUsd += sumaUsd;
                     efectivoUsd += Number(c.efectivoUsd || 0);
                     zelleUsd += Number(c.zelleUsd || 0);
+
                     const tasa = Number(c.tasa || 0);
                     if (tasa > 0) {
                         totalGeneral += sumaUsd + sumaBs / tasa;
+                        totalGeneralSinRecargas += sumaUsd + (sumaBs - Number(c.recargaBs || 0)) / tasa;
                     } else {
                         totalGeneral += sumaUsd;
+                        totalGeneralSinRecargas += sumaUsd;
                     }
+
                     faltantes += Number(c.faltanteUsd || 0);
                     sobrantes += Number(c.sobranteUsd || 0);
                 }
             });
+
             ventasPorFarmacia[farm.id] = {
                 totalVentas: Number(totalGeneral.toFixed(2)),
                 totalBs: Number(totalBs.toFixed(2)),
@@ -119,10 +130,13 @@ const ResumenFarmaciasVentas: React.FC = () => {
                 zelleUsd: Number(zelleUsd.toFixed(2)),
                 faltantes: Number(faltantes.toFixed(2)),
                 sobrantes: Number(sobrantes.toFixed(2)),
+                totalGeneralSinRecargas: Number(totalGeneralSinRecargas.toFixed(2)),
+                totalUsdSinRecargas: 0, // Añadir propiedad faltante con valor predeterminado
             };
         });
-        setVentas(ventasPorFarmacia);
-    }, [cuadresPorFarmacia, farmacias, mes]);
+
+        setVentas(ventasPorFarmacia); // Mover dentro del bloque
+    }, [cuadresPorFarmacia, farmacias, mes]); // Cerrar correctamente el bloque
 
     const sortedFarmacias = [...farmacias].sort((a, b) => {
         const ventasA = ventas[a.id]?.totalVentas || 0;
@@ -233,7 +247,8 @@ const ResumenFarmaciasVentas: React.FC = () => {
                                 zelleUsd={ventas[farm.id]?.zelleUsd || 0}
                                 faltantes={ventas[farm.id]?.faltantes || 0}
                                 sobrantes={ventas[farm.id]?.sobrantes || 0}
-                                top={idx < 3}
+                                totalGeneralSinRecargas={ventas[farm.id]?.totalGeneralSinRecargas || 0} // Añadido para corregir el error
+                                top={idx < 3} // Restaurar el uso de `idx` para determinar los top 3
                             />
 
                             <button
@@ -243,7 +258,15 @@ const ResumenFarmaciasVentas: React.FC = () => {
                                 }
                             >
                                 {detallesVisibles[farm.id] ? "Ocultar detalles" : "Mostrar detalles"}
-                            </button>          {detallesVisibles[farm.id] && calcularDetalles(farm.id)}
+                            </button>
+                            {detallesVisibles[farm.id] && (
+                                <div>
+                                    {calcularDetalles(farm.id)}
+                                    <div className="bg-white border border-gray-200 rounded p-3 mt-3 text-sm shadow-sm">
+                                        <div className="mb-1"><strong>Total General sin Recargas:</strong> {ventas[farm.id]?.totalGeneralSinRecargas || 0}</div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>

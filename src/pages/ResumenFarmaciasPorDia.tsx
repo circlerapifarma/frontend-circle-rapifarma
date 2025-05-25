@@ -10,6 +10,7 @@ type VentasFarmacia = {
   zelleUsd: number;
   faltantes: number;
   sobrantes: number;
+  totalGeneralSinRecargas: number; // Mantener
 };
 
 function isInRange(dia: string, inicio: string, fin: string) {
@@ -78,6 +79,7 @@ const ResumenFarmaciasPorDia: React.FC = () => {
       let totalBs = 0;
       let totalUsd = 0;
       let totalGeneral = 0;
+      let totalGeneralSinRecargas = 0; // Nuevo campo
       let efectivoUsd = 0;
       let zelleUsd = 0;
       let faltantes = 0;
@@ -98,8 +100,10 @@ const ResumenFarmaciasPorDia: React.FC = () => {
         const tasa = Number(c.tasa || 0);
         if (tasa > 0) {
           totalGeneral += sumaUsd + (sumaBs / tasa);
+          totalGeneralSinRecargas += sumaUsd + ((sumaBs - Number(c.recargaBs || 0)) / tasa); // Excluir recargas
         } else {
           totalGeneral += sumaUsd;
+          totalGeneralSinRecargas += sumaUsd; // Excluir recargas
         }
         faltantes += Number(c.faltanteUsd || 0);
         sobrantes += Number(c.sobranteUsd || 0);
@@ -113,10 +117,11 @@ const ResumenFarmaciasPorDia: React.FC = () => {
         zelleUsd: Number(zelleUsd.toFixed(2)),
         faltantes: Number(faltantes.toFixed(2)),
         sobrantes: Number(sobrantes.toFixed(2)),
+        totalGeneralSinRecargas: Number(totalGeneralSinRecargas.toFixed(2)), // Añadir al estado
       };
     });
     setVentas(ventasPorFarmacia);
-  }, [cuadresPorFarmacia, farmacias, fechaInicio, fechaFin]);
+  }, [cuadresPorFarmacia, farmacias, fechaInicio, fechaFin]); // Actualizar dependencias
 
   const sortedFarmacias = [...farmacias].sort((a, b) => {
     const ventasA = ventas[a.id]?.totalVentas || 0;
@@ -147,6 +152,7 @@ const ResumenFarmaciasPorDia: React.FC = () => {
       <div className="bg-blue-50 border border-blue-200 rounded p-3 mt-2 text-sm">
         <div><b>Total Bs:</b> {ventasFarm.totalBs}</div>
         <div><b>Total USD:</b> {ventasFarm.totalUsd}</div>
+        <div><b>Total General sin Recargas:</b> {ventasFarm.totalGeneralSinRecargas}</div> {/* Mostrar nuevo total */}
         <div><b>Efectivo USD:</b> {ventasFarm.efectivoUsd}</div>
         <div><b>Zelle USD:</b> {ventasFarm.zelleUsd}</div>
         <div><b>Faltantes USD:</b> {ventasFarm.faltantes}</div>
@@ -213,6 +219,7 @@ const ResumenFarmaciasPorDia: React.FC = () => {
                 zelleUsd={ventas[farm.id]?.zelleUsd || 0}
                 faltantes={ventas[farm.id]?.faltantes || 0}
                 sobrantes={ventas[farm.id]?.sobrantes || 0}
+                totalGeneralSinRecargas={ventas[farm.id]?.totalGeneralSinRecargas || 0} // Mantener
                 top={idx < 3}
               />
               <button
