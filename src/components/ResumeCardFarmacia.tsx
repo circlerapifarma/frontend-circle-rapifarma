@@ -13,6 +13,7 @@ interface ResumeCardFarmaciaProps {
   top?: boolean;       // Si es top 3
   totalGeneralSinRecargas: number; // Total General sin incluir recargas
   valesUsd: number;    // Agregar vales en USD
+  pendienteVerificar?: number; // Nuevo campo: monto pendiente por verificar
 }
 
 const ResumeCardFarmacia: React.FC<ResumeCardFarmaciaProps> = ({
@@ -28,9 +29,15 @@ const ResumeCardFarmacia: React.FC<ResumeCardFarmaciaProps> = ({
   totalGeneralSinRecargas = 0, // Valor predeterminado
   valesUsd = 0, // Valor predeterminado
   top,
+  pendienteVerificar = 0,
 }) => {
   return (
-    <div className={`bg-white rounded-xl shadow-md p-6 border flex flex-col items-center transition hover:shadow-lg ${top ? 'border-yellow-400 ring-2 ring-yellow-300' : 'border-blue-100'}`}>
+    <div className={`bg-white rounded-xl shadow-md p-6 border flex flex-col items-center transition hover:shadow-lg relative ${top ? 'border-yellow-400 ring-2 ring-yellow-300' : 'border-blue-100'}`}>
+      {pendienteVerificar > 0 && (
+        <div className="absolute top-1 right-4 bg-yellow-100 text-yellow-800 text-xs font-bold px-3 py-1 rounded-full shadow border border-yellow-300 z-10">
+          Pendiente: ${pendienteVerificar.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </div>
+      )}
       {top && (
         <div className="flex items-center mb-2">
           <span className="material-icons text-yellow-500 mr-1">emoji_events</span>

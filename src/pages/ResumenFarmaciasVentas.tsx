@@ -200,6 +200,29 @@ const ResumenFarmaciasVentas: React.FC = () => {
         setVentas(ventasPorFarmacia);
     }, [cuadresPorFarmacia, farmacias, fechaInicio, fechaFin]);
 
+    // Calcular ventas pendientes por verificar para cada farmacia
+    const pendientesPorFarmacia: { [key: string]: number } = {};
+    farmacias.forEach((farm) => {
+        const data = cuadresPorFarmacia[farm.id] || [];
+        let totalPendiente = 0;
+        data.forEach((c: any) => {
+            if (!c.dia || c.estado !== "wait") return;
+            let sumaBs = Number(c.recargaBs || 0) + Number(c.pagomovilBs || 0) + Number(c.efectivoBs || 0);
+            if (Array.isArray(c.puntosVenta)) {
+                sumaBs += c.puntosVenta.reduce((acc: number, pv: any) => acc + Number(pv.puntoDebito || 0) + Number(pv.puntoCredito || 0), 0);
+            }
+            sumaBs -= Number(c.devolucionesBs || 0);
+            const sumaUsd = Number(c.efectivoUsd || 0) + Number(c.zelleUsd || 0);
+            const tasa = Number(c.tasa || 0);
+            if (tasa > 0) {
+                totalPendiente += sumaUsd + sumaBs / tasa;
+            } else {
+                totalPendiente += sumaUsd;
+            }
+        });
+        pendientesPorFarmacia[farm.id] = Number(totalPendiente.toFixed(2));
+    });
+
     const sortedFarmacias = [...farmacias].sort((a, b) => {
         const ventasA = ventas[a.id]?.totalVentas || 0;
         const ventasB = ventas[b.id]?.totalVentas || 0;
@@ -325,7 +348,7 @@ const ResumenFarmaciasVentas: React.FC = () => {
                 </header>
 
                 <div className="w-full overflow-x-auto pb-2">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 min-w-[340px]">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 min-w-[340px]">
                     {sortedFarmacias.map((farm, idx) => (
                         <div key={farm.id} className="bg-white rounded-2xl shadow-lg border border-blue-100 p-4 flex flex-col items-stretch transition hover:shadow-2xl hover:-translate-y-1 duration-200">
                             <ResumeCardFarmacia
@@ -341,6 +364,7 @@ const ResumenFarmaciasVentas: React.FC = () => {
                                 totalGeneralSinRecargas={ventas[farm.id]?.totalGeneralSinRecargas || 0}
                                 valesUsd={ventas[farm.id]?.valesUsd || 0}
                                 top={idx < 3}
+                                pendienteVerificar={pendientesPorFarmacia[farm.id] || 0}
                             />
                             <button
                                 className="mt-2 text-blue-700 underline text-xs sm:text-sm hover:text-blue-900 self-end"
