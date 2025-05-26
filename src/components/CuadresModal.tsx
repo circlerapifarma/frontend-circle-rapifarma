@@ -33,6 +33,8 @@ interface CuadresModalProps {
   farmaciaNombre: string;
 }
 
+const ESTADOS = ["Todos", "wait", "verified", "denied"];
+
 const CuadresModal: React.FC<CuadresModalProps> = ({ open, onClose, farmaciaId, farmaciaNombre }) => {
   const [cuadres, setCuadres] = useState<Cuadre[]>([]);
   const [cajeros, setCajeros] = useState<Cajero[]>([]);
@@ -40,6 +42,7 @@ const CuadresModal: React.FC<CuadresModalProps> = ({ open, onClose, farmaciaId, 
   const [error, setError] = useState<string | null>(null);
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
+  const [estadoSeleccionado, setEstadoSeleccionado] = useState<string>("Todos");
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -88,10 +91,15 @@ const CuadresModal: React.FC<CuadresModalProps> = ({ open, onClose, farmaciaId, 
     }
   };
 
+  // Filtrar cuadres por estado seleccionado
+  const cuadresFiltrados = estadoSeleccionado === "Todos"
+    ? cuadres
+    : cuadres.filter(c => c.estado === estadoSeleccionado);
+
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 bg-opacity-40 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-opacity-40 flex items-center justify-center z-50 bg-white">
       <div className="bg-white rounded-xl shadow-lg p-6 max-w-2xl w-full relative max-h-[90vh] overflow-auto">
         <button
           className="absolute top-2 right-4 text-2xl text-gray-400 hover:text-red-500"
@@ -110,6 +118,26 @@ const CuadresModal: React.FC<CuadresModalProps> = ({ open, onClose, farmaciaId, 
             <label className="block text-xs text-gray-600">Hasta</label>
             <input type="date" value={fechaFin} onChange={e => setFechaFin(e.target.value)} className="border rounded p-1" />
           </div>
+          <div>
+            <label className="block text-xs text-gray-600">Estado</label>
+            <select
+              className="border rounded p-1"
+              value={estadoSeleccionado}
+              onChange={e => setEstadoSeleccionado(e.target.value)}
+            >
+              {ESTADOS.map(estado => (
+                <option key={estado} value={estado}>
+                  {estado === "wait"
+                    ? "Pendiente"
+                    : estado === "approved"
+                      ? "Aprobado"
+                      : estado === "rejected"
+                        ? "Rechazado"
+                        : estado}
+                </option>
+              ))}
+            </select>
+          </div>
           <button
             className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
             onClick={handleBuscar}
@@ -120,17 +148,16 @@ const CuadresModal: React.FC<CuadresModalProps> = ({ open, onClose, farmaciaId, 
           <div className="text-center py-8">Cargando...</div>
         ) : error ? (
           <div className="text-center text-red-500">{error}</div>
-        ) : cuadres.length === 0 ? (
+        ) : cuadresFiltrados.length === 0 ? (
           <div className="text-center text-gray-500">No hay cuadres registrados para esta farmacia.</div>
         ) : (
-          <div className="space-y-4">
-            {cuadres
+          <div className="space-y-4 overflow-auto max-h-[60vh]">
+            {cuadresFiltrados
               .sort((a, b) => b.dia.localeCompare(a.dia))
               .map((c, idx) => (
                 <div key={idx} className="border rounded-lg p-4 bg-blue-50">
                   <div className="font-semibold text-blue-700">Día: {c.dia}</div>
                   <div className="text-sm">Caja: <b>{c.cajaNumero}</b> | Turno: <b>{c.turno}</b></div>
-                  {/* Mostrar nombre y cédula del cajero */}
                   <div className="text-sm mb-2">
                     Cajero: <b>{c.cajero}</b> (Cédula: <b>{cajeros.find(cj => cj.NOMBRE === c.cajero)?.ID || 'N/A'}</b>)
                   </div>

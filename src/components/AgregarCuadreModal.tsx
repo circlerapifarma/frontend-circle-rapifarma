@@ -20,79 +20,84 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
     const [cajaNumero, setCajaNumero] = useState<number>(1);
     const [turno, setTurno] = useState<string>("Mañana");
     const [cajero, setCajero] = useState<string>("");
-    const [tasa, setTasa] = useState<number>(0);
+    const [tasa, setTasa] = useState<number>();
 
-    const [totalCajaSistemaBs, setTotalCajaSistemaBs] = useState<number>(0);
-    const [devolucionesBs, setDevolucionesBs] = useState<number>(0);
-    const [recargaBs, setRecargaBs] = useState<number>(0);
-    const [pagomovilBs, setPagomovilBs] = useState<number>(0);
-    const [efectivoBs, setEfectivoBs] = useState<number>(0);
+    const [totalCajaSistemaBs, setTotalCajaSistemaBs] = useState<number | undefined>();
+    const [devolucionesBs, setDevolucionesBs] = useState<number | undefined>();
+    const [recargaBs, setRecargaBs] = useState<number | undefined>();
+    const [pagomovilBs, setPagomovilBs] = useState<number | undefined>();
+    const [efectivoBs, setEfectivoBs] = useState<number | undefined>();
 
-    const [efectivoUsd, setEfectivoUsd] = useState<number>(0);
-    const [zelleUsd, setZelleUsd] = useState<number>(0);
+    const [efectivoUsd, setEfectivoUsd] = useState<number | undefined>();
+    const [zelleUsd, setZelleUsd] = useState<number | undefined>();
 
     const [valesUsd, setValesUsd] = useState<number | undefined>(undefined); // Inicialmente vacío
 
     const [error, setError] = useState<string>("");
     const [success, setSuccess] = useState<string>("");
     const [loading, setLoading] = useState<boolean>(false); // Nuevo estado para controlar el loading
+    const [showConfirm, setShowConfirm] = useState(false);
 
     // Nuevo estado para puntos de venta
-    const [puntosVenta, setPuntosVenta] = useState<Array<{ banco: string; puntoDebito: number; puntoCredito: number }>>([
-        { banco: '', puntoDebito: 0, puntoCredito: 0 }
+    const [puntosVenta, setPuntosVenta] = useState<Array<{ banco: string; puntoDebito: number | string | undefined; puntoCredito: number | string | undefined }>>([
+        { banco: '', puntoDebito: "", puntoCredito: "" }
     ]);
 
     const [cajeros, setCajeros] = useState<Cajero[]>([]);
 
     // Cálculos automáticos
     // Recarga Bs y Devoluciones Bs son solo visuales, no afectan los totales
-    const totalBsIngresados = pagomovilBs + puntosVenta.reduce((acc, pv) => acc + Number(pv.puntoDebito || 0), 0) + puntosVenta.reduce((acc, pv) => acc + Number(pv.puntoCredito || 0), 0) + efectivoBs;
+    const totalBsIngresados = (pagomovilBs??0) + puntosVenta.reduce((acc, pv) => acc + Number(pv.puntoDebito || 0), 0) + puntosVenta.reduce((acc, pv) => acc + Number(pv.puntoCredito || 0), 0) + (efectivoBs??0);
     const totalBsMenosVales = totalBsIngresados; // Ya no se resta devolucionesBs
-    const totalCajaSistemaMenosVales = totalCajaSistemaBs - (valesUsd ? valesUsd * tasa : 0);
-    const totalBsEnUsd = tasa > 0 ? totalBsMenosVales / tasa : 0;
-    const totalGeneralUsd = totalBsEnUsd + efectivoUsd + zelleUsd;
-    const diferenciaUsd = tasa > 0 ? Number((totalGeneralUsd - (totalCajaSistemaMenosVales / tasa)).toFixed(2)) : 0;
+    const totalCajaSistemaMenosVales = (totalCajaSistemaBs??0) - (valesUsd ? valesUsd * (tasa??0) : 0);
+    const totalBsEnUsd = (tasa??0) > 0 ? totalBsMenosVales / (tasa??0) : 0;
+    const totalGeneralUsd = totalBsEnUsd + (efectivoUsd??0) + (zelleUsd??0);
+    const diferenciaUsd = (tasa??0) > 0 ? Number((totalGeneralUsd - (totalCajaSistemaMenosVales / (tasa??0))).toFixed(2)) : 0;
 
     const validar = () => {
         if (!cajero.trim()) return "El campo 'Cajero' es obligatorio.";
         if (!turno.trim()) return "El campo 'Turno' es obligatorio.";
         if (cajaNumero <= 0) return "El número de caja debe ser mayor a 0.";
-        if (tasa <= 0) return "La tasa debe ser mayor a 0.";
-        if (totalCajaSistemaBs < 0 || devolucionesBs < 0 || recargaBs < 0 || pagomovilBs < 0 ||
-            efectivoBs < 0 ||
-            efectivoUsd < 0 || zelleUsd < 0) return "Los montos no pueden ser negativos.";
+        if ((tasa??0) <= 0) return "La tasa debe ser mayor a 0.";
+        if ((totalCajaSistemaBs??0) < 0 || (devolucionesBs??0) < 0 || (recargaBs??0) < 0 || (pagomovilBs??0) < 0 ||
+            (efectivoBs??0) < 0 ||
+            (efectivoUsd??0) < 0 || (zelleUsd??0) < 0) return "Los montos no pueden ser negativos.";
         return "";
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (loading) return; // Evita doble submit por toque rápido
+        if (loading) return;
         setError("");
         setSuccess("");
-        setLoading(true); // Activar loading lo antes posible
         const errorMsg = validar();
         if (errorMsg) {
             setError(errorMsg);
-            setLoading(false);
             return;
         }
+        // Mostrar confirmación siempre
+        setShowConfirm(true);
+    };
+
+    const doSubmit = async () => {
+        setLoading(true);
         const cuadre = {
             dia,
             cajaNumero,
             tasa,
             turno,
             cajero,
-            cajeroId: cajeros.find(c => c.NOMBRE === cajero)?.ID || '', // Add the ID of the selected cashier
+            cajeroId: cajeros.find(c => c.NOMBRE === cajero)?.ID || '',
             totalCajaSistemaBs,
             devolucionesBs,
             recargaBs,
             pagomovilBs,
-            puntosVenta, // array de puntos de venta
+            puntosVenta,
             efectivoBs,
-            valesUsd: valesUsd ?? 0, // Enviar 0 si está vacío
-            totalBs: totalBsMenosVales, // Ahora es la suma de todos los bolívares menos devoluciones
+            valesUsd: valesUsd ?? 0,
+            totalBs: totalBsMenosVales,
             totalBsEnUsd: Number(totalBsEnUsd.toFixed(2)),
-            totalCajaSistemaMenosVales, // Se envía el total caja sistema menos vales
+            totalCajaSistemaMenosVales,
             efectivoUsd,
             zelleUsd,
             totalGeneralUsd: Number(totalGeneralUsd.toFixed(2)),
@@ -119,7 +124,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
         console.log("Valor de valesUsd antes de enviar:", valesUsd); // Log adicional para depuración
 
         try {
-            setLoading(true); // Activar loading
+            setLoading(true);
             const token = localStorage.getItem("token");
             const response = await fetch(`${API_BASE_URL}/agg/cuadre/${farmacia}`, {
                 method: "POST",
@@ -135,16 +140,24 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
             }
             setSuccess("¡Cuadre guardado exitosamente!");
             setError("");
-            // Opcional: puedes actualizar el contexto si lo necesitas
-            // addCuadreCaja(farmacia, cuadre);
             setTimeout(() => {
                 onClose();
             }, 300);
         } catch (err: any) {
             setError(err.message);
         } finally {
-            setLoading(false); // Desactivar loading
+            setLoading(false);
+            setShowConfirm(false);
         }
+    };
+
+    const handleConfirm = async () => {
+        setShowConfirm(false);
+        await doSubmit();
+    };
+
+    const handleCancelConfirm = () => {
+        setShowConfirm(false);
     };
 
     // Limpia mensajes al cerrar el modal
@@ -171,7 +184,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-2 sm:p-4">
+        <div className="fixed inset-0 bg-white bg-opacity-40 flex items-center justify-center z-50 p-2 sm:p-4">
             <div className="overflow-auto max-h-[95vh] w-full max-w-lg sm:max-w-xl md:max-w-2xl p-0 relative rounded-2xl shadow-2xl bg-white border border-blue-200 animate-fade-in">
                 <button
                     type="button"
@@ -346,7 +359,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                                 readOnly
                                 className="w-full border rounded-lg p-2 bg-gray-100 text-gray-700"
                             />
-                        </div> 
+                        </div>
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Total Caja Sistema Bs - Vales</label>
                             <input
@@ -402,6 +415,45 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                         {loading ? "Guardando..." : "Guardar"}
                     </button>
                 </form>
+                {showConfirm && (
+                    <div className="fixed inset-0 bg-white bg-opacity-40 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full border border-blue-200">
+                            <h3 className="text-lg font-bold text-blue-700 mb-2">Confirmar cuadre</h3>
+                            {Math.abs(diferenciaUsd) > 0.009 ? (
+                                <>
+                                    <p className="mb-2 text-gray-700">Hay un {diferenciaUsd > 0 ? 'sobrante' : 'faltante'} en el cuadre.</p>
+                                    <div className="mb-4 text-center">
+                                        {diferenciaUsd > 0 && (
+                                            <span className="text-green-700 font-semibold">Sobrante: ${diferenciaUsd.toFixed(2)}</span>
+                                        )}
+                                        {diferenciaUsd < 0 && (
+                                            <span className="text-red-700 font-semibold">Faltante: ${Math.abs(diferenciaUsd).toFixed(2)}</span>
+                                        )}
+                                    </div>
+                                </>
+                            ) : (
+                                <p className="mb-4 text-gray-700">¿Desea guardar el cuadre?</p>
+                            )}
+                            <p className="mb-4 text-sm text-gray-500">¿Desea continuar y guardar el cuadre?</p>
+                            <div className="flex gap-3 justify-center">
+                                <button
+                                    onClick={handleConfirm}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg"
+                                    disabled={loading}
+                                >
+                                    Sí, guardar
+                                </button>
+                                <button
+                                    onClick={handleCancelConfirm}
+                                    className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold px-4 py-2 rounded-lg"
+                                    disabled={loading}
+                                >
+                                    Cancelar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -172,6 +172,62 @@ const ResumenFarmaciasPorDia: React.FC = () => {
     );
   };
 
+  // Helpers para fechas rápidas
+  const setHoy = () => {
+    const hoy = new Date();
+    const yyyy = hoy.getFullYear();
+    const mm = String(hoy.getMonth() + 1).padStart(2, "0");
+    const dd = String(hoy.getDate()).padStart(2, "0");
+    const fecha = `${yyyy}-${mm}-${dd}`;
+    setFechaInicio(fecha);
+    setFechaFin(fecha);
+  };
+
+  const setAyer = () => {
+    const ayer = new Date();
+    ayer.setDate(ayer.getDate() - 1);
+    const yyyy = ayer.getFullYear();
+    const mm = String(ayer.getMonth() + 1).padStart(2, "0");
+    const dd = String(ayer.getDate()).padStart(2, "0");
+    const fecha = `${yyyy}-${mm}-${dd}`;
+    setFechaInicio(fecha);
+    setFechaFin(fecha);
+  };
+
+  const setUltimaSemana = () => {
+    const hoy = new Date();
+    const fin = new Date(hoy);
+    const inicio = new Date(hoy);
+    inicio.setDate(hoy.getDate() - 6);
+    const yyyyInicio = inicio.getFullYear();
+    const mmInicio = String(inicio.getMonth() + 1).padStart(2, "0");
+    const ddInicio = String(inicio.getDate()).padStart(2, "0");
+    const yyyyFin = fin.getFullYear();
+    const mmFin = String(fin.getMonth() + 1).padStart(2, "0");
+    const ddFin = String(fin.getDate()).padStart(2, "0");
+    setFechaInicio(`${yyyyInicio}-${mmInicio}-${ddInicio}`);
+    setFechaFin(`${yyyyFin}-${mmFin}-${ddFin}`);
+  };
+
+  const setSemanaActual = () => {
+    // Siempre usar la fecha de hoy como referencia para la semana actual
+    const today = new Date();
+    const day = today.getDay();
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() + diffToMonday);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    const yyyyInicio = monday.getFullYear();
+    const mmInicio = String(monday.getMonth() + 1).padStart(2, "0");
+    const ddInicio = String(monday.getDate()).padStart(2, "0");
+    const yyyyFin = sunday.getFullYear();
+    const mmFin = String(sunday.getMonth() + 1).padStart(2, "0");
+    const ddFin = String(sunday.getDate()).padStart(2, "0");
+    setFechaInicio(`${yyyyInicio}-${mmInicio}-${ddInicio}`);
+    setFechaFin(`${yyyyFin}-${mmFin}-${ddFin}`);
+  };
+
   if (loading) return <div className="text-center py-10">Cargando...</div>;
   if (error) return <div className="text-center text-red-600 py-10">{error}</div>;
 
@@ -183,30 +239,56 @@ const ResumenFarmaciasPorDia: React.FC = () => {
             <h1 className="text-3xl font-bold text-blue-900 mb-2">Resumen de Ventas por Farmacia (Rango de Días)</h1>
             <p className="text-gray-600">Consulta el resumen de ventas por farmacia en un rango de días.</p>
           </div>
-          <div className="mt-4 md:mt-0 flex gap-2 items-end">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="fechaInicio">
-                Desde:
-              </label>
-              <input
-                id="fechaInicio"
-                type="date"
-                value={fechaInicio}
-                onChange={e => setFechaInicio(e.target.value)}
-                className="border rounded p-2"
-              />
+          <div className="mt-4 md:mt-0 flex gap-2 items-end flex-col">
+            <div className="flex flex-col md:flex-row gap-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="fechaInicio">
+                  Desde:
+                </label>
+                <input
+                  id="fechaInicio"
+                  type="date"
+                  value={fechaInicio}
+                  onChange={e => setFechaInicio(e.target.value)}
+                  className="border rounded p-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="fechaFin">
+                  Hasta:
+                </label>
+                <input
+                  id="fechaFin"
+                  type="date"
+                  value={fechaFin}
+                  onChange={e => setFechaFin(e.target.value)}
+                  className="border rounded p-2"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="fechaFin">
-                Hasta:
-              </label>
-              <input
-                id="fechaFin"
-                type="date"
-                value={fechaFin}
-                onChange={e => setFechaFin(e.target.value)}
-                className="border rounded p-2"
-              />
+            {/* Botones de fechas rápidas */}
+            <div className="flex flex-row gap-1 ml-2">
+              <button
+                type="button"
+                className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs hover:bg-blue-200"
+                onClick={setHoy}
+              >
+                Hoy
+              </button>
+              <button
+                type="button"
+                className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs hover:bg-blue-200"
+                onClick={setAyer}
+              >
+                Ayer
+              </button>
+              <button
+                type="button"
+                className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs hover:bg-blue-200"
+                onClick={setSemanaActual}
+              >
+                1 Semana
+              </button>
             </div>
           </div>
         </div>

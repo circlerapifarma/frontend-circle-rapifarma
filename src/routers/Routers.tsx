@@ -76,14 +76,6 @@ const AppRouter = () => (
             }
         />
         <Route
-            path="/resumenfarmacias-dia"
-            element={
-                <PermissionRoute permiso="ver_resumen_dia">
-                    <ResumenFarmaciasPorDia />
-                </PermissionRoute>
-            }
-        />
-        <Route
             path="/ventatotal"
             element={
                 <PermissionRoute permiso="ver_ventas_totales">

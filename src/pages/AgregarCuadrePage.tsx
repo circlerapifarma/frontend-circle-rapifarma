@@ -23,11 +23,15 @@ const AgregarCuadrePage: React.FC = () => {
         setMostrarModal(true);
     };
 
-    const handleCloseModal = (exito?: boolean) => {
+    const handleCloseModal = (exito?: boolean, sobrante?: number, faltante?: number) => {
         setMostrarModal(false);
         if (exito) {
-            setMensaje("¡Cuadre agregado exitosamente!");
-            setTimeout(() => setMensaje(""), 3000);
+            let mensaje = "¡Cuadre agregado exitosamente!";
+            if (typeof sobrante === "number" || typeof faltante === "number") {
+                mensaje += `\nSobrante: ${sobrante ?? 0} | Faltante: ${faltante ?? 0}`;
+            }
+            setMensaje(mensaje);
+            setTimeout(() => setMensaje(""), 5000);
             setFarmacia(Object.keys(farmacias)[0] || "");
             setDia(new Date().toISOString().slice(0, 10));
             setInputTouched({ farmacia: false, dia: false });
