@@ -194,21 +194,6 @@ const ResumenFarmaciasPorDia: React.FC = () => {
     setFechaFin(fecha);
   };
 
-  const setUltimaSemana = () => {
-    const hoy = new Date();
-    const fin = new Date(hoy);
-    const inicio = new Date(hoy);
-    inicio.setDate(hoy.getDate() - 6);
-    const yyyyInicio = inicio.getFullYear();
-    const mmInicio = String(inicio.getMonth() + 1).padStart(2, "0");
-    const ddInicio = String(inicio.getDate()).padStart(2, "0");
-    const yyyyFin = fin.getFullYear();
-    const mmFin = String(fin.getMonth() + 1).padStart(2, "0");
-    const ddFin = String(fin.getDate()).padStart(2, "0");
-    setFechaInicio(`${yyyyInicio}-${mmInicio}-${ddInicio}`);
-    setFechaFin(`${yyyyFin}-${mmFin}-${ddFin}`);
-  };
-
   const setSemanaActual = () => {
     // Siempre usar la fecha de hoy como referencia para la semana actual
     const today = new Date();

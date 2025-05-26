@@ -9,7 +9,6 @@ import AgregarCuadrePage from '@/pages/AgregarCuadrePage';
 import ResumenFarmaciasVentas from '@/pages/ResumenFarmaciasVentas';
 import VerificacionCuadresPage from '@/pages/VerificacionCuadresPage';
 import CuadresPorFarmaciaPage from '@/pages/CuadresPorFarmaciaPage';
-import ResumenFarmaciasPorDia from '@/pages/ResumenFarmaciasPorDia';
 import TotalGeneralFarmaciasPage from '@/pages/TotalGeneralFarmaciasPage';
 
 const AppRouter = () => (
