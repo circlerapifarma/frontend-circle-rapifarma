@@ -5,6 +5,7 @@ const allLinks = [
   { to: '/resumenfarmacias', label: 'Resumen Mensual', permiso: 'ver_resumen_mensual' },
   { to: '/ventatotal', label: 'Venta Total', permiso: 'ver_ventas_totales' },
   { to: '/agregarcuadre', label: 'Agregar Cuadre', permiso: 'agregar_cuadre' },
+  { to: '/cuadresporfarmacia', label: 'Mis Cuadres', permiso: 'agregar_cuadre' },
   { to: '/verificacion-cuadres', label: 'Verificación Cuadres', permiso: 'verificar_cuadres' },
   { to: '/ver-cuadres-dia', label: 'Cuadres por Día', permiso: 'ver_cuadres_dia' },
 ];

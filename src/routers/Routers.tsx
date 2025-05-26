@@ -10,6 +10,7 @@ import ResumenFarmaciasVentas from '@/pages/ResumenFarmaciasVentas';
 import VerificacionCuadresPage from '@/pages/VerificacionCuadresPage';
 import CuadresPorFarmaciaPage from '@/pages/CuadresPorFarmaciaPage';
 import TotalGeneralFarmaciasPage from '@/pages/TotalGeneralFarmaciasPage';
+import CuadresPorUsuarioPage from '@/pages/CuadresPorUsuarioPage';
 
 const AppRouter = () => (
     <Routes>
@@ -66,19 +67,26 @@ const AppRouter = () => (
         />
         {/* Ejemplo: solo usuarios con permiso eliminar_cuadres pueden acceder */}
         <Route
-            path="/admin/eliminar"
-            element={
-                <PermissionRoute permiso="eliminar_cuadres">
-                    {/* Aquí tu componente de eliminar */}
-                    <AdminPage />
-                </PermissionRoute>
-            }
-        />
-        <Route
             path="/ventatotal"
             element={
                 <PermissionRoute permiso="ver_ventas_totales">
                     <TotalGeneralFarmaciasPage />
+                </PermissionRoute>
+            }
+        />
+        <Route
+            path="/cuadresporfarmacia"
+            element={
+                <PermissionRoute permiso="agregar_cuadre">
+                    <CuadresPorUsuarioPage />
+                </PermissionRoute>
+            }
+        />
+        <Route
+            path="/cuadres-usuario"
+            element={
+                <PermissionRoute permiso="ver_cuadres_usuario">
+                    <CuadresPorUsuarioPage />
                 </PermissionRoute>
             }
         />

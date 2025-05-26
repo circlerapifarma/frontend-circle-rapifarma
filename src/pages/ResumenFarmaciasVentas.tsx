@@ -282,55 +282,52 @@ const ResumenFarmaciasVentas: React.FC = () => {
         );
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6">
-            <div className="max-w-5xl mx-auto">
-                <header className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 p-2 sm:p-4 md:p-6">
+            <div className="max-w-7xl mx-auto">
+                <header className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4 md:gap-0">
                     <div>
-                        <h1 className="text-2xl font-semibold text-gray-900 mb-1">
-                            Resumen de Ventas Mensuales
-                        </h1>
-                        <p className="text-gray-600 text-sm">
-                            Consulta el resumen de ventas mensuales
-                        </p>
+                        <h1 className="text-2xl md:text-3xl font-extrabold text-blue-900 mb-1">Resumen de Ventas Mensuales</h1>
+                        <p className="text-gray-600 text-sm md:text-base">Consulta el resumen de ventas mensuales</p>
                     </div>
-                    <div className="mt-4 md:mt-0 flex flex-col gap-2">
-                        <label htmlFor="mes" className="block text-sm font-medium text-gray-700 mb-1">
-                            Selecciona un mes:
-                        </label>
-                        <input
-                            id="mes"
-                            type="month"
-                            value={mes}
-                            onChange={handleMesChange}
-                            className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                        />
-                        <div className="flex flex-row gap-1 mt-2">
+                    <div className="mt-2 md:mt-0 flex flex-col gap-2 w-full md:w-auto">
+                        <label htmlFor="mes" className="block text-sm font-medium text-gray-700 mb-1">Selecciona un mes:</label>
+                        <div className="flex flex-col sm:flex-row gap-2 w-full">
+                            <input
+                                id="mes"
+                                type="month"
+                                value={mes}
+                                onChange={handleMesChange}
+                                className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full sm:w-auto"
+                            />
                             <input
                                 type="date"
                                 value={fechaInicio}
                                 onChange={e => setFechaInicio(e.target.value)}
-                                className="border rounded p-1 text-xs"
+                                className="border rounded p-2 text-xs focus:ring-2 focus:ring-blue-200 w-full sm:w-auto"
                                 placeholder="Desde"
                             />
                             <input
                                 type="date"
                                 value={fechaFin}
                                 onChange={e => setFechaFin(e.target.value)}
-                                className="border rounded p-1 text-xs"
+                                className="border rounded p-2 text-xs focus:ring-2 focus:ring-blue-200 w-full sm:w-auto"
                                 placeholder="Hasta"
                             />
-                            <button type="button" className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs hover:bg-blue-200" onClick={setAyer}>Ayer</button>
-                            <button type="button" className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs hover:bg-blue-200" onClick={setHoy}>Hoy</button>
-                            <button type="button" className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs hover:bg-blue-200" onClick={setSemanaActual}>Esta Semana</button>
-                            <button type="button" className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs hover:bg-blue-200" onClick={setQuincena}>Quincena</button>
-                            <button type="button" className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs hover:bg-blue-200" onClick={setMesActual}>Mes Actual</button>
+                        </div>
+                        <div className="flex flex-wrap gap-1 mt-2">
+                            <button type="button" className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-semibold hover:bg-blue-200 transition" onClick={setAyer}>Ayer</button>
+                            <button type="button" className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-semibold hover:bg-blue-200 transition" onClick={setHoy}>Hoy</button>
+                            <button type="button" className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-semibold hover:bg-blue-200 transition" onClick={setSemanaActual}>Esta Semana</button>
+                            <button type="button" className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-semibold hover:bg-blue-200 transition" onClick={setQuincena}>Quincena</button>
+                            <button type="button" className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-semibold hover:bg-blue-200 transition" onClick={setMesActual}>Mes Actual</button>
                         </div>
                     </div>
                 </header>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+                <div className="w-full overflow-x-auto pb-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 min-w-[340px]">
                     {sortedFarmacias.map((farm, idx) => (
-                        <div key={farm.id}>
+                        <div key={farm.id} className="bg-white rounded-2xl shadow-lg border border-blue-100 p-4 flex flex-col items-stretch transition hover:shadow-2xl hover:-translate-y-1 duration-200">
                             <ResumeCardFarmacia
                                 nombre={farm.nombre}
                                 totalVentas={ventas[farm.id]?.totalVentas || 0}
@@ -341,29 +338,27 @@ const ResumenFarmaciasVentas: React.FC = () => {
                                 zelleUsd={ventas[farm.id]?.zelleUsd || 0}
                                 faltantes={ventas[farm.id]?.faltantes || 0}
                                 sobrantes={ventas[farm.id]?.sobrantes || 0}
-                                totalGeneralSinRecargas={ventas[farm.id]?.totalGeneralSinRecargas || 0} // Añadido para corregir el error
-                                valesUsd={ventas[farm.id]?.valesUsd || 0} // Agregar vales en USD
-                                top={idx < 3} // Restaurar el uso de `idx` para determinar los top 3
+                                totalGeneralSinRecargas={ventas[farm.id]?.totalGeneralSinRecargas || 0}
+                                valesUsd={ventas[farm.id]?.valesUsd || 0}
+                                top={idx < 3}
                             />
-
                             <button
-                                className="mt-2 text-gray-700 underline text-sm hover:text-gray-900"
-                                onClick={() =>
-                                    setDetallesVisibles((v) => ({ ...v, [farm.id]: !v[farm.id] }))
-                                }
+                                className="mt-2 text-blue-700 underline text-xs sm:text-sm hover:text-blue-900 self-end"
+                                onClick={() => setDetallesVisibles((v) => ({ ...v, [farm.id]: !v[farm.id] }))}
                             >
                                 {detallesVisibles[farm.id] ? "Ocultar detalles" : "Mostrar detalles"}
                             </button>
                             {detallesVisibles[farm.id] && (
                                 <div>
                                     {calcularDetalles(farm.id)}
-                                    <div className="bg-white border border-gray-200 rounded p-3 mt-3 text-sm shadow-sm">
+                                    <div className="bg-blue-50 border border-blue-100 rounded p-3 mt-3 text-xs sm:text-sm shadow-sm">
                                         <div className="mb-1"><strong>Total General sin Recargas:</strong> {ventas[farm.id]?.totalGeneralSinRecargas || 0}</div>
                                     </div>
                                 </div>
                             )}
                         </div>
                     ))}
+                  </div>
                 </div>
             </div>
         </div>
