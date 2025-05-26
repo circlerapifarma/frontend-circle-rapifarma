@@ -36,7 +36,7 @@ const Navbar = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <span className="text-xl font-bold bg-gradient-to-r from-green-600 via-blue-500 to-blue-700 bg-clip-text text-transparent tracking-wide">
-            CIRCLE
+            GRUPO DROCOLVEN
           </span>
         </div>
 
