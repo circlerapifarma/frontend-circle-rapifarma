@@ -67,9 +67,16 @@ const ResumeCardFarmacia: React.FC<ResumeCardFarmaciaProps> = ({
 
   return (
     <div className={`bg-white rounded-xl shadow-md p-6 border flex flex-col items-center transition hover:shadow-lg relative ${top ? 'border-yellow-400 ring-2 ring-yellow-300' : 'border-blue-100'}`}>
+      {/* Chip solo si hay pendiente, sin la palabra 'Ref' */}
       {pendienteVerificar > 0 && (
-        <div className="absolute top-1 right-4 bg-yellow-100 text-yellow-800 text-xs font-bold px-3 py-1 rounded-full shadow border border-yellow-300 z-10">
-          Pendiente: ${pendienteVerificar.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        <div className="absolute top-2 left-4 flex flex-col gap-1 z-10">
+          <div className="bg-yellow-100 text-yellow-800 text-[10px] font-bold px-2 py-0.5 rounded-full shadow border border-yellow-300 min-w-[90px] text-center">
+            Pendiente: ${pendienteVerificar.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+          <div className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-full shadow border border-blue-300 flex items-center gap-1 min-w-[90px] justify-center">
+            <span className="material-icons text-blue-400 text-xs">info</span>
+            Total: ${(totalVentas + pendienteVerificar).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
         </div>
       )}
       {top && (
