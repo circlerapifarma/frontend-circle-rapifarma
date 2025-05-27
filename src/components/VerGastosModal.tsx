@@ -8,7 +8,7 @@ interface VerGastosModalProps {
 }
 
 interface Gasto {
-  id: string;
+  _id: string; // Cambiado de id a _id
   titulo: string;
   descripcion: string;
   monto: number;
@@ -25,12 +25,15 @@ const VerGastosModal: React.FC<VerGastosModalProps> = ({ open, onClose, farmacia
       const fetchGastos = async () => {
         setLoading(true);
         try {
-          const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/gastos?localidad=${farmaciaId}&estado=wait`); // Filter by estado=wait
+          // Traer todos los gastos de la farmacia (sin filtrar por estado en la API)
+          const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/gastos?localidad=${farmaciaId}`);
           if (!res.ok) {
             throw new Error("Error al obtener los gastos");
           }
           const data = await res.json();
-          setGastos(data);
+          // Filtrar en frontend: solo mostrar los que NO son denied NI verified
+          const pendientes = data.filter((g: Gasto) => g.estado !== "denied" && g.estado !== "verified");
+          setGastos(pendientes);
         } catch (error) {
           console.error("Error al obtener los gastos:", error);
         } finally {
@@ -48,7 +51,7 @@ const VerGastosModal: React.FC<VerGastosModalProps> = ({ open, onClose, farmacia
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ id: gastoId, estado: "denied" }),
+        body: JSON.stringify({ id: gastoId, estado: "denied" }) // gastoId ahora es _id
       });
 
       if (!res.ok) {
@@ -56,7 +59,7 @@ const VerGastosModal: React.FC<VerGastosModalProps> = ({ open, onClose, farmacia
       }
 
       alert("Gasto denegado exitosamente");
-      setGastos(gastos.filter(gasto => gasto.id !== gastoId)); // Remove denied gasto from the list
+      setGastos(gastos.filter(gasto => gasto._id !== gastoId)); // Usar _id
     } catch (error) {
       console.error("Error al denegar el gasto:", error);
       alert("Hubo un error al denegar el gasto");
@@ -66,43 +69,53 @@ const VerGastosModal: React.FC<VerGastosModalProps> = ({ open, onClose, farmacia
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl p-6">
-        <h2 className="text-xl font-bold mb-4">Cuadres en espera de {farmaciaNombre}</h2>
+    <div className="fixed inset-0 bg-white bg-opacity-80 flex items-center justify-center z-50 px-2 sm:px-0">
+      <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl p-4 sm:p-6 relative max-h-[90vh] flex flex-col">
+        <h2 className="text-lg sm:text-xl font-bold mb-4 text-center">Gastos pendientes de {farmaciaNombre}</h2>
         <button
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+          className="absolute top-2 right-2 sm:top-4 sm:right-4 text-2xl sm:text-3xl text-gray-500 hover:text-gray-700"
           onClick={onClose}
         >
           &times;
         </button>
-        {loading ? (
-          <div className="text-center text-gray-500">Cargando cuadres...</div>
-        ) : gastos.length === 0 ? (
-          <div className="text-center text-gray-500">No hay cuadres en espera para esta farmacia.</div>
-        ) : (
-          <ul className="divide-y divide-gray-200">
-            {gastos.map(gasto => (
-              <li key={gasto.id} className="py-4">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-800">{gasto.titulo}</h3>
-                    <p className="text-sm text-gray-600">{gasto.descripcion}</p>
-                    <p className="text-sm text-gray-600">Fecha: {new Date(gasto.fecha).toLocaleDateString()}</p>
+        <div className="flex-1 overflow-y-auto">
+          {loading ? (
+            <div className="text-center text-gray-500">Cargando cuadres...</div>
+          ) : gastos.length === 0 ? (
+            <div className="text-center text-gray-500">No hay cuadres pendientes para esta farmacia.</div>
+          ) : (
+            <ul className="divide-y divide-gray-200">
+              {gastos.map(gasto => (
+                <li key={gasto._id} className="py-3 sm:py-4">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0">
+                    <div>
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-800">{gasto.titulo}</h3>
+                      <p className="text-xs sm:text-sm text-gray-600">{gasto.descripcion}</p>
+                      <p className="text-xs sm:text-sm text-gray-600">Fecha: {new Date(gasto.fecha).toLocaleDateString()}</p>
+                      <p className="text-xs sm:text-sm text-gray-600">Estado: {(() => {
+                        switch (gasto.estado) {
+                          case 'wait': return 'Pendiente';
+                          case 'verified': return 'Verificado';
+                          case 'denied': return 'Denegado';
+                          default: return gasto.estado;
+                        }
+                      })()}</p>
+                    </div>
+                    <div className="text-right mt-2 sm:mt-0">
+                      <p className="text-base sm:text-lg font-bold text-gray-800">${gasto.monto.toFixed(2)}</p>
+                      <button
+                        className="text-xs sm:text-sm font-medium text-red-600 hover:underline"
+                        onClick={() => handleDeny(gasto._id)}
+                      >
+                        Denegar
+                      </button>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold text-gray-800">${gasto.monto.toFixed(2)}</p>
-                    <button
-                      className="text-sm font-medium text-red-600 hover:underline"
-                      onClick={() => handleDeny(gasto.id)}
-                    >
-                      Denegar
-                    </button>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   );

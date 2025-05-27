@@ -11,9 +11,9 @@ import VerificacionCuadresPage from '@/pages/VerificacionCuadresPage';
 import CuadresPorFarmaciaPage from '@/pages/CuadresPorFarmaciaPage';
 import TotalGeneralFarmaciasPage from '@/pages/TotalGeneralFarmaciasPage';
 import CuadresPorUsuarioPage from '@/pages/CuadresPorUsuarioPage';
-import AgregarGastosPage from '@/pages/AgregarGastosPage';
 import ChequeoGastosPage from '@/pages/ChequeoGastosPage';
 import GastosPorUsuarioPage from '@/pages/GastosPorUsuarioPage';
+import AgregarGastos from '@/pages/AgregarGastosPage';
 
 const AppRouter = () => (
     <Routes>
@@ -86,26 +86,18 @@ const AppRouter = () => (
             }
         />
         <Route
-            path="/gastos"
+            path="/agregargastos"
             element={
                 <PermissionRoute permiso="agregar_cuadre">
-                    <ChequeoGastosPage />
+                    <AgregarGastos />
                 </PermissionRoute>
             }
         />
         <Route
-            path="/verificaicongastos"
+            path="/verificaciongastos"
             element={
-                <PermissionRoute permiso="agregar_cuadre">
+                <PermissionRoute permiso="verificar_gastos">
                     <ChequeoGastosPage />
-                </PermissionRoute>
-            }
-        />
-        <Route
-            path="/cuadres-usuario"
-            element={
-                <PermissionRoute permiso="ver_cuadres_usuario">
-                    <CuadresPorUsuarioPage />
                 </PermissionRoute>
             }
         />

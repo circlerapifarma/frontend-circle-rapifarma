@@ -290,13 +290,15 @@ const ResumenFarmaciasPorDia: React.FC = () => {
                 zelleUsd={ventas[farm.id]?.zelleUsd || 0}
                 faltantes={ventas[farm.id]?.faltantes || 0}
                 sobrantes={ventas[farm.id]?.sobrantes || 0}
-                totalGeneralSinRecargas={ventas[farm.id]?.totalGeneralSinRecargas || 0} // Mantener
-                valesUsd={ventas[farm.id]?.valesUsd || 0} // Agregar vales en USD
+                totalGeneralSinRecargas={ventas[farm.id]?.totalGeneralSinRecargas || 0}
+                valesUsd={ventas[farm.id]?.valesUsd || 0}
                 top={idx < 3}
+                localidadId={farm.id} // <-- Se agrega la propiedad requerida
               />
               <button
                 className="mt-2 text-blue-700 underline text-sm"
-                onClick={() => setDetallesVisibles(v => ({ ...v, [farm.id]: !v[farm.id] }))}
+                onClick={() => setDetallesVisibles(v => ({ ...v, [farm.id]: !v[farm.id] }))
+                }
               >
                 {detallesVisibles && detallesVisibles[farm.id] ? "Ocultar detalles" : "Ver detalles"}
               </button>

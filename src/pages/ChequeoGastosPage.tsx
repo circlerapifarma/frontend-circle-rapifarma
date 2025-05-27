@@ -49,14 +49,6 @@ const ChequeoGastosPage: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-200 p-4 sm:p-6">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-4xl font-extrabold text-red-500 mb-10 text-center tracking-tight">Chequeo de Gastos</h1>
-        <div className="flex justify-end mb-4">
-          <Button
-            onClick={() => setModalAgregarAbierto(true)}
-            className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg"
-          >
-            Agregar Gasto
-          </Button>
-        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8">
           {localidades.map((loc) => (
@@ -81,21 +73,21 @@ const ChequeoGastosPage: React.FC = () => {
         </div>
 
         {modalAbierto && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl p-8 relative border-4 border-blue-700 mx-2 sm:mx-0">
+          <div className="fixed inset-0 bg-white bg-opacity-80 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl p-8 relative border-4 border-red-500 mx-2 sm:mx-0">
               <button
                 className="absolute top-3 right-5 text-3xl text-gray-500 hover:text-red-600 font-bold"
                 onClick={() => setModalAbierto(false)}
               >
                 &times;
               </button>
-              <h2 className="text-3xl font-extrabold text-blue-800 mb-6 text-center tracking-wide drop-shadow">
+              <h2 className="text-3xl font-extrabold text-red-500 mb-6 text-center tracking-wide drop-shadow">
                 Gastos - {localidadNombreSeleccionada}
               </h2>
               <div className="flex flex-col gap-8 max-h-[65vh] overflow-y-auto">
                 {gastosPorLocalidad[localidadSeleccionada]?.filter((gasto) => gasto.estado === "wait").map((gasto) => (
-                  <Card key={gasto._id} className="p-6 border-2 border-blue-300 rounded-xl shadow-lg bg-blue-50">
-                    <div className="text-lg font-bold text-blue-900">Título: {gasto.titulo}</div>
+                  <Card key={gasto._id} className="p-6 border-2 border-red-300 rounded-xl shadow-lg bg-red-50">
+                    <div className="text-lg font-bold text-red-900">Título: {gasto.titulo}</div>
                     <div className="text-base">Monto: ${gasto.monto.toFixed(2)}</div>
                     <div className="text-base">Descripción: {gasto.descripcion}</div>
                     <div className="text-base">Fecha: {gasto.fecha}</div>

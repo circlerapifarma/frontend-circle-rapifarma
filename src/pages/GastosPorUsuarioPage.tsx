@@ -32,8 +32,8 @@ const GastosPorUsuarioPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto py-8 px-4">
-      <h1 className="text-2xl font-bold text-blue-800 mb-6 text-center">Gastos por Farmacia</h1>
+    <div className="w-full max-w-2xl mx-auto py-8 px-2 sm:px-4">
+      <h1 className="text-2xl sm:text-3xl font-bold text-red-800 mb-6 text-center">Gastos por Farmacia</h1>
       {farmacias.length === 0 ? (
         <div className="text-center text-gray-500">No tienes farmacias asociadas.</div>
       ) : (
@@ -41,8 +41,10 @@ const GastosPorUsuarioPage: React.FC = () => {
           {farmacias.map(f => (
             <button
               key={f.id}
-              className="w-full bg-blue-100 hover:bg-blue-200 border border-blue-300 rounded-lg p-4 text-lg font-semibold text-blue-900 shadow"
+              className="w-full bg-red-100 hover:bg-red-200 border border-red-300 rounded-lg p-3 sm:p-4 text-base sm:text-lg font-semibold text-red-900 shadow transition-all duration-200"
               onClick={() => handleSelectFarmacia(f)}
+              tabIndex={0}
+              onWheel={e => e.currentTarget.blur()} // Evita scroll accidental en el botón
             >
               {f.nombre}
             </button>
@@ -50,12 +52,14 @@ const GastosPorUsuarioPage: React.FC = () => {
         </div>
       )}
       {selectedFarmacia && (
-        <VerGastosModal
-          open={modalOpen}
-          onClose={() => setModalOpen(false)}
-          farmaciaId={selectedFarmacia.id}
-          farmaciaNombre={selectedFarmacia.nombre}
-        />
+        <div>
+          <VerGastosModal
+            open={modalOpen}
+            onClose={() => setModalOpen(false)}
+            farmaciaId={selectedFarmacia.id}
+            farmaciaNombre={selectedFarmacia.nombre}
+          />
+        </div>
       )}
     </div>
   );

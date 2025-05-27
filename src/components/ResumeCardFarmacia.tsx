@@ -15,13 +15,14 @@ interface ResumeCardFarmaciaProps {
   valesUsd: number;    // Agregar vales en USD
   pendienteVerificar?: number; // Nuevo campo: monto pendiente por verificar
   localidadId: string; // Nuevo campo para identificar la farmacia
+  fechaInicio?: string;
+  fechaFin?: string;
 }
 
 const ResumeCardFarmacia: React.FC<ResumeCardFarmaciaProps> = ({
   nombre,
   totalVentas = 0, // Valor predeterminado
   totalBs = 0, // Valor predeterminado
-  totalBsEnUsd = 0, // Valor predeterminado
   efectivoUsd = 0, // Valor predeterminado
   zelleUsd = 0, // Valor predeterminado
   totalUsd = 0, // Valor predeterminado
@@ -32,27 +33,37 @@ const ResumeCardFarmacia: React.FC<ResumeCardFarmaciaProps> = ({
   top,
   pendienteVerificar = 0,
   localidadId,
+  fechaInicio,
+  fechaFin,
 }) => {
   const [gastos, setGastos] = useState(0);
 
   useEffect(() => {
     const fetchGastos = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/gastos/total`);
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/gastos`);
         if (!res.ok) {
           throw new Error("Error al obtener los gastos");
         }
         const data = await res.json();
-        const gastoLocalidad = data[localidadId] || 0;
-        setGastos(Math.max(0, gastoLocalidad)); // Ensure gastos is non-negative
-        console.log("Gastos obtenidos:", gastoLocalidad);
+        // Filtrar por localidad, estado y fechas si están presentes
+        const gastosFiltrados = Array.isArray(data)
+          ? data.filter((g: any) =>
+              g.localidad === localidadId &&
+              g.estado === 'verified' &&
+              (!fechaInicio || g.fecha >= fechaInicio) &&
+              (!fechaFin || g.fecha <= fechaFin)
+            )
+          : [];
+        const totalGastos = gastosFiltrados.reduce((acc: number, g: any) => acc + Number(g.monto || 0), 0);
+        setGastos(Math.max(0, totalGastos));
       } catch (error) {
         console.error("Error al obtener los gastos:", error);
       }
     };
 
     fetchGastos();
-  }, [localidadId]);
+  }, [localidadId, fechaInicio, fechaFin]);
 
   return (
     <div className={`bg-white rounded-xl shadow-md p-6 border flex flex-col items-center transition hover:shadow-lg relative ${top ? 'border-yellow-400 ring-2 ring-yellow-300' : 'border-blue-100'}`}>
@@ -77,7 +88,7 @@ const ResumeCardFarmacia: React.FC<ResumeCardFarmaciaProps> = ({
         <div className="flex justify-between w-full"><span>Solo USD:</span><span>${totalUsd.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
         <div className="flex justify-between w-full"><span>Vales USD:</span><span>${valesUsd.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
         <div className="flex justify-between w-full"><span>Gastos:</span><span className="text-red-600">${gastos.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
-        <div className="flex justify-between w-full font-bold"><span>Total con Gastos:</span><span>$ {(totalBsEnUsd + totalUsd - gastos).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+        <div className="flex justify-between w-full font-bold"><span>Total con Gastos:</span><span>$ {(totalVentas - gastos).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
         {faltantes > 0 && (
           <div className="flex justify-between w-full"><span>Faltantes:</span><span className="text-red-600">${faltantes.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
         )}

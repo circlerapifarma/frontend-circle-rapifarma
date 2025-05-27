@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 
 const allLinks = [
   { to: '/resumenfarmacias', label: 'Resumen Mensual', permiso: 'ver_resumen_mensual' },
@@ -8,7 +8,8 @@ const allLinks = [
   { to: '/cuadresporfarmacia', label: 'Mis Cuadres', permiso: 'agregar_cuadre' },
   { to: '/verificacion-cuadres', label: 'Verificación Cuadres', permiso: 'verificar_cuadres' },
   { to: '/ver-cuadres-dia', label: 'Cuadres por Día', permiso: 'ver_cuadres_dia' },
-  { to: '/gastos', label: 'Gastos', permiso: 'ver_ventas_totales' },
+  { to: '/verificaciongastos', label: 'Verificación Gastos', permiso: 'verificar_gastos' },
+  { to: '/agregargastos', label: 'Agregar Gasto', permiso: 'agregar_cuadre' },
   { to: '/gastosporusuario', label: 'Mis Gastos', permiso: 'agregar_cuadre' },
 ];
 
@@ -16,6 +17,7 @@ const Navbar = () => {
   const [open, setOpen] = useState(false);
   const [permisosUsuario, setPermisosUsuario] = useState<string[]>([]);
   const [usuario, setUsuario] = useState<any>(null);
+  const location = useLocation();
 
   useEffect(() => {
     const storedUsuario = JSON.parse(localStorage.getItem('usuario') || 'null');
@@ -35,16 +37,14 @@ const Navbar = () => {
   const links = allLinks.filter(link => !link.permiso || permisosUsuario.includes(link.permiso));
 
   return (
-    <nav className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm sticky top-0 z-50">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <span className="text-xl font-bold bg-gradient-to-r from-green-600 via-blue-500 to-blue-700 bg-clip-text text-transparent tracking-wide">
-            GRUPO DROCOLVEN
-          </span>
+    <nav className="bg-white border-b border-gray-200 shadow-md px-6 py-4 sticky top-0 z-50">
+      <div className="flex justify-between items-center">
+        <div className="text-xl font-bold text-transparent bg-gradient-to-r from-green-600 via-blue-500 to-blue-700 bg-clip-text">
+          GRUPO DROCOLVEN
         </div>
 
         <button
-          className="sm:hidden text-gray-700 focus:outline-none"
+          className="sm:hidden text-gray-700"
           onClick={() => setOpen(prev => !prev)}
           aria-label="Abrir menú"
         >
@@ -53,12 +53,16 @@ const Navbar = () => {
           </svg>
         </button>
 
-        <div className="hidden sm:flex gap-6 items-center">
+        <div className="hidden sm:flex items-center gap-6">
           {links.map(link => (
             <Link
               key={link.to}
               to={link.to}
-              className="text-sm text-gray-600 hover:text-black transition-colors"
+              className={`text-sm transition-all duration-150 pb-1 ${
+                location.pathname === link.to
+                  ? 'text-blue-600 border-b-2 border-blue-600 font-semibold'
+                  : 'text-gray-600 hover:text-blue-600 hover:border-b-2 hover:border-blue-400'
+              }`}
             >
               {link.label}
             </Link>
@@ -70,7 +74,7 @@ const Navbar = () => {
                 localStorage.removeItem('usuario');
                 window.location.href = '/login';
               }}
-              className="ml-4 px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+              className="ml-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm transition"
             >
               Cerrar sesión
             </button>
@@ -78,15 +82,19 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Mobile menu */}
+      {/* Menú móvil */}
       {open && (
-        <div className="flex flex-col sm:hidden mt-4 gap-3">
+        <div className="sm:hidden mt-4 flex flex-col gap-3">
           {links.map(link => (
             <Link
               key={link.to}
               to={link.to}
-              className="text-sm text-gray-600 hover:text-black transition-colors"
               onClick={() => setOpen(false)}
+              className={`text-sm transition-all duration-150 ${
+                location.pathname === link.to
+                  ? 'text-blue-600 font-semibold'
+                  : 'text-gray-600 hover:text-blue-600'
+              }`}
             >
               {link.label}
             </Link>
@@ -98,7 +106,7 @@ const Navbar = () => {
                 localStorage.removeItem('usuario');
                 window.location.href = '/login';
               }}
-              className="mt-2 px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+              className="mt-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm transition"
             >
               Cerrar sesión
             </button>
