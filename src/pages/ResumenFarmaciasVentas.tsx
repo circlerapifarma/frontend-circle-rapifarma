@@ -338,10 +338,10 @@ const ResumenFarmaciasVentas: React.FC = () => {
                             />
                         </div>
                         <div className="flex flex-wrap gap-1 mt-2">
-                            <button type="button" className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-semibold hover:bg-blue-200 transition" onClick={setAyer}>Ayer</button>
-                            <button type="button" className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-semibold hover:bg-blue-200 transition" onClick={setHoy}>Hoy</button>
+                            <button type="button" className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-semibold hover:bg-blue-200 transition" onClick={setAyer}>Dia Anterior</button>
+                            <button type="button" className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-semibold hover:bg-blue-200 transition" onClick={setHoy}>Este Dia</button>
                             <button type="button" className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-semibold hover:bg-blue-200 transition" onClick={setSemanaActual}>Esta Semana</button>
-                            <button type="button" className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-semibold hover:bg-blue-200 transition" onClick={setQuincena}>Quincena</button>
+                            <button type="button" className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-semibold hover:bg-blue-200 transition" onClick={setQuincena}>Quincena Actual</button>
                             <button type="button" className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-semibold hover:bg-blue-200 transition" onClick={setMesActual}>Mes Actual</button>
                         </div>
                     </div>
