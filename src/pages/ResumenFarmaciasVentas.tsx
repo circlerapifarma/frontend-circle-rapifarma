@@ -365,6 +365,7 @@ const ResumenFarmaciasVentas: React.FC = () => {
                                 valesUsd={ventas[farm.id]?.valesUsd || 0}
                                 top={idx < 3}
                                 pendienteVerificar={pendientesPorFarmacia[farm.id] || 0}
+                                localidadId={farm.id}
                             />
                             <button
                                 className="mt-2 text-blue-700 underline text-xs sm:text-sm hover:text-blue-900 self-end"

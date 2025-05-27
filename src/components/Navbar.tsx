@@ -8,6 +8,8 @@ const allLinks = [
   { to: '/cuadresporfarmacia', label: 'Mis Cuadres', permiso: 'agregar_cuadre' },
   { to: '/verificacion-cuadres', label: 'Verificación Cuadres', permiso: 'verificar_cuadres' },
   { to: '/ver-cuadres-dia', label: 'Cuadres por Día', permiso: 'ver_cuadres_dia' },
+  { to: '/gastos', label: 'Gastos', permiso: 'ver_ventas_totales' },
+  { to: '/gastosporusuario', label: 'Mis Gastos', permiso: 'agregar_cuadre' },
 ];
 
 const Navbar = () => {
