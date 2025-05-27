@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 
 const allLinks = [
-  { to: '/resumenfarmacias', label: 'Resumen Mensual', permiso: 'ver_resumen_mensual' },
+  { to: '/resumenfarmacias', label: 'Resumen de Ventas', permiso: 'ver_resumen_mensual' },
   { to: '/ventatotal', label: 'Venta Total', permiso: 'ver_ventas_totales' },
   { to: '/agregarcuadre', label: 'Agregar Cuadre', permiso: 'agregar_cuadre' },
   { to: '/cuadresporfarmacia', label: 'Mis Cuadres', permiso: 'agregar_cuadre' },
