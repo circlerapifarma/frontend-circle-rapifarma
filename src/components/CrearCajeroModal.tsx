@@ -142,7 +142,12 @@ const CrearCajeroModal: React.FC<CrearCajeroModalProps> = ({ open, onClose }) =>
                             name="comision"
                             id="comision"
                             value={formData.comision}
-                            onChange={handleChange}
+                            onChange={e => {
+                              const value = e.target.value;
+                              setFormData(prev => ({ ...prev, comision: value === '' ? 0 : parseFloat(value) }));
+                            }}
+                            step="0.01"
+                            min="0"
                             className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm shadow-sm focus:border-green-500 focus:ring-1 focus:ring-green-500 transition"
                             required
                         />

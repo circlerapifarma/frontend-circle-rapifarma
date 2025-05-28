@@ -176,25 +176,40 @@ const ComisionesPorTurnoPage: React.FC = () => {
 
       {Object.keys(comisionesPorCajero).length > 0 ? (
         <div className="space-y-6">
-          {Object.entries(comisionesPorCajero).map(([cajero, lista]) => (
-            <div key={cajero} className="border p-4 rounded-lg shadow">
-              <h2 className="text-lg font-semibold text-gray-800 mb-2">{cajero}</h2>
-              <ul className="divide-y divide-gray-200">
-                {lista.map((item, index) => (
-                  <li key={index} className="py-2 flex flex-col sm:flex-row sm:justify-between text-sm text-gray-700 gap-2">
-                    <span>Turno: <strong>{item.turno}</strong></span>
-                    <span>Comisión: <strong>${Number(item.comision ?? 0).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
-                    <span>Total vendido: <strong>${Number(item.totalVentas ?? 0).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
-                    <span>Sobrante: <strong className="text-green-700">${Number(item.sobrante ?? 0).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
-                    <span>Faltante: <strong className="text-red-700">${Number(item.faltante ?? 0).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
-                    {item.farmacias && (
-                      <span className="text-xs text-blue-600 mt-1 sm:mt-0">Farmacias: {Array.isArray(item.farmacias) ? item.farmacias.join(", ") : Object.values(item.farmacias).join(", ")}</span>
-                    )}
+          {Object.entries(comisionesPorCajero).map(([cajero, lista]) => {
+            // Calcular totales por cajero
+            const totalComision = lista.reduce((acc, item) => acc + (Number(item.comision) || 0), 0);
+            const totalVentas = lista.reduce((acc, item) => acc + (Number(item.totalVentas) || 0), 0);
+            const totalSobrante = lista.reduce((acc, item) => acc + (Number(item.sobrante) || 0), 0);
+            const totalFaltante = lista.reduce((acc, item) => acc + (Number(item.faltante) || 0), 0);
+            return (
+              <div key={cajero} className="border p-4 rounded-lg shadow">
+                <h2 className="text-lg font-semibold text-gray-800 mb-2">{cajero}</h2>
+                <ul className="divide-y divide-gray-200">
+                  {lista.map((item, index) => (
+                    <li key={index} className="py-2 flex flex-col sm:flex-row sm:justify-between text-sm text-gray-700 gap-2">
+                      <span>Turno: <strong>{item.turno}</strong></span>
+                      <span>Comisión: <strong>${Number(item.comision ?? 0).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
+                      <span>Total vendido: <strong>${Number(item.totalVentas ?? 0).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
+                      <span>Sobrante: <strong className="text-green-700">${Number(item.sobrante ?? 0).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
+                      <span>Faltante: <strong className="text-red-700">${Number(item.faltante ?? 0).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
+                      {item.farmacias && (
+                        <span className="text-xs text-blue-600 mt-1 sm:mt-0">Farmacias: {Array.isArray(item.farmacias) ? item.farmacias.join(", ") : Object.values(item.farmacias).join(", ")}</span>
+                      )}
+                    </li>
+                  ))}
+                  {/* Fila de totales por cajero */}
+                  <li className="pt-2 mt-2 border-t flex flex-col sm:flex-row sm:justify-between text-sm font-bold text-blue-900 bg-blue-50 rounded">
+                    <span>Total</span>
+                    <span>Comisión: ${totalComision.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span>Total vendido: ${totalVentas.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span>Sobrante: <span className="text-green-700">${totalSobrante.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></span>
+                    <span>Faltante: <span className="text-red-700">${totalFaltante.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></span>
                   </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+                </ul>
+              </div>
+            );
+          })}
         </div>
       ) : (
         !loading && (

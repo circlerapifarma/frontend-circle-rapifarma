@@ -119,6 +119,7 @@ const EditarCajeroModal: React.FC<EditarCajeroModalProps> = ({ open, onClose, ca
 
       alert("Cajero actualizado exitosamente");
       onClose();
+      window.location.reload(); // <-- Recarga la página después de cerrar el modal
     } catch (error) {
       console.error("Error al actualizar el cajero:", error);
       alert("Hubo un error al actualizar el cajero");
@@ -170,7 +171,12 @@ const EditarCajeroModal: React.FC<EditarCajeroModalProps> = ({ open, onClose, ca
               name="comision"
               id="comision"
               value={formData.comision}
-              onChange={handleChange}
+              onChange={e => {
+                const value = e.target.value;
+                setFormData(prev => ({ ...prev, comision: value === '' ? 0 : parseFloat(value) }));
+              }}
+              step="0.01"
+              min="0"
               className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
               required
             />
