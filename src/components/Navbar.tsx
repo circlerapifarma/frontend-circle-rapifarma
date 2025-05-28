@@ -11,6 +11,7 @@ const allLinks = [
   { to: '/verificaciongastos', label: 'Verificación Gastos', permiso: 'verificar_gastos' },
   { to: '/agregargastos', label: 'Agregar Gasto', permiso: 'agregar_cuadre' },
   { to: '/gastosporusuario', label: 'Mis Gastos', permiso: 'agregar_cuadre' },
+  { to: '/cajeros', label: 'Cajeros', permiso: 'acceso_admin' },
 ];
 
 const Navbar = () => {
