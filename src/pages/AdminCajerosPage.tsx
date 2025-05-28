@@ -57,10 +57,6 @@ const AdminCajerosPage: React.FC = () => {
     setModalEditarOpen(true);
   };
 
-  const handleCrearCajero = () => {
-    setModalCrearOpen(true);
-  };
-
   // Obtener farmacias únicas de todos los cajeros
   const farmaciasUnicas = Array.from(
     new Set(

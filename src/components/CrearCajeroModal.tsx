@@ -164,7 +164,7 @@ const CrearCajeroModal: React.FC<CrearCajeroModalProps> = ({ open, onClose }) =>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Tipo Comisión</label>
                         <div className="flex flex-wrap gap-2">
-                            {TIPOS_COMISION.map((tipo, idx) => (
+                            {TIPOS_COMISION.map((tipo) => (
                                 <button
                                     key={tipo}
                                     type="button"
