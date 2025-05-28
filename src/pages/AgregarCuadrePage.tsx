@@ -101,7 +101,7 @@ const AgregarCuadrePage: React.FC = () => {
                     farmacia={farmacia}
                     onClose={handleCloseModal}
                 />
-            )} 
+            )}
         </div>
     );
 };
