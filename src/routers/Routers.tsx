@@ -115,7 +115,7 @@ const AppRouter = () => (
         <Route
             path="/cajeros"
             element={
-                <PermissionRoute permiso="agregar_cuadre">
+                <PermissionRoute permiso="acceso_admin">
                     <AdminCajerosPage />
                 </PermissionRoute>
             }
@@ -123,7 +123,7 @@ const AppRouter = () => (
         <Route
             path="/comisiones"
             element={
-                <PermissionRoute permiso="agregar_cuadre">
+                <PermissionRoute permiso="acceso_admin">
                     <ComisionesPorTurnoPage />
                 </PermissionRoute>
             }

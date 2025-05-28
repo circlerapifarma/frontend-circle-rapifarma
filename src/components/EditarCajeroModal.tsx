@@ -10,6 +10,10 @@ interface EditarCajeroModalProps {
     farmacias: Record<string, string>;
     comision: number;
     estado: string;
+    tipocomision?: string;
+    turno?: string;
+    especial?: string;
+    extra?: string;
   };
 }
 
@@ -17,6 +21,8 @@ interface Farmacia {
   id: string;
   nombre: string;
 }
+
+const TIPOS_COMISION = ["Extra", "Especial", "Turno"];
 
 const EditarCajeroModal: React.FC<EditarCajeroModalProps> = ({ open, onClose, cajero }) => {
   const [formData, setFormData] = useState({
@@ -26,6 +32,13 @@ const EditarCajeroModal: React.FC<EditarCajeroModalProps> = ({ open, onClose, ca
     comision: cajero.comision,
     estado: cajero.estado,
     farmacias: Object.keys(cajero.farmacias),
+    tipocomision: Array.isArray(cajero.tipocomision)
+      ? cajero.tipocomision
+      : (typeof cajero.tipocomision === "string" && cajero.tipocomision
+          ? [cajero.tipocomision]
+          : (cajero.tipocomision === undefined || cajero.tipocomision === null)
+            ? []
+            : []),
   });
   const [farmacias, setFarmacias] = useState<Farmacia[]>([]);
 
@@ -42,6 +55,24 @@ const EditarCajeroModal: React.FC<EditarCajeroModalProps> = ({ open, onClose, ca
     };
     fetchFarmacias();
   }, []);
+
+  useEffect(() => {
+    setFormData({
+      _id: cajero._id,
+      id: cajero.id,
+      nombre: cajero.nombre,
+      comision: cajero.comision,
+      estado: cajero.estado,
+      farmacias: Object.keys(cajero.farmacias),
+      tipocomision: Array.isArray(cajero.tipocomision)
+        ? cajero.tipocomision
+        : (typeof cajero.tipocomision === "string" && cajero.tipocomision
+            ? [cajero.tipocomision]
+            : (cajero.tipocomision === undefined || cajero.tipocomision === null)
+              ? []
+              : []),
+    });
+  }, [cajero]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -71,6 +102,7 @@ const EditarCajeroModal: React.FC<EditarCajeroModalProps> = ({ open, onClose, ca
           }
           return acc;
         }, {} as Record<string, string>),
+        tipocomision: formData.tipocomision,
       };
 
       const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/cajeros/${cajero._id}`, {
@@ -156,6 +188,29 @@ const EditarCajeroModal: React.FC<EditarCajeroModalProps> = ({ open, onClose, ca
               <option value="activo">Activo</option>
               <option value="inactivo">Inactivo</option>
             </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Tipo Comisión</label>
+            <div className="flex flex-wrap gap-2">
+              {TIPOS_COMISION.map((tipo) => (
+                <button
+                  key={tipo}
+                  type="button"
+                  onClick={() => {
+                    setFormData((prev) => {
+                      const selected = prev.tipocomision.includes(tipo);
+                      let newTipos = selected
+                          ? prev.tipocomision.filter((t: string) => t !== tipo)
+                          : [...prev.tipocomision, tipo];
+                      return { ...prev, tipocomision: newTipos };
+                    });
+                  }}
+                  className={`px-3 py-1 rounded-full text-sm font-medium shadow-sm transition focus:outline-none ${formData.tipocomision.includes(tipo) ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700"}`}
+                >
+                  {tipo}
+                </button>
+              ))}
+            </div>
           </div>
           <div>
             <label htmlFor="farmacias" className="block text-sm font-medium text-gray-700 mb-1">Farmacias</label>

@@ -10,6 +10,8 @@ interface Farmacia {
   nombre: string;
 }
 
+const TIPOS_COMISION = ["Extra", "Especial", "Turno"];
+
 const CrearCajeroModal: React.FC<CrearCajeroModalProps> = ({ open, onClose }) => {
     const [formData, setFormData] = useState({
         NOMBRE: "",
@@ -17,13 +19,22 @@ const CrearCajeroModal: React.FC<CrearCajeroModalProps> = ({ open, onClose }) =>
         comision: 0,
         estado: "activo",
         FARMACIAS: [] as string[],
+        tipocomision: ["", "", ""], // [extra, especial, turno]
     });
 
     const [farmacias, setFarmacias] = useState<Farmacia[]>([]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
+        if (name === "extra") {
+            setFormData((prev) => ({ ...prev, tipocomision: [value, prev.tipocomision[1], prev.tipocomision[2]] }));
+        } else if (name === "especial") {
+            setFormData((prev) => ({ ...prev, tipocomision: [prev.tipocomision[0], value, prev.tipocomision[2]] }));
+        } else if (name === "turno") {
+            setFormData((prev) => ({ ...prev, tipocomision: [prev.tipocomision[0], prev.tipocomision[1], value] }));
+        } else {
+            setFormData({ ...formData, [name]: value });
+        }
     };
 
     const toggleFarmaciaSelection = (id: string) => {
@@ -49,6 +60,7 @@ const CrearCajeroModal: React.FC<CrearCajeroModalProps> = ({ open, onClose }) =>
                     }
                     return acc;
                 }, {} as Record<string, string>),
+                tipocomision: formData.tipocomision,
             };
 
             const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/cajeros`, {
@@ -148,6 +160,29 @@ const CrearCajeroModal: React.FC<CrearCajeroModalProps> = ({ open, onClose }) =>
                             <option value="activo">Activo</option>
                             <option value="inactivo">Inactivo</option>
                         </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Tipo Comisión</label>
+                        <div className="flex flex-wrap gap-2">
+                            {TIPOS_COMISION.map((tipo, idx) => (
+                                <button
+                                    key={tipo}
+                                    type="button"
+                                    onClick={() => {
+                                        setFormData((prev) => {
+                                            const selected = prev.tipocomision.includes(tipo);
+                                            let newTipos = selected
+                                                ? prev.tipocomision.filter((t: string) => t !== tipo)
+                                                : [...prev.tipocomision, tipo];
+                                            return { ...prev, tipocomision: newTipos };
+                                        });
+                                    }}
+                                    className={`px-3 py-1 rounded-full text-sm font-medium shadow-sm transition focus:outline-none ${formData.tipocomision.includes(tipo) ? "bg-green-500 text-white" : "bg-gray-200 text-gray-700"}`}
+                                >
+                                    {tipo}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                     <div>
                         <label htmlFor="farmacias" className="block text-sm font-medium text-gray-700 mb-1">Farmacias</label>

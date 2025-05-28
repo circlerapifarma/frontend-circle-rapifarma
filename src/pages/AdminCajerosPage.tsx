@@ -9,6 +9,10 @@ interface Cajero {
   farmacias: Record<string, string>;
   comision: number;
   estado: string;
+  tipocomision?: string[]; // <-- Cambia a string[]
+  turno?: string;
+  especial?: string;
+  extra?: string;
 }
 
 const AdminCajerosPage: React.FC = () => {
@@ -16,6 +20,8 @@ const AdminCajerosPage: React.FC = () => {
   const [selectedCajero, setSelectedCajero] = useState<Cajero | null>(null);
   const [modalEditarOpen, setModalEditarOpen] = useState(false);
   const [modalCrearOpen, setModalCrearOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [farmaciaFiltro, setFarmaciaFiltro] = useState<string>("");
 
   useEffect(() => {
     const fetchCajeros = async () => {
@@ -29,6 +35,14 @@ const AdminCajerosPage: React.FC = () => {
           farmacias: cajero.FARMACIAS || {},
           comision: cajero.comision || 0, // Default commission
           estado: cajero.estado || "activo", // Default state
+          tipocomision: Array.isArray(cajero.tipocomision)
+            ? cajero.tipocomision
+            : (typeof cajero.tipocomision === "string" && cajero.tipocomision
+                ? [cajero.tipocomision]
+                : []), // <-- Asegura que tipocomision sea un array
+          turno: cajero.turno || "",
+          especial: cajero.especial || "",
+          extra: cajero.extra || "",
         }));
         setCajeros(transformedData);
         console.log("Cajeros transformados:", transformedData);
@@ -47,20 +61,66 @@ const AdminCajerosPage: React.FC = () => {
     setModalCrearOpen(true);
   };
 
+  // Obtener farmacias únicas de todos los cajeros
+  const farmaciasUnicas = Array.from(
+    new Set(
+      cajeros.flatMap((c) => Object.values(c.farmacias || {})).filter(Boolean)
+    )
+  );
+  // Filtrado de cajeros por búsqueda y farmacia
+  const cajerosFiltrados = cajeros.filter((cajero) => {
+    const coincideBusqueda =
+      cajero.nombre.toLowerCase().includes(search.toLowerCase()) ||
+      cajero.id.toLowerCase().includes(search.toLowerCase());
+    const farmaciasArr = Object.values(cajero.farmacias || {});
+    const coincideFarmacia =
+      !farmaciaFiltro || farmaciasArr.includes(farmaciaFiltro);
+    return coincideBusqueda && coincideFarmacia;
+  });
+
   return (
     <div className="max-w-4xl mx-auto py-8 px-4">
       <h1 className="text-2xl font-bold text-blue-800 mb-6 text-center">Administrar Cajeros</h1>
-      <button
-        className="bg-green-500 text-white py-2 px-4 rounded-lg shadow hover:bg-green-600 transition mb-4"
-        onClick={handleCrearCajero}
-      >
-        Crear Nuevo Cajero
-      </button>
-      {cajeros.length === 0 ? (
+      {/* Filtros de búsqueda y farmacia */}
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="Buscar por nombre o ID..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm shadow-sm focus:ring-blue-500"
+        />
+      </div>
+      {/* Chips de filtro por farmacia */}
+      <div className="mb-4 flex flex-wrap gap-2">
+        {farmaciasUnicas.map((f) => (
+          <button
+            key={f}
+            className={`px-3 py-1 rounded-full text-xs font-semibold border transition shadow-sm ${
+              farmaciaFiltro === f
+                ? "bg-blue-500 text-white border-blue-600"
+                : "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+            }`}
+            onClick={() => setFarmaciaFiltro(farmaciaFiltro === f ? "" : f)}
+          >
+            {f}
+          </button>
+        ))}
+        {farmaciaFiltro && (
+          <button
+            className="px-3 py-1 rounded-full text-xs font-semibold border bg-gray-200 text-gray-700 border-gray-300 ml-2"
+            onClick={() => setFarmaciaFiltro("")}
+          >
+            Limpiar filtro
+          </button>
+        )}
+      </div>
+      {/* Lista filtrada de cajeros */}
+      {cajerosFiltrados.length === 0 ? (
         <div className="text-center text-gray-500">No hay cajeros registrados.</div>
       ) : (
         <ul className="divide-y divide-gray-200">
-          {cajeros.map(cajero => (
+          {cajerosFiltrados.map(cajero => (
             <li key={cajero._id} className="py-4 flex justify-between items-center">
               <div>
                 <h3 className="text-lg font-semibold text-gray-800">{cajero.nombre}</h3>
@@ -84,7 +144,14 @@ const AdminCajerosPage: React.FC = () => {
         <EditarCajeroModal
           open={modalEditarOpen}
           onClose={() => setModalEditarOpen(false)}
-          cajero={selectedCajero}
+          cajero={{
+            ...selectedCajero,
+            tipocomision: Array.isArray(selectedCajero.tipocomision)
+              ? selectedCajero.tipocomision
+              : (typeof selectedCajero.tipocomision === "string" && selectedCajero.tipocomision
+                  ? [selectedCajero.tipocomision]
+                  : []),
+          } as any}
         />
       )}
       {modalCrearOpen && (
