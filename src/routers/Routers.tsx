@@ -15,6 +15,7 @@ import ChequeoGastosPage from '@/pages/ChequeoGastosPage';
 import GastosPorUsuarioPage from '@/pages/GastosPorUsuarioPage';
 import AgregarGastos from '@/pages/AgregarGastosPage';
 import AdminCajerosPage from '@/pages/AdminCajerosPage';
+import ComisionesPorTurnoPage from '@/pages/ComisionesPorTurnoPage';
 
 const AppRouter = () => (
     <Routes>
@@ -116,6 +117,14 @@ const AppRouter = () => (
             element={
                 <PermissionRoute permiso="agregar_cuadre">
                     <AdminCajerosPage />
+                </PermissionRoute>
+            }
+        />
+        <Route
+            path="/comisiones"
+            element={
+                <PermissionRoute permiso="agregar_cuadre">
+                    <ComisionesPorTurnoPage />
                 </PermissionRoute>
             }
         />
