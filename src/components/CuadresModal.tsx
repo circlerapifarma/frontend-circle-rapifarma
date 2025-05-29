@@ -17,6 +17,7 @@ interface Cuadre {
   sobranteUsd?: number;
   faltanteUsd?: number;
   estado?: string;
+  tasa?: number;
 }
 
 interface Cajero {
@@ -172,6 +173,7 @@ const CuadresModal: React.FC<CuadresModalProps> = ({ open, onClose, farmaciaId, 
                   <div className="text-sm">Sobrante USD: <b>{c.sobranteUsd}</b></div>
                   <div className="text-sm">Faltante USD: <b>{c.faltanteUsd}</b></div>
                   <div className="text-sm">Estado: <b>{c.estado}</b></div>
+                  <div className="text-sm">Tasa: <b>{c.tasa || 'N/A'}</b></div>
                   {c.puntosVenta && c.puntosVenta.length > 0 && (
                     <div className="text-sm mt-2">
                       <b>Puntos de Venta:</b>

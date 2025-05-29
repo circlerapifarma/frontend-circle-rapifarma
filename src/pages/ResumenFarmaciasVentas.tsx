@@ -165,7 +165,6 @@ const ResumenFarmaciasVentas: React.FC = () => {
                 if (Array.isArray(c.puntosVenta)) {
                     sumaBs += c.puntosVenta.reduce((acc: number, pv: any) => acc + Number(pv.puntoDebito || 0) + Number(pv.puntoCredito || 0), 0);
                 }
-                sumaBs -= Number(c.devolucionesBs || 0);
                 totalBs += sumaBs;
                 const sumaUsd = Number(c.efectivoUsd || 0) + Number(c.zelleUsd || 0);
                 totalUsd += sumaUsd;
@@ -244,6 +243,10 @@ const ResumenFarmaciasVentas: React.FC = () => {
         if (cuadresFarmacia.length) {
             cuadresFarmacia.forEach((c: any) => {
                 if (!c.dia || c.estado !== "verified") return;
+
+                // Aplicar filtros de fecha
+                if ((fechaInicio && c.dia < fechaInicio) || (fechaFin && c.dia > fechaFin)) return;
+
                 const [anio, mesDb] = c.dia.split("-");
                 if (anio === anioSel && mesDb === mesSel) {
                     sumaRecargaBs += Number(c.recargaBs || 0);

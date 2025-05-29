@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Loader2, AlertTriangle, DollarSign, PlusCircle, MinusCircle } from "lucide-react";
+import { Loader2, AlertTriangle, DollarSign } from "lucide-react";
 import { motion } from "framer-motion";
 
 const containerVariants = {
@@ -27,16 +27,18 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
   const [totalFaltantes, setTotalFaltantes] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [verifiedData, setVerifiedData] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchTotalGeneral = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/cuadres/all`);
         const data = await response.json();
-        const verifiedData = data.filter((cuadre: any) => cuadre.estado === "verified");
-        const total = verifiedData.reduce((acc: number, cuadre: any) => acc + cuadre.totalGeneralUsd, 0);
-        const sobrantes = verifiedData.reduce((acc: number, cuadre: any) => acc + (cuadre.sobranteUsd || 0), 0);
-        const faltantes = verifiedData.reduce((acc: number, cuadre: any) => acc + (cuadre.faltanteUsd || 0), 0);
+        const verified = data.filter((cuadre: any) => cuadre.estado === "verified");
+        setVerifiedData(verified);
+        const total = verified.reduce((acc: number, cuadre: any) => acc + cuadre.totalGeneralUsd, 0);
+        const sobrantes = verified.reduce((acc: number, cuadre: any) => acc + (cuadre.sobranteUsd || 0), 0);
+        const faltantes = verified.reduce((acc: number, cuadre: any) => acc + (cuadre.faltanteUsd || 0), 0);
         setTotalGeneral(total);
         setTotalSobrantes(sobrantes);
         setTotalFaltantes(faltantes);
@@ -49,6 +51,13 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
 
     fetchTotalGeneral();
   }, []);
+
+  const totalEfectivoUsd = verifiedData.reduce((acc: number, cuadre: any) => acc + (cuadre.efectivoUsd || 0), 0);
+  const totalZelleUsd = verifiedData.reduce((acc: number, cuadre: any) => acc + (cuadre.zelleUsd || 0), 0);
+  const totalPuntosVentaDebitoBs = verifiedData.reduce((acc: number, cuadre: any) => acc + cuadre.puntosVenta.reduce((sum: number, punto: any) => sum + (punto.puntoDebito || 0), 0), 0);
+  const totalPuntosVentaCreditoBs = verifiedData.reduce((acc: number, cuadre: any) => acc + cuadre.puntosVenta.reduce((sum: number, punto: any) => sum + (punto.puntoCredito || 0), 0), 0);
+  const totalPagomovilBs = verifiedData.reduce((acc: number, cuadre: any) => acc + (cuadre.pagomovilBs || 0), 0);
+  const totalEfectivoBs = verifiedData.reduce((acc: number, cuadre: any) => acc + (cuadre.efectivoBs || 0), 0);
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center px-4 py-12">
@@ -65,7 +74,7 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
           </div>
         ) : (
           <motion.div
-            className="grid md:grid-cols-3 gap-6"
+            className="grid md:grid-rows-3 gap-6"
             variants={containerVariants}
             initial="hidden"
             animate="visible"
@@ -74,42 +83,27 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
             <motion.div
               variants={cardVariants}
               whileHover={{ scale: 1.03 }}
-              className="rounded-xl border border-gray-200 bg-blue-50 p-6 space-y-3 shadow-sm"
+              className="rounded-xl border border-gray-200 bg-blue-50 p-6 space-y-3 shadow-sm flex flex-col items-center"
             >
               <div className="flex justify-center text-blue-400">
                 <DollarSign className="w-7 h-7" />
               </div>
-              <h2 className="text-lg font-semibold text-gray-700">Total General (USD)</h2>
-              <p className="text-2xl font-bold text-gray-900">${totalGeneral?.toFixed(2)}</p>
-            </motion.div>
-
-            {/* CARD SOBRANTES */}
-            <motion.div
-              variants={cardVariants}
-              whileHover={{ scale: 1.03 }}
-              className="rounded-xl border border-gray-200 bg-green-50 p-6 space-y-3 shadow-sm"
-            >
-              <div className="flex justify-center text-green-400">
-                <PlusCircle className="w-7 h-7" />
-              </div>
-              <h2 className="text-lg font-semibold text-gray-700">Total Sobrantes (USD)</h2>
-              <p className="text-2xl font-bold text-gray-900">${totalSobrantes?.toFixed(2)}</p>
-            </motion.div>
-
-            {/* CARD FALTANTES */}
-            <motion.div
-              variants={cardVariants}
-              whileHover={{ scale: 1.03 }}
-              className="rounded-xl border border-gray-200 bg-red-50 p-6 space-y-3 shadow-sm"
-            >
-              <div className="flex justify-center text-red-400">
-                <MinusCircle className="w-7 h-7" />
-              </div>
-              <h2 className="text-lg font-semibold text-gray-700">Total Faltantes (USD)</h2>
-              <p className="text-2xl font-bold text-gray-900">${totalFaltantes?.toFixed(2)}</p>
+              <h2 className="text-lg font-semibold text-gray-700 text-center">Total General (USD)</h2>
+              <p className="text-2xl font-bold text-gray-900 text-center">${totalGeneral?.toFixed(2)}</p>
+              <p className="text-sm text-gray-600 text-center">Efectivo: ${totalEfectivoUsd.toFixed(2)}</p>
+              <p className="text-sm text-gray-600 text-center">Zelle: ${totalZelleUsd.toFixed(2)}</p>
+              <p className="text-sm text-gray-600 text-center">Puntos de Venta (Débito Bs): {totalPuntosVentaDebitoBs.toFixed(2)}</p>
+              <p className="text-sm text-gray-600 text-center">Puntos de Venta (Crédito Bs): {totalPuntosVentaCreditoBs.toFixed(2)}</p>
+              <p className="text-sm text-gray-600 text-center">Pago Móvil (Bs): {totalPagomovilBs.toFixed(2)}</p>
+              <p className="text-sm text-gray-600 text-center">Efectivo (Bs): {totalEfectivoBs.toFixed(2)}</p>
+              <p className="text-sm text-green-600 text-center">Sobrantes: ${totalSobrantes?.toFixed(2)}</p>
+              <p className="text-sm text-red-600 text-center">Faltantes: ${totalFaltantes?.toFixed(2)}</p>
             </motion.div>
           </motion.div>
         )}
+
+        {/* DETALLE DE CUADRES VERIFICADOS */}
+        {/* Eliminado para mostrar solo totales */}
       </div>
     </div>
   );

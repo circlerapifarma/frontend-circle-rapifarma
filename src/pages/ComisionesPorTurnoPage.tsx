@@ -189,13 +189,14 @@ const ComisionesPorTurnoPage: React.FC = () => {
                   {lista.map((item, index) => (
                     <li key={index} className="py-2 flex flex-col sm:flex-row sm:justify-between text-sm text-gray-700 gap-2">
                       <span>Turno: <strong>{item.turno}</strong></span>
-                      <span>Comisión: <strong>${Number(item.comision ?? 0).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
                       <span>Total vendido: <strong>${Number(item.totalVentas ?? 0).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
-                      <span>Sobrante: <strong className="text-green-700">${Number(item.sobrante ?? 0).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
+                      <span>
+                        Total vendido menos faltante: <strong>
+                          ${Number((item.totalVentas ?? 0) - (item.faltante ?? 0)).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </strong>
+                      </span>
                       <span>Faltante: <strong className="text-red-700">${Number(item.faltante ?? 0).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
-                      {item.farmacias && (
-                        <span className="text-xs text-blue-600 mt-1 sm:mt-0">Farmacias: {Array.isArray(item.farmacias) ? item.farmacias.join(", ") : Object.values(item.farmacias).join(", ")}</span>
-                      )}
+                      <span>Comisión: <strong>${Number(item.comision ?? 0).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
                     </li>
                   ))}
                   {/* Fila de totales por cajero */}
