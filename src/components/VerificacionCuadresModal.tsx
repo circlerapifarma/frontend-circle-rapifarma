@@ -112,6 +112,7 @@ const VerificacionCuadresModal: React.FC<Props> = ({ open, onClose, farmaciaId, 
                   <div><b>Diferencia USD:</b> {c.diferenciaUsd}</div>
                   <div><b>Sobrante USD:</b> <span className="text-green-700 font-bold">{c.sobranteUsd}</span></div>
                   <div><b>Faltante USD:</b> <span className="text-red-700 font-bold">{c.faltanteUsd}</span></div>
+                  <div><b>Devoluciones:</b> <span className="font-bold text-blue-700">{c.devolucionesBs}</span></div>
                   <div><b>Estado actual:</b> <span className="font-bold">{c.estado}</span></div>
                   <div><b>Eliminado:</b> <span className="font-semibold">{c.delete ? 'Sí' : 'No'}</span></div>
                 </div>
