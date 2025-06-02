@@ -14,6 +14,9 @@ const allLinks = [
   { to: '/cajeros', label: 'Vendedores', permiso: 'acceso_admin' },
   { to: '/comisiones', label: 'Comisiones Por Turno', permiso: 'acceso_admin' },
   { to: '/comisionesgenerales', label: 'Comisiones Generales', permiso: 'acceso_admin' },
+  { to: '/cuentasporpagar', label: 'Cuentas por Pagar', permiso: 'acceso_admin' },
+  { to: '/vercuentasporpagar', label: 'Ver Cuentas por Pagar', permiso: 'acceso_admin' },
+  { to: '/vergastos', label: 'Ver Gastos', permiso: 'acceso_admin' },
 ];
 
 const Navbar = () => {
@@ -56,48 +59,67 @@ const Navbar = () => {
           </svg>
         </button>
 
-        <div className="hidden sm:flex items-center gap-6">
-          {links.map(link => (
-            <Link
-              key={link.to}
-              to={link.to}
-              className={`text-sm transition-all duration-150 pb-1 ${
-                location.pathname === link.to
-                  ? 'text-blue-600 border-b-2 border-blue-600 font-semibold'
-                  : 'text-gray-600 hover:text-blue-600 hover:border-b-2 hover:border-blue-400'
-              }`}
-            >
-              {link.label}
-            </Link>
-          ))}
-          {usuario && (
+        <div className="hidden sm:flex items-center gap-6 relative">
+          <div className="relative group">
             <button
-              onClick={() => {
-                localStorage.removeItem('token');
-                localStorage.removeItem('usuario');
-                window.location.href = '/login';
-              }}
-              className="ml-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm transition"
+              className="flex items-center gap-2 px-3 py-2 rounded hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-200 text-sm font-semibold text-blue-700"
+              tabIndex={0}
             >
-              Cerrar sesión
+              Menú
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
             </button>
-          )}
+            <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded shadow-lg z-50 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-events-none group-hover:pointer-events-auto group-focus-within:pointer-events-auto transition-opacity duration-150">
+              <ul className="py-2 max-h-96 overflow-y-auto">
+                {links.map(link => (
+                  <li key={link.to}>
+                    <Link
+                      to={link.to}
+                      className={`block px-4 py-2 text-sm whitespace-nowrap transition-all duration-150 ${
+                        location.pathname === link.to
+                          ? 'text-blue-600 font-semibold bg-blue-50'
+                          : 'text-gray-700 hover:text-blue-700 hover:bg-blue-50'
+                      }`}
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+                {usuario && (
+                  <li>
+                    <button
+                      onClick={() => {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('usuario');
+                        window.location.href = '/login';
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded"
+                    >
+                      Cerrar sesión
+                    </button>
+                  </li>
+                )}
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Menú móvil */}
       {open && (
-        <div className="sm:hidden mt-4 flex flex-col gap-3">
+        <div className="sm:hidden mt-4 flex flex-row flex-wrap gap-2 max-h-[70vh] overflow-y-auto border rounded shadow bg-white p-2">
           {links.map(link => (
             <Link
               key={link.to}
               to={link.to}
               onClick={() => setOpen(false)}
-              className={`text-sm transition-all duration-150 ${
+              className={`px-3 py-2 text-sm whitespace-nowrap transition-all duration-150 rounded ${
                 location.pathname === link.to
-                  ? 'text-blue-600 font-semibold'
-                  : 'text-gray-600 hover:text-blue-600'
+                  ? 'text-blue-600 font-semibold bg-blue-50'
+                  : 'text-gray-700 hover:text-blue-700 hover:bg-blue-50'
               }`}
+              style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis' }}
             >
               {link.label}
             </Link>
@@ -109,7 +131,7 @@ const Navbar = () => {
                 localStorage.removeItem('usuario');
                 window.location.href = '/login';
               }}
-              className="mt-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm transition"
+              className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded"
             >
               Cerrar sesión
             </button>

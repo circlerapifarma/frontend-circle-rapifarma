@@ -17,6 +17,9 @@ import AgregarGastos from '@/pages/AgregarGastosPage';
 import AdminCajerosPage from '@/pages/AdminCajerosPage';
 import ComisionesPorTurnoPage from '@/pages/ComisionesPorTurnoPage';
 import ComisionesEspecialesPage from '@/pages/ComisionesEspecialesPage';
+import CuentasPorPagarPage from '@/pages/CuentasPorPagarPage';
+import VisualizarCuentasPorPagarPage from '@/pages/VisualizarCuentasPorPagarPage';
+import VisualizarGastosFarmaciaPage from '@/pages/VisualizarGastosFarmaciaPage';
 
 const AppRouter = () => (
     <Routes>
@@ -134,6 +137,30 @@ const AppRouter = () => (
             element={
                 <PermissionRoute permiso="acceso_admin">
                     <ComisionesEspecialesPage />
+                </PermissionRoute>
+            }
+        />
+        <Route
+            path="/cuentasporpagar"
+            element={
+                <PermissionRoute permiso="acceso_admin">
+                    <CuentasPorPagarPage />
+                </PermissionRoute>
+            }
+        />
+        <Route
+            path="/vercuentasporpagar"
+            element={
+                <PermissionRoute permiso="acceso_admin">
+                    <VisualizarCuentasPorPagarPage />
+                </PermissionRoute>
+            }
+        />
+        <Route
+            path="/vergastos"
+            element={
+                <PermissionRoute permiso="acceso_admin">
+                    <VisualizarGastosFarmaciaPage />
                 </PermissionRoute>
             }
         />

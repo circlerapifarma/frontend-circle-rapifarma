@@ -210,11 +210,11 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Caja #</label>
-                            <input type="number" step="any" value={cajaNumero} onChange={e => setCajaNumero(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={1} />
+                            <input type="number" step="any" value={cajaNumero} onChange={e => setCajaNumero(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={1} onWheel={e => e.currentTarget.blur()} />
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Tasa</label>
-                            <input type="number" step="any" value={tasa} onChange={e => setTasa(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0.01} />
+                            <input type="number" step="any" value={tasa} onChange={e => setTasa(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0.01} onWheel={e => e.currentTarget.blur()} />
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Turno</label>
@@ -245,19 +245,19 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Total Caja Sistema Bs</label>
-                            <input type="number" step="any" value={totalCajaSistemaBs} onChange={e => setTotalCajaSistemaBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
+                            <input type="number" step="any" value={totalCajaSistemaBs} onChange={e => setTotalCajaSistemaBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} onWheel={e => e.currentTarget.blur()} />
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Devoluciones Bs (solo visual)</label>
-                            <input type="number" step="any" value={devolucionesBs} onChange={e => setDevolucionesBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
+                            <input type="number" step="any" value={devolucionesBs} onChange={e => setDevolucionesBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} onWheel={e => e.currentTarget.blur()} />
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Recarga Bs</label>
-                            <input type="number" step="any" value={recargaBs} onChange={e => setRecargaBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
+                            <input type="number" step="any" value={recargaBs} onChange={e => setRecargaBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} onWheel={e => e.currentTarget.blur()} />
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Pago Móvil Bs</label>
-                            <input type="number" step="any" value={pagomovilBs} onChange={e => setPagomovilBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
+                            <input type="number" step="any" value={pagomovilBs} onChange={e => setPagomovilBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} onWheel={e => e.currentTarget.blur()} />
                         </div>
                         <div className="md:col-span-2">
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Puntos de Venta</label>
@@ -306,6 +306,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                                                 className="border rounded-lg p-2 w-full"
                                                 min={0}
                                                 required
+                                                onWheel={e => e.currentTarget.blur()}
                                             />
                                         </div>
                                         <div className="flex-1 flex flex-col min-w-[120px]">
@@ -323,6 +324,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                                                 className="border rounded-lg p-2 w-full"
                                                 min={0}
                                                 required
+                                                onWheel={e => e.currentTarget.blur()}
                                             />
                                         </div>
                                     </div>
@@ -338,7 +340,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Efectivo Bs</label>
-                            <input type="number" step="any" value={efectivoBs} onChange={e => setEfectivoBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
+                            <input type="number" step="any" value={efectivoBs} onChange={e => setEfectivoBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} onWheel={e => e.currentTarget.blur()} />
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Vales $</label>
@@ -349,6 +351,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                                 onChange={e => handleNumericInput(e.target.value, setValesUsd)}
                                 className="w-full border rounded-lg p-2"
                                 min={0}
+                                onWheel={e => e.currentTarget.blur()}
                             /> {/* Cambiado de valesBs a valesUsd */}
                         </div>
                         <div>
@@ -380,12 +383,12 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Efectivo $</label>
-                            <input type="number" step="any" value={efectivoUsd} onChange={e => setEfectivoUsd(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
+                            <input type="number" step="any" value={efectivoUsd} onChange={e => setEfectivoUsd(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} onWheel={e => e.currentTarget.blur()} />
                         </div>
 
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Zelle $</label>
-                            <input type="number" step="any" value={zelleUsd} onChange={e => setZelleUsd(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} />
+                            <input type="number" step="any" value={zelleUsd} onChange={e => setZelleUsd(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} onWheel={e => e.currentTarget.blur()} />
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Total General $ (calculado)</label>

@@ -284,7 +284,6 @@ const ResumenFarmaciasPorDia: React.FC = () => {
                 nombre={farm.nombre}
                 totalVentas={ventas[farm.id]?.totalVentas || 0}
                 totalBs={ventas[farm.id]?.totalBs || 0}
-                totalBsEnUsd={ventas[farm.id]?.totalBsEnUsd || 0}
                 totalUsd={ventas[farm.id]?.totalUsd || 0}
                 efectivoUsd={ventas[farm.id]?.efectivoUsd || 0}
                 zelleUsd={ventas[farm.id]?.zelleUsd || 0}
@@ -293,7 +292,9 @@ const ResumenFarmaciasPorDia: React.FC = () => {
                 totalGeneralSinRecargas={ventas[farm.id]?.totalGeneralSinRecargas || 0}
                 valesUsd={ventas[farm.id]?.valesUsd || 0}
                 top={idx < 3}
-                localidadId={farm.id} // <-- Se agrega la propiedad requerida
+                localidadId={farm.id}
+                fechaInicio={fechaInicio}
+                fechaFin={fechaFin}
               />
               <button
                 className="mt-2 text-blue-700 underline text-sm"

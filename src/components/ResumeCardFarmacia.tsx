@@ -1,35 +1,37 @@
 import React, { useEffect, useState } from "react";
 
+// Considera mover estas interfaces a un archivo de tipos compartido si se usan en varios lugares
 interface ResumeCardFarmaciaProps {
   nombre: string;
-  totalVentas: number; // Monto real de la venta (totalGeneralUsd)
-  totalBs: number;     // Total en Bs (sin conversión)
-  totalBsEnUsd: number; // Total Bs convertido a USD
-  efectivoUsd: number;  // Solo USD efectivo
-  zelleUsd: number;     // Solo USD zelle
-  totalUsd: number;    // Total en USD directo (efectivoUsd + zelleUsd)
-  faltantes: number;   // Suma de diferencias negativas (faltantes)
-  sobrantes: number;   // Suma de diferencias positivas (sobrantes)
-  top?: boolean;       // Si es top 3
-  totalGeneralSinRecargas: number; // Total General sin incluir recargas
-  valesUsd: number;    // Agregar vales en USD
-  pendienteVerificar?: number; // Nuevo campo: monto pendiente por verificar
-  localidadId: string; // Nuevo campo para identificar la farmacia
+  totalVentas?: number; // Monto real de la venta (totalGeneralUsd)
+  totalBs?: number;     // Total en Bs (sin conversión)
+  efectivoUsd?: number; // Solo USD efectivo
+  zelleUsd?: number;    // Solo USD zelle
+  totalUsd?: number;    // Total en USD directo (efectivoUsd + zelleUsd)
+  faltantes?: number;   // Suma de diferencias negativas (faltantes)
+  sobrantes?: number;   // Suma de diferencias positivas (sobrantes)
+  top?: boolean;        // Si es top 3
+  totalGeneralSinRecargas?: number; // Total General sin incluir recargas
+  valesUsd?: number;    // Vales en USD
+  pendienteVerificar?: number; // Monto pendiente por verificar
+  localidadId: string;
   fechaInicio?: string;
   fechaFin?: string;
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // Reutilizar la constante
+
 const ResumeCardFarmacia: React.FC<ResumeCardFarmaciaProps> = ({
   nombre,
-  totalVentas = 0, // Valor predeterminado
-  totalBs = 0, // Valor predeterminado
-  efectivoUsd = 0, // Valor predeterminado
-  zelleUsd = 0, // Valor predeterminado
-  totalUsd = 0, // Valor predeterminado
-  faltantes = 0, // Valor predeterminado
-  sobrantes = 0, // Valor predeterminado
-  totalGeneralSinRecargas = 0, // Valor predeterminado
-  valesUsd = 0, // Valor predeterminado
+  totalVentas = 0,
+  totalBs = 0,
+  efectivoUsd = 0,
+  zelleUsd = 0,
+  totalUsd = 0,
+  faltantes = 0,
+  sobrantes = 0,
+  totalGeneralSinRecargas = 0,
+  valesUsd = 0,
   top,
   pendienteVerificar = 0,
   localidadId,
@@ -37,76 +39,187 @@ const ResumeCardFarmacia: React.FC<ResumeCardFarmaciaProps> = ({
   fechaFin,
 }) => {
   const [gastos, setGastos] = useState(0);
+  const [cuentasPorPagarActivas, setCuentasPorPagarActivas] = useState(0);
+  const [loadingGastosCuentas, setLoadingGastosCuentas] = useState(true);
+  const [errorGastosCuentas, setErrorGastosCuentas] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchGastos = async () => {
+    const fetchAdditionalData = async () => {
+      setLoadingGastosCuentas(true);
+      setErrorGastosCuentas(null);
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/gastos`);
-        if (!res.ok) {
-          throw new Error("Error al obtener los gastos");
+        // Fetch Gastos
+        const resGastos = await fetch(`${API_BASE_URL}/gastos`);
+        if (!resGastos.ok) {
+          throw new Error("Error al obtener los gastos.");
         }
-        const data = await res.json();
-        // Filtrar por localidad, estado y fechas si están presentes
-        const gastosFiltrados = Array.isArray(data)
-          ? data.filter((g: any) =>
+        const dataGastos = await resGastos.json();
+        const gastosFiltrados = Array.isArray(dataGastos)
+          ? dataGastos.filter((g: any) =>
               g.localidad === localidadId &&
               g.estado === 'verified' &&
-              (!fechaInicio || g.fecha >= fechaInicio) &&
-              (!fechaFin || g.fecha <= fechaFin)
+              (!fechaInicio || new Date(g.fecha) >= new Date(fechaInicio)) && // Comparación de fechas
+              (!fechaFin || new Date(g.fecha) <= new Date(fechaFin))
             )
           : [];
         const totalGastos = gastosFiltrados.reduce((acc: number, g: any) => acc + Number(g.monto || 0), 0);
         setGastos(Math.max(0, totalGastos));
-      } catch (error) {
-        console.error("Error al obtener los gastos:", error);
+
+        // Fetch Cuentas por Pagar
+        const token = localStorage.getItem("token");
+        if (!token) {
+          console.warn("No hay token de autenticación.");
+          // No lanzamos un error aquí, solo no intentamos la llamada si no hay token.
+          // O podrías establecer un error específico si esta es una falla crítica.
+        } else {
+          const resCuentas = await fetch(`${API_BASE_URL}/cuentas-por-pagar`, {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          if (!resCuentas.ok) {
+            throw new Error("Error al obtener cuentas por pagar.");
+          }
+          const dataCuentas = await resCuentas.json();
+          const cuentasFiltradas = Array.isArray(dataCuentas)
+            ? dataCuentas.filter((c: any) =>
+                c.farmacia === localidadId &&
+                c.estatus === 'activa' &&
+                (!fechaInicio || new Date(c.fechaEmision) >= new Date(fechaInicio)) && // Comparación de fechas
+                (!fechaFin || new Date(c.fechaEmision) <= new Date(fechaFin))
+              )
+            : [];
+          const totalCuentas = cuentasFiltradas.reduce((acc: number, c: any) => acc + Number(c.monto || 0), 0);
+          setCuentasPorPagarActivas(Math.max(0, totalCuentas));
+        }
+      } catch (error: any) {
+        console.error("Error al obtener datos adicionales:", error);
+        setErrorGastosCuentas(error.message || "Error desconocido al cargar datos adicionales.");
+      } finally {
+        setLoadingGastosCuentas(false);
       }
     };
 
-    fetchGastos();
-  }, [localidadId, fechaInicio, fechaFin]);
+    fetchAdditionalData();
+  }, [localidadId, fechaInicio, fechaFin]); // Dependencias para re-fetch cuando cambian
+
+  // Función auxiliar para formatear moneda
+  const formatCurrency = (amount: number) => {
+    return amount.toLocaleString("es-VE", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  };
+
+  const totalConGastos = totalVentas - gastos;
+  const showMissing = faltantes > 0 && faltantes !== null; // Asegúrate que no sea null
+  const showSurplus = sobrantes > 0 && sobrantes !== null; // Asegúrate que no sea null
 
   return (
-    <div className={`bg-white rounded-xl shadow-md p-6 border flex flex-col items-center transition hover:shadow-lg relative ${top ? 'border-yellow-400 ring-2 ring-yellow-300' : 'border-blue-100'}`}>
-      {/* Chip solo si hay pendiente, sin la palabra 'Ref' */}
-      {pendienteVerificar > 0 && (
-        <div className="absolute top-2 left-4 flex flex-col gap-1 z-10">
-          <div className="bg-yellow-100 text-yellow-800 text-[10px] font-bold px-2 py-0.5 rounded-full shadow border border-yellow-300 min-w-[90px] text-center">
-            Pendiente: ${pendienteVerificar.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </div>
-          <div className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-full shadow border border-blue-300 flex items-center gap-1 min-w-[90px] justify-center">
-            <span className="material-icons text-blue-400 text-xs">info</span>
-            Total: ${(totalVentas + pendienteVerificar).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </div>
-        </div>
-      )}
+    <div
+      className={`
+        bg-white rounded-2xl shadow-xl p-6 border-2 flex flex-col items-center
+        transition-all duration-300 transform hover:scale-[1.02] hover:shadow-2xl relative
+        ${top ? 'border-yellow-500 ring-4 ring-yellow-200' : 'border-blue-200'}
+      `}
+    >
+      {/* Indicador TOP (si aplica) */}
       {top && (
-        <div className="flex items-center mb-2">
-          <span className="material-icons text-yellow-500 mr-1">emoji_events</span>
-          <span className="text-yellow-600 font-bold text-sm">TOP</span>
+        <div className="absolute -top-3 -left-3 bg-yellow-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg transform rotate-[-5deg] z-10">
+          🏆 TOP VENTAS
         </div>
       )}
-      <h3 className={`text-lg font-bold mb-2 text-center ${top ? 'text-yellow-700' : 'text-blue-700'}`}>{nombre}</h3>
-      <div className={`text-2xl font-extrabold mb-1 ${top ? 'text-yellow-700' : 'text-green-700'}`}>${totalVentas.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-      <div className="flex flex-col gap-1 text-sm text-gray-700 w-full mt-2">
-        <div className="flex justify-between w-full"><span>Total General sin Recargas:</span><span>${totalGeneralSinRecargas.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
-        <div className="flex justify-between w-full"><span>Solo Bs:</span><span>{totalBs.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs</span></div>
-        <div className="flex justify-between w-full"><span>Solo USD Efectivo:</span><span>${efectivoUsd.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
-        <div className="flex justify-between w-full"><span>Solo USD Zelle:</span><span>${zelleUsd.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
-        <div className="flex justify-between w-full"><span>Solo USD:</span><span>${totalUsd.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
-        <div className="flex justify-between w-full"><span>Vales USD:</span><span>${valesUsd.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
-        <div className="flex justify-between w-full"><span>Gastos:</span><span className="text-red-600">${gastos.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
-        <div className="flex justify-between w-full font-bold"><span>Total con Gastos:</span><span>$ {(totalVentas - gastos).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
-        {faltantes > 0 && (
-          <div className="flex justify-between w-full"><span>Faltantes:</span><span className="text-red-600">${faltantes.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+
+      {/* Chip de Pendiente de Verificar (si aplica) */}
+      {pendienteVerificar > 0 && (
+        <div className="absolute top-4 right-4 flex flex-col items-end gap-1 z-10">
+          <div className="bg-yellow-100 text-yellow-800 text-xs font-bold px-3 py-1 rounded-full shadow border border-yellow-300">
+            ⏳ Pendiente: {formatCurrency(pendienteVerificar)}
+          </div>
+          <div className="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full shadow border border-blue-300">
+            Total Estimado: {formatCurrency(totalVentas + pendienteVerificar)}
+          </div>
+        </div>
+      )}
+
+      {/* Nombre de la Farmacia */}
+      <h3 className={`text-2xl font-extrabold mb-3 text-center ${top ? 'text-yellow-800' : 'text-gray-900'} leading-tight`}>
+        {nombre}
+      </h3>
+
+      {/* Total de Ventas Principal */}
+      <div className={`text-4xl font-extrabold mb-4 ${top ? 'text-yellow-600' : 'text-green-600'} text-center`}>
+        {formatCurrency(totalVentas)}
+      </div>
+
+      {/* Sección de Métricas Detalladas */}
+      <div className="flex flex-col gap-2 text-base text-gray-700 w-full mt-3">
+        <div className="flex justify-between items-center py-1 border-b border-gray-100">
+          <span className="flex items-center gap-2"><i className="fas fa-dollar-sign text-green-500"></i> Total sin Recargas:</span>
+          <span className="font-semibold">{formatCurrency(totalGeneralSinRecargas)}</span>
+        </div>
+        <div className="flex justify-between items-center py-1 border-b border-gray-100">
+          <span className="flex items-center gap-2"><i className="fas fa-money-bill-wave text-blue-500"></i> Solo USD Efectivo:</span>
+          <span className="font-semibold">{formatCurrency(efectivoUsd)}</span>
+        </div>
+        <div className="flex justify-between items-center py-1 border-b border-gray-100">
+          <span className="flex items-center gap-2"><i className="fas fa-university text-blue-500"></i> Solo USD Zelle:</span>
+          <span className="font-semibold">{formatCurrency(zelleUsd)}</span>
+        </div>
+        <div className="flex justify-between items-center py-1 border-b border-gray-100">
+          <span className="flex items-center gap-2"><i className="fas fa-money-check-alt text-blue-500"></i> Solo USD (Directo):</span>
+          <span className="font-semibold">{formatCurrency(totalUsd)}</span>
+        </div>
+        <div className="flex justify-between items-center py-1 border-b border-gray-100">
+          <span className="flex items-center gap-2"><i className="fas fa-receipt text-indigo-500"></i> Vales USD:</span>
+          <span className="font-semibold">{formatCurrency(valesUsd)}</span>
+        </div>
+        <div className="flex justify-between items-center py-1 border-b border-gray-100">
+          <span className="flex items-center gap-2"><i className="fas fa-coins text-yellow-600"></i> Solo Bs:</span>
+          <span className="font-semibold">{totalBs.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs</span>
+        </div>
+
+        {loadingGastosCuentas ? (
+          <div className="text-center text-sm text-gray-500 py-2">Cargando detalles...</div>
+        ) : errorGastosCuentas ? (
+          <div className="text-center text-sm text-red-500 py-2">Error al cargar: {errorGastosCuentas}</div>
+        ) : (
+          <>
+            <div className="flex justify-between items-center py-1 border-b border-gray-100">
+              <span className="flex items-center gap-2"><i className="fas fa-minus-circle text-red-600"></i> Gastos Verificados:</span>
+              <span className="font-semibold text-red-600">{formatCurrency(gastos)}</span>
+            </div>
+            <div className="flex justify-between items-center py-1 border-b border-gray-100">
+              <span className="flex items-center gap-2"><i className="fas fa-hand-holding-usd text-orange-600"></i> Cuentas por Pagar:</span>
+              <span className="font-semibold text-orange-600">{formatCurrency(cuentasPorPagarActivas)}</span>
+            </div>
+          </>
         )}
-        {sobrantes > 0 && (
-          <div className="flex justify-between w-full"><span>Sobrante:</span><span className="text-green-600">${sobrantes.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+
+        {/* Sección de Resumen final con Totales Ajustados */}
+        <div className="flex justify-between items-center py-2 mt-2 border-t-2 border-gray-300 font-bold text-lg">
+          <span className="flex items-center gap-2"><i className="fas fa-balance-scale text-purple-600"></i> Venta Neta:</span>
+          <span className="text-purple-700">{formatCurrency(totalConGastos)}</span>
+        </div>
+
+        {/* Faltantes y Sobrantes (condicionales) */}
+        {showMissing && (
+          <div className="flex justify-between items-center py-1 bg-red-50 rounded-md px-3">
+            <span className="flex items-center gap-2 text-red-700"><i className="fas fa-exclamation-triangle"></i> Faltantes:</span>
+            <span className="font-bold text-red-700">{formatCurrency(faltantes)}</span>
+          </div>
+        )}
+        {showSurplus && (
+          <div className="flex justify-between items-center py-1 bg-green-50 rounded-md px-3">
+            <span className="flex items-center gap-2 text-green-700"><i className="fas fa-check-circle"></i> Sobrante:</span>
+            <span className="font-bold text-green-700">{formatCurrency(sobrantes)}</span>
+          </div>
         )}
       </div>
-      <span className="text-xs text-gray-500 mt-2">Venta mensual</span>
+
+      <span className="text-xs text-gray-500 mt-4 italic">Resumen de ventas del período</span>
     </div>
   );
 };
 
 export default ResumeCardFarmacia;
-// Si quieres mostrar el estado general de los cuadres, puedes agregarlo aquí. Si no, omite este cambio.
