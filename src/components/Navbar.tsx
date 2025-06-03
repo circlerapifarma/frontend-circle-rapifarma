@@ -199,8 +199,8 @@ const Navbar = () => {
                 <div className="p-4 custom-scrollbar">
                     {accessibleLinks.map(category => (
                         <div key={category.category} className="mb-4 last:mb-0">
-                            <h3 className="text-sm font-bold uppercase text-gray-700 mb-2 flex items-center gap-2">
-                                {category.icon && <category.icon className="w-4 h-4 text-gray-700" />}
+                            <h3 className="text-sm font-bold uppercase text-gray-600 mb-2 flex items-center gap-2">
+                                {category.icon && <category.icon className="w-4 h-4" />}
                                 {category.category}
                             </h3>
                             <ul className="space-y-1">
