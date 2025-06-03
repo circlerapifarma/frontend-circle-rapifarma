@@ -118,7 +118,7 @@ const Navbar = () => {
                 {/* Desktop Menu (Dropdown) */}
                 <div className="hidden sm:flex items-center gap-6 relative" ref={dropdownRef}>
                     <button
-                        className="flex items-center gap-2 px-4 py-2 rounded-full text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all duration-200 text-base font-semibold"
+                        className="flex items-center gap-2 px-4 py-2 rounded-full text-black transition-all duration-200 text-base font-semibold"
                         onClick={() => setIsDropdownOpen(prev => !prev)}
                         aria-expanded={isDropdownOpen}
                     >
