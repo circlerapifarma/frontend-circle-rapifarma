@@ -1,49 +1,153 @@
 import React from 'react';
+import { motion } from 'framer-motion';
+// Import icons from Lucide React for a modern look
+import { Store, DollarSign, BarChart2, Settings, Users, HelpCircle, LayoutDashboard, PlusCircle, CreditCard, ClipboardList } from 'lucide-react';
+
+// Animation variants for Framer Motion
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1, // Slight delay for each card to appear
+        },
+    },
+};
+
+const cardVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+        y: 0,
+        opacity: 1,
+        transition: {
+            type: "spring",
+            stiffness: 100,
+            damping: 10,
+        },
+    },
+    hover: {
+        scale: 1.05,
+        boxShadow: "0 15px 30px rgba(0, 0, 0, 0.2)",
+        transition: {
+            duration: 0.2,
+        },
+    }
+};
+
+interface AdminCardProps {
+    icon: React.ElementType; // Lucide React component
+    title: string;
+    description: string;
+    color: string; // Tailwind CSS color class for icon and border
+    // onClick?: () => void; // Optional: if cards are clickable
+}
+
+const AdminCard: React.FC<AdminCardProps> = ({ icon: Icon, title, description, color }) => {
+    return (
+        <motion.div
+            className={`bg-white rounded-2xl shadow-lg p-8 flex flex-col items-center text-center border-b-4 ${color} transition-all duration-300`}
+            variants={cardVariants}
+            whileHover="hover"
+            // onClick={onClick} // Uncomment if cards are clickable
+            // style={{ cursor: onClick ? 'pointer' : 'default' }} // Add pointer cursor if clickable
+        >
+            <div className={`rounded-full p-4 mb-4 bg-${color.replace('border-b-4 border-', '').replace('-500', '')}-100`}>
+                <Icon className={`w-10 h-10 text-${color.replace('border-b-4 border-', '')}`} />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">{title}</h2>
+            <p className="text-gray-600 text-base">{description}</p>
+        </motion.div>
+    );
+};
+
 
 const AdminPage: React.FC = () => {
     return (
-        <div className="flex flex-col items-center min-h-screen bg-gradient-to-br from-slate-900 to-green-800 py-8 px-4">
-            <div className="w-full max-w-4xl mb-8">
-                <h1 className="text-5xl font-extrabold text-center text-white mb-4 drop-shadow-lg tracking-tight">Gestion Administrativa</h1>
-                <p className="text-center text-gray-100 mb-6 text-lg">Bienvenido al panel de administración. Aquí puedes gestionar las operaciones de la farmacia.</p>
-            </div>
+        <div className="min-h-screen bg-gradient-to-br bg-black py-12 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-7xl mx-auto">
+                {/* --- Header Section --- */}
+                <header className="text-center mb-16 animate-fade-in">
+                    <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-4 drop-shadow-2xl tracking-tight">
+                        <LayoutDashboard className="inline-block w-14 h-14 mr-4 text-green-400" />
+                        Panel de Administración
+                    </h1>
+                    <p className="text-xl text-gray-200 mt-4 max-w-2xl mx-auto">
+                        Bienvenido al centro de control. Gestiona eficientemente todas las operaciones y datos de la farmacia.
+                    </p>
+                </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full max-w-6xl">
-                <div className="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center">
-                    <span className="material-icons text-6xl text-blue-500 mb-4">store</span>
-                    <h2 className="text-xl font-bold text-gray-800 mb-2">Gestión de Farmacias</h2>
-                    <p className="text-gray-600 text-center">Administra las farmacias y sus datos operativos.</p>
-                </div>
+                {/* --- Admin Features Grid --- */}
+                <motion.div
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10"
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                >
+                    <AdminCard
+                        icon={Store}
+                        title="Gestión de Farmacias"
+                        description="Administra la información de tus sucursales y sus detalles operativos."
+                        color="border-blue-500"
+                        // onClick={() => console.log('Navigate to Farmacias')}
+                    />
 
-                <div className="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center">
-                    <span className="material-icons text-6xl text-green-500 mb-4">attach_money</span>
-                    <h2 className="text-xl font-bold text-gray-800 mb-2">Gestión de Ventas</h2>
-                    <p className="text-gray-600 text-center">Consulta y gestiona las ventas realizadas.</p>
-                </div>
+                    <AdminCard
+                        icon={DollarSign}
+                        title="Resumen General de Ventas"
+                        description="Visualiza un consolidado de todas las ventas para una visión global."
+                        color="border-green-500"
+                        // onClick={() => console.log('Navigate to Resumen General')}
+                    />
 
-                <div className="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center">
-                    <span className="material-icons text-6xl text-red-500 mb-4">report</span>
-                    <h2 className="text-xl font-bold text-gray-800 mb-2">Reportes</h2>
-                    <p className="text-gray-600 text-center">Genera reportes detallados de las operaciones.</p>
-                </div>
+                     <AdminCard
+                        icon={CreditCard}
+                        title="Gestión de Cuadres"
+                        description="Revisa, verifica y administra los cuadres de caja diarios de cada farmacia."
+                        color="border-purple-500"
+                        // onClick={() => console.log('Navigate to Cuadres')}
+                    />
 
-                <div className="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center">
-                    <span className="material-icons text-6xl text-yellow-500 mb-4">settings</span>
-                    <h2 className="text-xl font-bold text-gray-800 mb-2">Configuración</h2>
-                    <p className="text-gray-600 text-center">Ajusta las configuraciones del sistema.</p>
-                </div>
+                    <AdminCard
+                        icon={ClipboardList}
+                        title="Reportes Detallados"
+                        description="Genera informes específicos sobre ventas, movimientos y más para análisis."
+                        color="border-red-500"
+                        // onClick={() => console.log('Navigate to Reportes')}
+                    />
 
-                <div className="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center">
-                    <span className="material-icons text-6xl text-purple-500 mb-4">group</span>
-                    <h2 className="text-xl font-bold text-gray-800 mb-2">Usuarios</h2>
-                    <p className="text-gray-600 text-center">Gestiona los usuarios y sus permisos.</p>
-                </div>
+                    <AdminCard
+                        icon={Users}
+                        title="Gestión de Usuarios"
+                        description="Administra las cuentas de usuario y define sus roles y permisos de acceso."
+                        color="border-yellow-500"
+                        // onClick={() => console.log('Navigate to Usuarios')}
+                    />
 
-                <div className="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center">
-                    <span className="material-icons text-6xl text-teal-500 mb-4">help</span>
-                    <h2 className="text-xl font-bold text-gray-800 mb-2">Soporte</h2>
-                    <p className="text-gray-600 text-center">Accede a la ayuda y soporte técnico.</p>
-                </div>
+                    <AdminCard
+                        icon={Settings}
+                        title="Configuración del Sistema"
+                        description="Ajusta los parámetros generales de la aplicación y preferencias."
+                        color="border-gray-500" // Changed from teal for better contrast on dark bg
+                        // onClick={() => console.log('Navigate to Configuración')}
+                    />
+
+                    {/* Puedes añadir más tarjetas si hay otras funcionalidades */}
+                    {/* Ejemplo de una tarjeta para añadir algo nuevo */}
+                    <AdminCard
+                        icon={PlusCircle}
+                        title="Añadir Nuevo Elemento"
+                        description="Opción rápida para registrar nuevas farmacias, productos o usuarios."
+                        color="border-indigo-500"
+                        // onClick={() => console.log('Add New')}
+                    />
+                     <AdminCard
+                        icon={HelpCircle}
+                        title="Centro de Ayuda"
+                        description="Accede a guías, tutoriales y soporte técnico para resolver tus dudas."
+                        color="border-cyan-500"
+                        // onClick={() => console.log('Navigate to Soporte')}
+                    />
+                </motion.div>
             </div>
         </div>
     );
