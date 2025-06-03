@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
-import { Link, useLocation } from 'react-router'; // Ensure you're using react-router-dom
-import { Menu, X, ChevronDown, LogOut, Home, BarChart, DollarSign, Users } from 'lucide-react'; // Import only used icons from Lucide React
+import { Link, useLocation } from 'react-router'; // Ensure react-router-dom is used
+import { Menu, X, ChevronDown, LogOut, Home, BarChart, DollarSign, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 // Permisos y enlaces agrupados para una mejor organización visual
@@ -39,12 +39,11 @@ const allLinks = [
             { to: '/vercuentasporpagar', label: 'Ver Cuentas por Pagar', permiso: 'acceso_admin' },
         ]
     },
-    // Añadir un enlace a la página de inicio o dashboard si existe
     {
         category: 'Inicio',
         icon: Home,
         items: [
-            { to: '/admin', label: 'Dashboard', permiso: 'acceso_admin' }, // Assuming '/admin' is your dashboard
+            { to: '/admin', label: 'Dashboard', permiso: 'acceso_admin' },
         ]
     },
 ];
@@ -77,13 +76,14 @@ const Navbar = () => {
     // Effect for handling clicks outside dropdown/mobile menu to close them
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
+            // Close desktop dropdown
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 setIsDropdownOpen(false);
             }
+            // Close mobile menu if open and click is outside the menu and not on the toggle button
             if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node) && isMobileMenuOpen) {
-                // Only close if the click is outside and menu is open
-                const button = document.querySelector('[aria-label="Abrir menú"]'); // Get the mobile menu button
-                if (button && !button.contains(event.target as Node)) {
+                const mobileButton = document.querySelector('[aria-label="Toggle mobile menu"]');
+                if (mobileButton && !mobileButton.contains(event.target as Node)) {
                     setIsMobileMenuOpen(false);
                 }
             }
@@ -97,27 +97,28 @@ const Navbar = () => {
     const accessibleLinks = allLinks.map(category => ({
         ...category,
         items: category.items.filter(link => !link.permiso || permisosUsuario.includes(link.permiso))
-    })).filter(category => category.items.length > 0); // Remove empty categories
+    })).filter(category => category.items.length > 0);
 
     const handleLogout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('usuario');
-        window.location.href = '/login'; // Redirect to login page
+        window.location.href = '/login';
     };
 
     return (
-        <nav className="bg-gradient-to-r bg-white text-black shadow-lg px-4 py-3 sticky top-0 z-50">
+        <nav className="bg-white text-black shadow-lg px-4 py-3 sticky top-0 z-50">
             <div className="flex justify-between items-center max-w-7xl mx-auto">
                 {/* Logo / Brand Name */}
-                <Link to="/admin" className="text-2xl font-extrabold tracking-wide flex items-center gap-2">
-                    <img src="/path/to/your/logo.png" alt="Drocolven Logo" className="h-8 w-auto" onError={(e) => (e.currentTarget.style.display = 'none')} /> {/* Optional: Add your logo here */}
+                <Link to="/admin" className="text-2xl font-extrabold tracking-wide flex items-center gap-2 text-black">
+                    {/* Consider placing your actual logo image here */}
+                    <img src="/path/to/your/logo.png" alt="Drocolven Logo" className="h-8 w-auto" onError={(e) => (e.currentTarget.style.display = 'none')} />
                     <span>DROCOLVEN</span>
                 </Link>
 
                 {/* Desktop Menu (Dropdown) */}
                 <div className="hidden sm:flex items-center gap-6 relative" ref={dropdownRef}>
                     <button
-                        className="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-200 transition-all duration-200 text-base font-semibold"
+                        className="flex items-center gap-2 px-4 py-2 rounded-full bg-black text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all duration-200 text-base font-semibold"
                         onClick={() => setIsDropdownOpen(prev => !prev)}
                         aria-expanded={isDropdownOpen}
                     >
@@ -136,8 +137,8 @@ const Navbar = () => {
                             <div className="py-2 max-h-[80vh] overflow-y-auto custom-scrollbar">
                                 {accessibleLinks.map(category => (
                                     <div key={category.category} className="mb-2">
-                                        <h3 className="px-4 pt-3 pb-2 text-xs font-bold uppercase text-gray-500 flex items-center gap-2 border-b border-gray-100">
-                                            {category.icon && <category.icon className="w-4 h-4" />}
+                                        <h3 className="px-4 pt-3 pb-2 text-xs font-bold uppercase text-gray-700 flex items-center gap-2 border-b border-gray-100">
+                                            {category.icon && <category.icon className="w-4 h-4 text-gray-700" />} {/* Icons remain dark */}
                                             {category.category}
                                         </h3>
                                         <ul className="pb-1">
@@ -145,11 +146,11 @@ const Navbar = () => {
                                                 <li key={link.to}>
                                                     <Link
                                                         to={link.to}
-                                                        onClick={() => setIsDropdownOpen(false)} // Close dropdown on link click
+                                                        onClick={() => setIsDropdownOpen(false)}
                                                         className={`block px-4 py-2 text-sm whitespace-nowrap transition-all duration-150 rounded mx-2 my-1
                                                             ${location.pathname === link.to
-                                                                ? 'text-gray-700 font-semibold bg-gray-50 hover:bg-gray-100'
-                                                                : 'text-gray-800 hover:text-gray-700 hover:bg-gray-100'
+                                                                ? 'text-black font-semibold bg-gray-100 hover:bg-gray-200' // Active link black on light gray
+                                                                : 'text-gray-800 hover:text-black hover:bg-gray-50' // Hover link black on very light gray
                                                             }`}
                                                     >
                                                         {link.label}
@@ -176,9 +177,9 @@ const Navbar = () => {
 
                 {/* Mobile Menu Button */}
                 <button
-                    className="sm:hidden text-white p-2 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-colors duration-200"
+                    className="sm:hidden bg-white text- p-2 rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-colors duration-200"
                     onClick={() => setIsMobileMenuOpen(prev => !prev)}
-                    aria-label="Abrir menú"
+                    aria-label="Toggle mobile menu"
                 >
                     {isMobileMenuOpen ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
                 </button>
@@ -193,13 +194,13 @@ const Navbar = () => {
                     open: { opacity: 1, height: "auto", transition: { duration: 0.3 } },
                     closed: { opacity: 0, height: 0, transition: { duration: 0.3 } }
                 }}
-                className="sm:hidden mt-4 bg-white rounded-lg shadow-xl overflow-hidden"
+                className="sm:hidden mt-4 bg-gray-100 rounded-lg shadow-xl overflow-y-auto overflow-x-hidden max-h-[70vh]"
             >
-                <div className="p-4 custom-scrollbar max-h-[70vh]">
+                <div className="p-4 custom-scrollbar">
                     {accessibleLinks.map(category => (
                         <div key={category.category} className="mb-4 last:mb-0">
-                            <h3 className="text-sm font-bold uppercase text-gray-600 mb-2 flex items-center gap-2">
-                                {category.icon && <category.icon className="w-4 h-4" />}
+                            <h3 className="text-sm font-bold uppercase text-gray-700 mb-2 flex items-center gap-2">
+                                {category.icon && <category.icon className="w-4 h-4 text-gray-700" />}
                                 {category.category}
                             </h3>
                             <ul className="space-y-1">
@@ -210,8 +211,8 @@ const Navbar = () => {
                                             onClick={() => setIsMobileMenuOpen(false)}
                                             className={`block px-3 py-2 text-sm transition-all duration-150 rounded
                                                 ${location.pathname === link.to
-                                                    ? 'text-blue-700 font-semibold bg-blue-50'
-                                                    : 'text-gray-800 hover:text-blue-700 hover:bg-gray-100'
+                                                    ? 'text-black font-semibold bg-gray-200' // Active link black on medium gray
+                                                    : 'text-gray-800 hover:text-black hover:bg-gray-50' // Default text gray, hover black on very light gray
                                                 }`}
                                         >
                                             {link.label}
