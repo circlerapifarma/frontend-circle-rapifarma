@@ -372,7 +372,7 @@ const ResumenFarmaciasVentas: React.FC = () => {
                 onClick={setAyer}
                 className="flex-1 min-w-[90px] px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold hover:bg-blue-200 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
               >
-                Ayer
+                Dia Anterior
               </button>
               <button
                 type="button"
