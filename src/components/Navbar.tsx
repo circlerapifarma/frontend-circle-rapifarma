@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { Link, useLocation } from 'react-router'; // Ensure you're using react-router-dom
-import { Menu, X, ChevronDown, LogOut, Home, BarChart, PlusCircle, Building, CheckCircle, CalendarDays, DollarSign, Users, Award, ClipboardList, Wallet, Eye } from 'lucide-react'; // Import specific icons from Lucide React
+import { Menu, X, ChevronDown, LogOut, Home, BarChart, DollarSign, Users } from 'lucide-react'; // Import only used icons from Lucide React
 import { motion } from 'framer-motion';
 
 // Permisos y enlaces agrupados para una mejor organización visual

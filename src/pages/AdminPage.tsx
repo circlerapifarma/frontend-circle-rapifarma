@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 // Import icons from Lucide React for a modern look
-import { Store, DollarSign, BarChart2, Settings, Users, HelpCircle, LayoutDashboard, PlusCircle, CreditCard, ClipboardList } from 'lucide-react';
+import { Store, DollarSign, HelpCircle, LayoutDashboard, CreditCard } from 'lucide-react';
 
 // Animation variants for Framer Motion
 const containerVariants = {
@@ -108,39 +108,6 @@ const AdminPage: React.FC = () => {
                     />
 
                     <AdminCard
-                        icon={ClipboardList}
-                        title="Reportes Detallados"
-                        description="Genera informes específicos sobre ventas, movimientos y más para análisis."
-                        color="border-red-500"
-                        // onClick={() => console.log('Navigate to Reportes')}
-                    />
-
-                    <AdminCard
-                        icon={Users}
-                        title="Gestión de Usuarios"
-                        description="Administra las cuentas de usuario y define sus roles y permisos de acceso."
-                        color="border-yellow-500"
-                        // onClick={() => console.log('Navigate to Usuarios')}
-                    />
-
-                    <AdminCard
-                        icon={Settings}
-                        title="Configuración del Sistema"
-                        description="Ajusta los parámetros generales de la aplicación y preferencias."
-                        color="border-gray-500" // Changed from teal for better contrast on dark bg
-                        // onClick={() => console.log('Navigate to Configuración')}
-                    />
-
-                    {/* Puedes añadir más tarjetas si hay otras funcionalidades */}
-                    {/* Ejemplo de una tarjeta para añadir algo nuevo */}
-                    <AdminCard
-                        icon={PlusCircle}
-                        title="Añadir Nuevo Elemento"
-                        description="Opción rápida para registrar nuevas farmacias, productos o usuarios."
-                        color="border-indigo-500"
-                        // onClick={() => console.log('Add New')}
-                    />
-                     <AdminCard
                         icon={HelpCircle}
                         title="Centro de Ayuda"
                         description="Accede a guías, tutoriales y soporte técnico para resolver tus dudas."
