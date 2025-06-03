@@ -8,6 +8,7 @@ type Comision = {
   sobrante?: number;
   faltante?: number;
   farmacias?: Record<string, string> | string[];
+  comisionPorcentaje?: number;
 };
 
 const ComisionesPorTurnoPage: React.FC = () => {
@@ -18,6 +19,7 @@ const ComisionesPorTurnoPage: React.FC = () => {
   const [search, setSearch] = useState("");
   const [farmaciaFiltro, setFarmaciaFiltro] = useState<string>("");
 
+  // Adjusted to handle updated backend response structure
   const handleFetchComisiones = async () => {
     if (!startDate || !endDate) {
       alert("Por favor selecciona ambas fechas");
@@ -31,8 +33,22 @@ const ComisionesPorTurnoPage: React.FC = () => {
       );
       if (!res.ok) throw new Error("Error al obtener las comisiones");
       const data = await res.json();
-      // Si la respuesta es un array, úsala directamente; si es un objeto con comisiones, usa data.comisiones
-      setComisiones(Array.isArray(data) ? data : data.comisiones);
+
+      // Updated to handle new backend response structure
+      setComisiones(
+        Array.isArray(data)
+          ? data.map((item) => ({
+              cajero: item.NOMBRE || "Sin nombre", // Ajuste para manejar valores vacíos
+              turno: item.turno || "Sin turno",
+              comision: item.comision || 0,
+              totalVentas: item.totalVentas || 0,
+              sobrante: item.sobrante || 0,
+              faltante: item.faltante || 0,
+              farmacias: item.farmacias || [],
+              comisionPorcentaje: item.comisionPorcentaje || 0,
+            }))
+          : []
+      );
       console.log("Comisiones obtenidas:", data);
     } catch (error) {
       console.error("Error al obtener las comisiones:", error);
@@ -184,17 +200,24 @@ const ComisionesPorTurnoPage: React.FC = () => {
             const totalFaltante = lista.reduce((acc, item) => acc + (Number(item.faltante) || 0), 0);
             return (
               <div key={cajero} className="border p-4 rounded-lg shadow">
-                <h2 className="text-lg font-semibold text-gray-800 mb-2">{cajero}</h2>
+                <h2 className="text-lg font-semibold text-gray-800 mb-2">
+                  {cajero}
+                  {lista[0].farmacias && (
+                    <span className="block text-xs text-blue-700 font-normal mt-1">
+                      Farmacia(s): {Array.isArray(lista[0].farmacias) ? lista[0].farmacias.join(", ") : Object.values(lista[0].farmacias).join(", ")}
+                    </span>
+                  )}
+                  <span className="block text-xs text-green-700 font-normal mt-1">
+                    % Comisión: {lista[0].comisionPorcentaje ?? 0}
+                  </span>
+                </h2>
                 <ul className="divide-y divide-gray-200">
                   {lista.map((item, index) => (
                     <li key={index} className="py-2 flex flex-col sm:flex-row sm:justify-between text-sm text-gray-700 gap-2">
+                      <span>Nombre: <strong>{item.cajero}</strong></span>
                       <span>Turno: <strong>{item.turno}</strong></span>
                       <span>Total vendido: <strong>${Number(item.totalVentas ?? 0).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
-                      <span>
-                        Total vendido menos faltante: <strong>
-                          ${Number((item.totalVentas ?? 0) - (item.faltante ?? 0)).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </strong>
-                      </span>
+                      <span>Sobrante: <strong className="text-green-700">${Number(item.sobrante ?? 0).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
                       <span>Faltante: <strong className="text-red-700">${Number(item.faltante ?? 0).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
                       <span>Comisión: <strong>${Number(item.comision ?? 0).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
                     </li>

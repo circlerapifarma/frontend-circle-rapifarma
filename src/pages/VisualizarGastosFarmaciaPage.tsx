@@ -360,19 +360,25 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
             <div className="bg-white p-6 sm:p-8 rounded-lg shadow-2xl max-w-md w-full">
               <h2 className="text-xl font-semibold text-slate-800 mb-2">Confirmar Cambio de Estado</h2>
-              <p className="text-slate-600 mb-6">
-                ¿Está seguro que desea cambiar el estado del gasto a <span className="font-bold text-red-600">{confirmDialog.nuevoEstado}</span>?
+              <p className="text-slate-600 mb-4">
+                ¿Está seguro que desea cambiar el estado del gasto a
+                <span className={`font-bold ml-1 ${confirmDialog.nuevoEstado === 'denied' ? 'text-red-600' : confirmDialog.nuevoEstado === 'verified' ? 'text-green-600' : 'text-yellow-600'}`}>{confirmDialog.nuevoEstado}</span>?
               </p>
+              {confirmDialog.nuevoEstado === 'denied' && (
+                <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-3 mb-4 rounded-md text-sm">
+                  <strong>Advertencia:</strong> Esta acción es irreversible. El gasto será marcado como rechazado.
+                </div>
+              )}
               <div className="flex justify-end gap-3">
-                <button 
-                  onClick={handleCancelChange} 
+                <button
+                  onClick={handleCancelChange}
                   className="px-5 py-2.5 rounded-md bg-slate-200 text-slate-700 hover:bg-slate-300 font-medium transition-colors duration-150 ease-in-out"
                 >
                   Cancelar
                 </button>
-                <button 
-                  onClick={handleConfirmChange} 
-                  className="px-5 py-2.5 rounded-md bg-red-600 text-white hover:bg-red-700 font-medium transition-colors duration-150 ease-in-out shadow-sm hover:shadow-md"
+                <button
+                  onClick={handleConfirmChange}
+                  className={`px-5 py-2.5 rounded-md font-medium transition-colors duration-150 ease-in-out shadow-sm hover:shadow-md ${confirmDialog.nuevoEstado === 'denied' ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
                 >
                   Aceptar
                 </button>

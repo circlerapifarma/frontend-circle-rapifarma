@@ -17,6 +17,7 @@ const allLinks = [
   { to: '/cuentasporpagar', label: 'Cuentas por Pagar', permiso: 'acceso_admin' },
   { to: '/vercuentasporpagar', label: 'Ver Cuentas por Pagar', permiso: 'acceso_admin' },
   { to: '/vergastos', label: 'Ver Gastos', permiso: 'acceso_admin' },
+  { to: '/visualizarcuadres', label: 'Visualizar Cuadres', permiso: 'acceso_admin' },
 ];
 
 const Navbar = () => {

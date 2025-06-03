@@ -20,6 +20,7 @@ import ComisionesEspecialesPage from '@/pages/ComisionesEspecialesPage';
 import CuentasPorPagarPage from '@/pages/CuentasPorPagarPage';
 import VisualizarCuentasPorPagarPage from '@/pages/VisualizarCuentasPorPagarPage';
 import VisualizarGastosFarmaciaPage from '@/pages/VisualizarGastosFarmaciaPage';
+import VisualizarCuadresPage from '@/pages/VisualizarCuadresPage';
 
 const AppRouter = () => (
     <Routes>
@@ -161,6 +162,14 @@ const AppRouter = () => (
             element={
                 <PermissionRoute permiso="acceso_admin">
                     <VisualizarGastosFarmaciaPage />
+                </PermissionRoute>
+            }
+        />
+        <Route
+            path="/visualizarcuadres"
+            element={
+                <PermissionRoute permiso="acceso_admin">
+                    <VisualizarCuadresPage />
                 </PermissionRoute>
             }
         />
