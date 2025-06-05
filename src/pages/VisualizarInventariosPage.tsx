@@ -239,7 +239,15 @@ const VisualizarInventariosPage: React.FC = () => {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
             <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
               <h3 className="text-lg font-semibold mb-3 text-slate-800">Confirmar cambio de estado</h3>
-              <p className="mb-5 text-slate-600 text-sm">¿Está seguro que desea cambiar el estado del inventario a <span className="font-bold text-indigo-700">{pendingEstado?.nuevoEstado.charAt(0).toUpperCase() + pendingEstado?.nuevoEstado.slice(1)}</span>? Esta acción no se puede deshacer fácilmente.</p>
+              <p className="mb-5 text-slate-600 text-sm">
+                ¿Está seguro que desea cambiar el estado del inventario a
+                <span className="font-bold text-indigo-700">
+                  {pendingEstado && pendingEstado.nuevoEstado
+                    ? pendingEstado.nuevoEstado.charAt(0).toUpperCase() + pendingEstado.nuevoEstado.slice(1)
+                    : ""}
+                </span>
+                ? Esta acción no se puede deshacer fácilmente.
+              </p>
               <div className="flex justify-end gap-3">
                 <button
                   onClick={handleCancelEstadoChange}
