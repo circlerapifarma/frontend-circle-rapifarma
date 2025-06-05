@@ -21,6 +21,8 @@ import CuentasPorPagarPage from '@/pages/CuentasPorPagarPage';
 import VisualizarCuentasPorPagarPage from '@/pages/VisualizarCuentasPorPagarPage';
 import VisualizarGastosFarmaciaPage from '@/pages/VisualizarGastosFarmaciaPage';
 import VisualizarCuadresPage from '@/pages/VisualizarCuadresPage';
+import AgregarInventarioPage from '@/pages/AgregarInventarioPage';
+import VisualizarInventariosPage from '@/pages/VisualizarInventariosPage';
 
 const AppRouter = () => (
     <Routes>
@@ -170,6 +172,22 @@ const AppRouter = () => (
             element={
                 <PermissionRoute permiso="acceso_admin">
                     <VisualizarCuadresPage />
+                </PermissionRoute>
+            }
+        />
+        <Route
+            path="/agregarinventariocosto"
+            element={
+                <PermissionRoute permiso="acceso_admin">
+                    <AgregarInventarioPage />
+                </PermissionRoute>
+            }
+        />
+        <Route
+            path="/verinventarios"
+            element={
+                <PermissionRoute permiso="acceso_admin">
+                    <VisualizarInventariosPage />
                 </PermissionRoute>
             }
         />

@@ -37,6 +37,8 @@ const allLinks = [
             { to: '/comisionesgenerales', label: 'Comisiones Generales', permiso: 'acceso_admin' },
             { to: '/cuentasporpagar', label: 'Cuentas por Pagar', permiso: 'acceso_admin' },
             { to: '/vercuentasporpagar', label: 'Ver Cuentas por Pagar', permiso: 'acceso_admin' },
+            { to: '/agregarinventariocosto', label: 'Agregar Costo Inv', permiso: 'acceso_admin' },
+            { to: '/verinventarios', label: 'Ver Inventarios', permiso: 'acceso_admin' },
         ]
     },
     {

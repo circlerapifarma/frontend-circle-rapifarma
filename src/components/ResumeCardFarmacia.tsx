@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import InventarioInfoChip from "./InventarioInfoChip";
 
 // Considera mover estas interfaces a un archivo de tipos compartido si se usan en varios lugares
 interface ResumeCardFarmaciaProps {
@@ -17,6 +18,8 @@ interface ResumeCardFarmaciaProps {
   localidadId: string;
   fechaInicio?: string;
   fechaFin?: string;
+  totalCosto?: number; // Nuevo prop
+  totalInventario?: number; // Nuevo: suma de inventarios por farmacia
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // Reutilizar la constante
@@ -37,9 +40,12 @@ const ResumeCardFarmacia: React.FC<ResumeCardFarmaciaProps> = ({
   localidadId,
   fechaInicio,
   fechaFin,
+  totalCosto = 0,
+  totalInventario = 0,
 }) => {
   const [gastos, setGastos] = useState(0);
   const [cuentasPorPagarActivas, setCuentasPorPagarActivas] = useState(0);
+  const [cuentasPagadas, setCuentasPagadas] = useState(0);
   const [loadingGastosCuentas, setLoadingGastosCuentas] = useState(true);
   const [errorGastosCuentas, setErrorGastosCuentas] = useState<string | null>(null);
 
@@ -67,28 +73,36 @@ const ResumeCardFarmacia: React.FC<ResumeCardFarmaciaProps> = ({
 
         // Fetch Cuentas por Pagar
         const token = localStorage.getItem("token");
-        if (!token) {
-          console.warn("No hay token de autenticación.");
-          // No lanzamos un error aquí, solo no intentamos la llamada si no hay token.
-          // O podrías establecer un error específico si esta es una falla crítica.
-        } else {
+        if (token) {
           const resCuentas = await fetch(`${API_BASE_URL}/cuentas-por-pagar`, {
             headers: { "Authorization": `Bearer ${token}` }
           });
-          if (!resCuentas.ok) {
-            throw new Error("Error al obtener cuentas por pagar.");
-          }
+          if (!resCuentas.ok) throw new Error("Error al obtener cuentas por pagar.");
           const dataCuentas = await resCuentas.json();
+
+          // Cuentas activas (ya lo tienes)
           const cuentasFiltradas = Array.isArray(dataCuentas)
             ? dataCuentas.filter((c: any) =>
                 c.farmacia === localidadId &&
                 c.estatus === 'activa' &&
-                (!fechaInicio || new Date(c.fechaEmision) >= new Date(fechaInicio)) && // Comparación de fechas
+                (!fechaInicio || new Date(c.fechaEmision) >= new Date(fechaInicio)) &&
                 (!fechaFin || new Date(c.fechaEmision) <= new Date(fechaFin))
               )
             : [];
           const totalCuentas = cuentasFiltradas.reduce((acc: number, c: any) => acc + Number(c.monto || 0), 0);
           setCuentasPorPagarActivas(Math.max(0, totalCuentas));
+
+          // NUEVO: Cuentas pagadas
+          const cuentasPagadasFiltradas = Array.isArray(dataCuentas)
+            ? dataCuentas.filter((c: any) =>
+                c.farmacia === localidadId &&
+                c.estatus === 'pagada' &&
+                (!fechaInicio || new Date(c.fechaEmision) >= new Date(fechaInicio)) &&
+                (!fechaFin || new Date(c.fechaEmision) <= new Date(fechaFin))
+              )
+            : [];
+          const totalCuentasPagadas = cuentasPagadasFiltradas.reduce((acc: number, c: any) => acc + Number(c.monto || 0), 0);
+          setCuentasPagadas(Math.max(0, totalCuentasPagadas));
         }
       } catch (error: any) {
         console.error("Error al obtener datos adicionales:", error);
@@ -148,8 +162,15 @@ const ResumeCardFarmacia: React.FC<ResumeCardFarmaciaProps> = ({
       </h3>
 
       {/* Total de Ventas Principal */}
-      <div className={`text-4xl font-extrabold mb-4 ${top ? 'text-yellow-600' : 'text-green-600'} text-center`}>
+      <div className={`text-4xl font-extrabold mb-2 ${top ? 'text-yellow-600' : 'text-green-600'} text-center`}>
         {formatCurrency(totalVentas)}
+      </div>
+      {/* Total Inventario visual */}
+      <div className="flex items-center gap-2 mb-4 text-base text-blue-700 font-semibold relative">
+        <i className="fas fa-boxes-stacked text-blue-500"></i>
+        <span>Costo Inventario:</span>
+        <span className="font-bold">{formatCurrency(totalInventario)}</span>
+        <InventarioInfoChip totalInventario={totalInventario} totalCosto={totalCosto} formatCurrency={formatCurrency} />
       </div>
 
       {/* Sección de Métricas Detalladas */}
@@ -167,7 +188,7 @@ const ResumeCardFarmacia: React.FC<ResumeCardFarmaciaProps> = ({
           <span className="font-semibold">{formatCurrency(zelleUsd)}</span>
         </div>
         <div className="flex justify-between items-center py-1 border-b border-gray-100">
-          <span className="flex items-center gap-2"><i className="fas fa-money-check-alt text-blue-500"></i> Solo USD (Directo):</span>
+          <span className="flex items-center gap-2"><i className="fas fa-money-check-alt text-blue-500"></i> Total USD (Recibido):</span>
           <span className="font-semibold">{formatCurrency(totalUsd)}</span>
         </div>
         <div className="flex justify-between items-center py-1 border-b border-gray-100">
@@ -177,6 +198,10 @@ const ResumeCardFarmacia: React.FC<ResumeCardFarmaciaProps> = ({
         <div className="flex justify-between items-center py-1 border-b border-gray-100">
           <span className="flex items-center gap-2"><i className="fas fa-coins text-yellow-600"></i> Solo Bs:</span>
           <span className="font-semibold">{totalBs.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs</span>
+        </div>
+        <div className="flex justify-between items-center py-1 border-b border-gray-100">
+          <span className="flex items-center gap-2"><i className="fas fa-cash-register text-pink-500"></i> Costo de Cuadres:</span>
+          <span className="font-semibold text-pink-700">{formatCurrency(totalCosto)}</span>
         </div>
 
         {loadingGastosCuentas ? (
@@ -192,6 +217,11 @@ const ResumeCardFarmacia: React.FC<ResumeCardFarmaciaProps> = ({
             <div className="flex justify-between items-center py-1 border-b border-gray-100">
               <span className="flex items-center gap-2"><i className="fas fa-hand-holding-usd text-orange-600"></i> Cuentas por Pagar:</span>
               <span className="font-semibold text-orange-600">{formatCurrency(cuentasPorPagarActivas)}</span>
+            </div>
+            {/* NUEVO: Total Pagado */}
+            <div className="flex justify-between items-center py-1 border-b border-gray-100">
+              <span className="flex items-center gap-2"><i className="fas fa-check-circle text-green-600"></i> Cuentas Pagadas:</span>
+              <span className="font-semibold text-green-700">{formatCurrency(cuentasPagadas)}</span>
             </div>
           </>
         )}

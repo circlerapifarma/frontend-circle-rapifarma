@@ -12,6 +12,7 @@ type VentasFarmacia = {
   sobrantes: number;
   totalGeneralSinRecargas: number;
   valesUsd: number;
+  totalCosto: number; // Agregado para compatibilidad con ResumeCardFarmacia
 };
 
 // Interface for Cuadre data, as it's used directly
@@ -29,6 +30,7 @@ interface Cuadre {
   sobranteUsd?: number;
   valesUsd?: number;
   devolucionesBs?: number;
+  costo?: number | string; // Agregado para compatibilidad con la suma de costos
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -47,6 +49,8 @@ const ResumenFarmaciasVentas: React.FC = () => {
   const [detallesVisibles, setDetallesVisibles] = useState<{ [key: string]: boolean }>({});
   // Guarda los cuadres crudos por farmacia
   const [cuadresPorFarmacia, setCuadresPorFarmacia] = useState<{ [key: string]: Cuadre[] }>({});
+  // --- Nuevo estado para inventarios por farmacia ---
+  const [inventariosFarmacia, setInventariosFarmacia] = useState<{ [key: string]: number }>({});
 
   // --- Helper Functions for Date Filtering ---
   // Using useCallback for memoization, beneficial for performance
@@ -101,7 +105,7 @@ const ResumenFarmaciasVentas: React.FC = () => {
     setDateRange(firstDay, lastDay);
   }, [setDateRange]);
 
-  // --- Fetching Farmacias and Cuadres ---
+  // --- Fetching Farmacias, Cuadres y Inventarios ---
   useEffect(() => {
     const fetchInitialData = async () => {
       setLoading(true);
@@ -118,22 +122,16 @@ const ResumenFarmaciasVentas: React.FC = () => {
 
         // Fetch All Cuadres
         const resultCuadres: { [key: string]: Cuadre[] } = {};
-        // Using Promise.allSettled to handle potential errors in individual farmacia fetches gracefully
         const cuadrePromises = listaFarmacias.map(async (farm) => {
           try {
             const resCuadres = await fetch(`${API_BASE_URL}/cuadres/${farm.id}`);
-            if (!resCuadres.ok) {
-              console.error(`Error al cargar cuadres para ${farm.nombre}:`, resCuadres.statusText);
-              return { farmId: farm.id, data: [] }; // Return empty array on error
-            }
+            if (!resCuadres.ok) return { farmId: farm.id, data: [] };
             const data = await resCuadres.json();
             return { farmId: farm.id, data };
           } catch (err) {
-            console.error(`Excepción al cargar cuadres para ${farm.nombre}:`, err);
             return { farmId: farm.id, data: [] };
           }
         });
-
         const settledResults = await Promise.allSettled(cuadrePromises);
         settledResults.forEach(settledResult => {
           if (settledResult.status === 'fulfilled') {
@@ -142,8 +140,25 @@ const ResumenFarmaciasVentas: React.FC = () => {
         });
         setCuadresPorFarmacia(resultCuadres);
 
+        // Fetch Inventarios
+        const token = localStorage.getItem("token");
+        let inventariosPorFarmacia: { [key: string]: number } = {};
+        if (token) {
+          const resInventarios = await fetch(`${API_BASE_URL}/inventarios`, {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          if (resInventarios.ok) {
+            const dataInventarios = await resInventarios.json();
+            // Agrupar suma de inventarios por farmacia
+            dataInventarios.forEach((inv: any) => {
+              if (!inv.farmacia) return;
+              if (!inventariosPorFarmacia[inv.farmacia]) inventariosPorFarmacia[inv.farmacia] = 0;
+              inventariosPorFarmacia[inv.farmacia] += Number(inv.costo || 0);
+            });
+          }
+        }
+        setInventariosFarmacia(inventariosPorFarmacia);
       } catch (err: any) {
-        console.error("Error al cargar datos iniciales:", err);
         setError(err.message || "Error desconocido al cargar datos iniciales.");
       } finally {
         setLoading(false);
@@ -156,7 +171,7 @@ const ResumenFarmaciasVentas: React.FC = () => {
 
   // --- Calculate Sales based on Filters ---
   useEffect(() => {
-    const ventasPorFarmacia: { [key: string]: VentasFarmacia } = {};
+    const ventasPorFarmacia: { [key: string]: VentasFarmacia & { totalCosto: number } } = {};
     farmacias.forEach((farm) => {
       const data = cuadresPorFarmacia[farm.id] || [];
       let totalBs = 0,
@@ -167,7 +182,8 @@ const ResumenFarmaciasVentas: React.FC = () => {
         faltantes = 0,
         sobrantes = 0,
         totalGeneralSinRecargas = 0,
-        valesUsd = 0;
+        valesUsd = 0,
+        totalCosto = 0;
 
       data.forEach((c) => {
         // Filter by verified status and date range
@@ -196,6 +212,13 @@ const ResumenFarmaciasVentas: React.FC = () => {
         faltantes += Number(c.faltanteUsd || 0);
         sobrantes += Number(c.sobranteUsd || 0);
         valesUsd += Number(c.valesUsd || 0);
+
+        // Sumar el costo si existe
+        if (typeof c.costo === "number") {
+          totalCosto += c.costo;
+        } else if (typeof c.costo === "string" && c.costo !== "") {
+          totalCosto += Number(c.costo);
+        }
       });
 
       ventasPorFarmacia[farm.id] = {
@@ -208,6 +231,7 @@ const ResumenFarmaciasVentas: React.FC = () => {
         sobrantes: Number(sobrantes.toFixed(2)),
         totalGeneralSinRecargas: Number(totalGeneralSinRecargas.toFixed(2)),
         valesUsd: Number(valesUsd.toFixed(2)),
+        totalCosto: Number(totalCosto.toFixed(2)), // Nuevo campo
       };
     });
     setVentas(ventasPorFarmacia);
@@ -402,35 +426,33 @@ const ResumenFarmaciasVentas: React.FC = () => {
         {/* --- Farmacia Cards Grid --- */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {sortedFarmacias.map((farm, idx) => (
-            <div
-              key={farm.id}
-              className="flex flex-col"
-            >
+            <div key={farm.id}>
               <ResumeCardFarmacia
                 nombre={farm.nombre}
-                totalVentas={ventas[farm.id]?.totalVentas}
-                totalBs={ventas[farm.id]?.totalBs}
-                totalUsd={ventas[farm.id]?.totalUsd}
-                efectivoUsd={ventas[farm.id]?.efectivoUsd}
-                zelleUsd={ventas[farm.id]?.zelleUsd}
-                faltantes={ventas[farm.id]?.faltantes}
-                sobrantes={ventas[farm.id]?.sobrantes}
-                totalGeneralSinRecargas={ventas[farm.id]?.totalGeneralSinRecargas}
-                valesUsd={ventas[farm.id]?.valesUsd}
-                top={idx < 3}
-                pendienteVerificar={pendientesPorFarmacia[farm.id]}
                 localidadId={farm.id}
+                totalVentas={ventas[farm.id]?.totalVentas || 0}
+                totalBs={ventas[farm.id]?.totalBs || 0}
+                totalUsd={ventas[farm.id]?.totalUsd || 0}
+                efectivoUsd={ventas[farm.id]?.efectivoUsd || 0}
+                zelleUsd={ventas[farm.id]?.zelleUsd || 0}
+                faltantes={ventas[farm.id]?.faltantes || 0}
+                sobrantes={ventas[farm.id]?.sobrantes || 0}
+                totalGeneralSinRecargas={ventas[farm.id]?.totalGeneralSinRecargas || 0}
+                valesUsd={ventas[farm.id]?.valesUsd || 0}
+                top={idx < 3}
+                pendienteVerificar={pendientesPorFarmacia[farm.id] || 0}
                 fechaInicio={fechaInicio}
                 fechaFin={fechaFin}
+                totalCosto={ventas[farm.id]?.totalCosto || 0}
+                totalInventario={inventariosFarmacia[farm.id] || 0}
               />
               <button
-                className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors duration-300 shadow-md self-center w-full max-w-[200px]"
-                onClick={() => setDetallesVisibles((prev) => ({ ...prev, [farm.id]: !prev[farm.id] }))}
+                className="mt-2 text-blue-700 underline text-sm"
+                onClick={() => setDetallesVisibles(v => ({ ...v, [farm.id]: !v[farm.id] }))}
               >
-                {detallesVisibles[farm.id] ? "Ocultar Detalles" : "Ver Detalles Completos"}
-                <i className={`ml-2 fas ${detallesVisibles[farm.id] ? 'fa-chevron-up' : 'fa-chevron-down'}`}></i>
+                {detallesVisibles && detallesVisibles[farm.id] ? "Ocultar detalles" : "Ver detalles completos"}
               </button>
-              {detallesVisibles[farm.id] && calcularDetalles(farm.id)}
+              {detallesVisibles && detallesVisibles[farm.id] ? calcularDetalles(farm.id) : null}
             </div>
           ))}
         </div>

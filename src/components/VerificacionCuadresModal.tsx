@@ -44,6 +44,7 @@ const VerificacionCuadresModal: React.FC<Props> = ({ open, onClose, farmaciaId, 
   const [cuadres, setCuadres] = useState<CuadreCaja[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [costoCuadre, setCostoCuadre] = useState<Record<string, string>>({}); // Nuevo estado
 
   useEffect(() => {
     if (!open || !farmaciaId) return;
@@ -62,10 +63,11 @@ const VerificacionCuadresModal: React.FC<Props> = ({ open, onClose, farmaciaId, 
   const actualizarEstado = async (cuadre: CuadreCaja, nuevoEstado: "verified" | "denied") => {
     if (!farmaciaId || !cuadre._id) return;
     try {
+      const costo = costoCuadre[cuadre._id] ? parseFloat(costoCuadre[cuadre._id]) : undefined;
       const res = await fetch(`${API_BASE_URL}/cuadres/${farmaciaId}/${cuadre._id}/estado`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ estado: nuevoEstado }),
+        body: JSON.stringify({ estado: nuevoEstado, costo }), // Enviar costo
       });
       if (!res.ok) throw new Error();
       setCuadres(prev => prev.filter(c => c._id !== cuadre._id));
@@ -128,6 +130,20 @@ const VerificacionCuadresModal: React.FC<Props> = ({ open, onClose, farmaciaId, 
                     </ul>
                   </div>
                 )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 sm:gap-x-8 gap-y-1 text-sm sm:text-base">
+                  <div>
+                    <b>Costo del cuadre:</b>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="ml-2 border rounded px-2 py-1 w-24"
+                      value={costoCuadre[c._id] || ""}
+                      onChange={e => setCostoCuadre(prev => ({ ...prev, [c._id]: e.target.value }))}
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mt-4 justify-end">
                   {!soloDenegar && (
                     <Button variant="default" size="lg" className="w-full sm:w-auto px-6 py-2 text-base sm:text-lg font-bold" onClick={() => actualizarEstado(c, "verified")}>Verificar</Button>
