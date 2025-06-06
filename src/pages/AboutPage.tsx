@@ -1,8 +1,8 @@
 const AboutPage: React.FC = () => {
     return (
         <div style={{ padding: '2rem' }}>
-            <h1>Admin Page</h1>
-            <p>Welcome to the admin dashboard.</p>
+            <h1>informacion</h1>
+            <p>Welcome to the informacion dashboard.</p>
         </div>
     );
 };

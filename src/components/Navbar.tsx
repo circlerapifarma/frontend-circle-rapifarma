@@ -113,18 +113,18 @@ const Navbar = () => {
                 {/* Logo / Brand Name */}
                 <Link to="/admin" className="text-2xl font-extrabold tracking-wide flex items-center gap-2 text-black">
                     {/* Consider placing your actual logo image here */}
-                    <img src="/path/to/your/logo.png" alt="Drocolven Logo" className="h-8 w-auto" onError={(e) => (e.currentTarget.style.display = 'none')} />
-                    <span>DROCOLVEN</span>
+                    <img src="/path/to/your/logo.png" alt="Donaive Logo" className="h-8 w-auto" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                    <span>DONAIVE</span>
                 </Link>
 
                 {/* Desktop Menu (Dropdown) */}
                 <div className="hidden sm:flex items-center gap-6 relative" ref={dropdownRef}>
                     <button
-                        className="flex items-center gap-2 px-4 py-2 rounded-full text-black transition-all duration-200 text-base font-semibold"
+                        className="flex items-center gap-2 px-4 text-2xl font-extrabold py-2 rounded-full text-black transition-all duration-200"
                         onClick={() => setIsDropdownOpen(prev => !prev)}
                         aria-expanded={isDropdownOpen}
                     >
-                        Menú de Opciones
+                        MODULOS
                         <ChevronDown className={`w-5 h-5 transition-transform ${isDropdownOpen ? 'rotate-180' : 'rotate-0'}`} />
                     </button>
 
