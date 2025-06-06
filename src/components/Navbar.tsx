@@ -35,7 +35,7 @@ const allLinks = [
             { to: '/cajeros', label: 'Vendedores', permiso: 'acceso_admin' },
             { to: '/comisiones', label: 'Comisiones Por Turno', permiso: 'acceso_admin' },
             { to: '/comisionesgenerales', label: 'Comisiones Generales', permiso: 'acceso_admin' },
-            { to: '/cuentasporpagar', label: 'Cuentas por Pagar', permiso: 'acceso_admin' },
+            { to: '/cuentasporpagar', label: 'Agregar Cuenta Por Pagar', permiso: 'agregar_cuadre' },
             { to: '/vercuentasporpagar', label: 'Ver Cuentas por Pagar', permiso: 'acceso_admin' },
             { to: '/agregarinventariocosto', label: 'Agregar Costo Inv', permiso: 'acceso_admin' },
             { to: '/verinventarios', label: 'Ver Inventarios', permiso: 'acceso_admin' },
