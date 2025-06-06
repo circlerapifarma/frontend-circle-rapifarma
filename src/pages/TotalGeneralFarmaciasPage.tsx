@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Loader2, AlertTriangle, DollarSign, ArrowUp, ArrowDown } from "lucide-react"; // Añadimos ArrowUp y ArrowDown
+import { Loader2, AlertTriangle, DollarSign, ArrowUp, ArrowDown, Warehouse, FileMinus2, HandCoins, CheckCircle2 } from "lucide-react"; // Añadimos ArrowUp y ArrowDown
 import { motion } from "framer-motion";
 
 // Reutilizamos las variantes de Framer Motion
@@ -48,6 +48,12 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
   const [totalPuntosVentaCreditoBs, setTotalPuntosVentaCreditoBs] = useState<number>(0);
   const [totalPagomovilBs, setTotalPagomovilBs] = useState<number>(0);
   const [totalEfectivoBs, setTotalEfectivoBs] = useState<number>(0);
+
+  // Estados para los nuevos totales
+  const [totalGastos, setTotalGastos] = useState<number>(0);
+  const [totalInventario, setTotalInventario] = useState<number>(0);
+  const [totalCuentasPorPagar, setTotalCuentasPorPagar] = useState<number>(0);
+  const [totalCuentasPagadas, setTotalCuentasPagadas] = useState<number>(0);
 
   // Filtros de fecha
   const [fechaInicio, setFechaInicio] = useState<string>("");
@@ -106,6 +112,83 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
     };
 
     if (fechaInicio && fechaFin) fetchTotalGeneral();
+  }, [fechaInicio, fechaFin]);
+
+  useEffect(() => {
+    // Fetch nuevos totales generales
+    const fetchResumenes = async () => {
+      try {
+        // GASTOS
+        const resGastos = await fetch(`${API_BASE_URL}/gastos`);
+        const dataGastos = await resGastos.json();
+        const gastosFiltrados = Array.isArray(dataGastos)
+          ? dataGastos.filter((g: any) =>
+              g.estado === 'verified' &&
+              (!fechaInicio || new Date(g.fecha) >= new Date(fechaInicio)) &&
+              (!fechaFin || new Date(g.fecha) <= new Date(fechaFin))
+            )
+          : [];
+        const totalGastosCalc = gastosFiltrados.reduce((acc: number, g: any) => {
+          if (g.divisa === 'Bs' && g.tasa && Number(g.tasa) > 0) {
+            return acc + (Number(g.monto || 0) / Number(g.tasa));
+          }
+          return acc + Number(g.monto || 0);
+        }, 0);
+        setTotalGastos(Math.max(0, totalGastosCalc));
+
+        // INVENTARIO
+        const resInventario = await fetch(`${API_BASE_URL}/inventarios`);
+        const dataInventario = await resInventario.json();
+        // Solo inventarios activos y dentro de rango de fechas
+        const inventarioFiltrado = Array.isArray(dataInventario)
+          ? dataInventario.filter((inv: any) =>
+              inv.estado === 'activo' &&
+              (!fechaInicio || new Date(inv.fecha) >= new Date(fechaInicio)) &&
+              (!fechaFin || new Date(inv.fecha) <= new Date(fechaFin))
+            )
+          : [];
+        // Sumar costo (USD), pero si algún inventario está en Bs y tiene tasa, convertirlo
+        const totalInventarioCalc = inventarioFiltrado.reduce((acc: number, inv: any) => {
+          if (inv.divisa === 'Bs' && inv.tasa && Number(inv.tasa) > 0) {
+            return acc + (Number(inv.costo || 0) / Number(inv.tasa));
+          }
+          return acc + Number(inv.costo || 0);
+        }, 0);
+        setTotalInventario(Math.max(0, totalInventarioCalc));
+
+        // CUENTAS POR PAGAR
+        const token = localStorage.getItem("token");
+        if (token) {
+          const resCuentas = await fetch(`${API_BASE_URL}/cuentas-por-pagar`, {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          const dataCuentas = await resCuentas.json();
+          // Activas
+          const cuentasActivas = Array.isArray(dataCuentas)
+            ? dataCuentas.filter((c: any) =>
+                c.estatus === 'activa' &&
+                (!fechaInicio || new Date(c.fechaEmision) >= new Date(fechaInicio)) &&
+                (!fechaFin || new Date(c.fechaEmision) <= new Date(fechaFin))
+              )
+            : [];
+          const totalCuentasActivas = cuentasActivas.reduce((acc: number, c: any) => acc + Number(c.montoUsd || 0), 0);
+          setTotalCuentasPorPagar(Math.max(0, totalCuentasActivas));
+          // Pagadas
+          const cuentasPagadas = Array.isArray(dataCuentas)
+            ? dataCuentas.filter((c: any) =>
+                c.estatus === 'pagada' &&
+                (!fechaInicio || new Date(c.fechaEmision) >= new Date(fechaInicio)) &&
+                (!fechaFin || new Date(c.fechaEmision) <= new Date(fechaFin))
+              )
+            : [];
+          const totalCuentasPagadasCalc = cuentasPagadas.reduce((acc: number, c: any) => acc + Number(c.montoUsd || 0), 0);
+          setTotalCuentasPagadas(Math.max(0, totalCuentasPagadasCalc));
+        }
+      } catch (e) {
+        // No interrumpe la carga principal
+      }
+    };
+    if (fechaInicio && fechaFin) fetchResumenes();
   }, [fechaInicio, fechaFin]);
 
   const currentMonthName = new Date().toLocaleString('es-VE', { month: 'long', year: 'numeric' });
@@ -269,6 +352,56 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
                 </div>
               </div>
               <p className="text-sm text-gray-500">Distribución de ingresos en bolívares.</p>
+            </motion.div>
+
+            {/* NUEVAS TARJETAS DE RESUMEN */}
+            <motion.div
+              variants={cardVariants}
+              whileHover={{ scale: 1.02 }}
+              className="rounded-2xl border-2 border-red-300 bg-white p-8 space-y-4 shadow-xl flex flex-col items-center text-center transition-all duration-300"
+            >
+              <div className="bg-red-100 rounded-full p-4">
+                <FileMinus2 className="w-10 h-10 text-red-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800">Total Gastos (USD)</h2>
+              <p className="text-5xl font-extrabold text-red-700">{formatCurrency(totalGastos)}</p>
+              <p className="text-sm text-gray-500">Suma de todos los gastos verificados (reconvertidos a USD).</p>
+            </motion.div>
+            <motion.div
+              variants={cardVariants}
+              whileHover={{ scale: 1.02 }}
+              className="rounded-2xl border-2 border-blue-300 bg-white p-8 space-y-4 shadow-xl flex flex-col items-center text-center transition-all duration-300"
+            >
+              <div className="bg-blue-100 rounded-full p-4">
+                <Warehouse className="w-10 h-10 text-blue-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800">Total Inventario (USD)</h2>
+              <p className="text-5xl font-extrabold text-blue-700">{formatCurrency(totalInventario)}</p>
+              <p className="text-sm text-gray-500">Suma del valor de inventario en USD.</p>
+            </motion.div>
+            <motion.div
+              variants={cardVariants}
+              whileHover={{ scale: 1.02 }}
+              className="rounded-2xl border-2 border-orange-300 bg-white p-8 space-y-4 shadow-xl flex flex-col items-center text-center transition-all duration-300"
+            >
+              <div className="bg-orange-100 rounded-full p-4">
+                <HandCoins className="w-10 h-10 text-orange-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800">Cuentas por Pagar (USD)</h2>
+              <p className="text-5xl font-extrabold text-orange-700">{formatCurrency(totalCuentasPorPagar)}</p>
+              <p className="text-sm text-gray-500">Total de cuentas por pagar activas (USD).</p>
+            </motion.div>
+            <motion.div
+              variants={cardVariants}
+              whileHover={{ scale: 1.02 }}
+              className="rounded-2xl border-2 border-green-300 bg-white p-8 space-y-4 shadow-xl flex flex-col items-center text-center transition-all duration-300"
+            >
+              <div className="bg-green-100 rounded-full p-4">
+                <CheckCircle2 className="w-10 h-10 text-green-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800">Cuentas Pagadas (USD)</h2>
+              <p className="text-5xl font-extrabold text-green-700">{formatCurrency(totalCuentasPagadas)}</p>
+              <p className="text-sm text-gray-500">Total de cuentas por pagar pagadas (USD).</p>
             </motion.div>
           </motion.div>
         )}

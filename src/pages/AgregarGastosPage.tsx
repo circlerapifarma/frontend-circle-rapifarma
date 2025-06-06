@@ -7,6 +7,8 @@ const AgregarGastos: React.FC<{ onSubmitSuccess?: () => void }> = ({ onSubmitSuc
     descripcion: "",
     localidad: "",
     fecha: "",
+    tasa: "",
+    divisa: "", // <-- Añadir divisa
   });
   const [localidades, setLocalidades] = useState<{ id: string; nombre: string }[]>([]);
 
@@ -61,6 +63,8 @@ const AgregarGastos: React.FC<{ onSubmitSuccess?: () => void }> = ({ onSubmitSuc
         descripcion: "",
         localidad: "",
         fecha: "",
+        tasa: "",
+        divisa: "", // <-- Reset divisa
       });
 
       if (onSubmitSuccess) {
@@ -143,6 +147,37 @@ const AgregarGastos: React.FC<{ onSubmitSuccess?: () => void }> = ({ onSubmitSuc
             className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm shadow-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
             required
           />
+        </div>
+
+        <div>
+          <label htmlFor="tasa" className="block text-sm font-medium text-gray-700 mb-1">Tasa (si aplica)</label>
+          <input
+            type="number"
+            name="tasa"
+            id="tasa"
+            value={formData.tasa}
+            onChange={handleChange}
+            className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm shadow-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+            step="any"
+            min="0"
+            placeholder="Ej: 40.5"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="divisa" className="block text-sm font-medium text-gray-700 mb-1">Moneda</label>
+          <select
+            name="divisa"
+            id="divisa"
+            value={formData.divisa}
+            onChange={handleChange}
+            className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm shadow-sm bg-white focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+            required
+          >
+            <option value="">Seleccione una moneda</option>
+            <option value="USD">USD</option>
+            <option value="Bs">Bs</option>
+          </select>
         </div>
 
         <div className="pt-4">

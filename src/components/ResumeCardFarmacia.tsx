@@ -68,7 +68,13 @@ const ResumeCardFarmacia: React.FC<ResumeCardFarmaciaProps> = ({
               (!fechaFin || new Date(g.fecha) <= new Date(fechaFin))
             )
           : [];
-        const totalGastos = gastosFiltrados.reduce((acc: number, g: any) => acc + Number(g.monto || 0), 0);
+        // Reconversión de gastos si tienen tasa y la divisa es Bs
+        const totalGastos = gastosFiltrados.reduce((acc: number, g: any) => {
+          if (g.divisa === 'Bs' && g.tasa && Number(g.tasa) > 0) {
+            return acc + (Number(g.monto || 0) / Number(g.tasa));
+          }
+          return acc + Number(g.monto || 0);
+        }, 0);
         setGastos(Math.max(0, totalGastos));
 
         // Fetch Cuentas por Pagar
@@ -89,7 +95,7 @@ const ResumeCardFarmacia: React.FC<ResumeCardFarmaciaProps> = ({
                 (!fechaFin || new Date(c.fechaEmision) <= new Date(fechaFin))
               )
             : [];
-          const totalCuentas = cuentasFiltradas.reduce((acc: number, c: any) => acc + Number(c.monto || 0), 0);
+          const totalCuentas = cuentasFiltradas.reduce((acc: number, c: any) => acc + Number(c.montoUsd || 0), 0);
           setCuentasPorPagarActivas(Math.max(0, totalCuentas));
 
           // NUEVO: Cuentas pagadas
@@ -101,7 +107,7 @@ const ResumeCardFarmacia: React.FC<ResumeCardFarmaciaProps> = ({
                 (!fechaFin || new Date(c.fechaEmision) <= new Date(fechaFin))
               )
             : [];
-          const totalCuentasPagadas = cuentasPagadasFiltradas.reduce((acc: number, c: any) => acc + Number(c.monto || 0), 0);
+          const totalCuentasPagadas = cuentasPagadasFiltradas.reduce((acc: number, c: any) => acc + Number(c.montoUsd || 0), 0);
           setCuentasPagadas(Math.max(0, totalCuentasPagadas));
         }
       } catch (error: any) {
@@ -125,7 +131,7 @@ const ResumeCardFarmacia: React.FC<ResumeCardFarmaciaProps> = ({
     });
   };
 
-  const totalConGastos = totalVentas - gastos;
+  const totalConGastos = totalVentas - gastos - cuentasPagadas;
   const showMissing = faltantes > 0 && faltantes !== null; // Asegúrate que no sea null
   const showSurplus = sobrantes > 0 && sobrantes !== null; // Asegúrate que no sea null
 
