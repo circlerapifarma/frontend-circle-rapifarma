@@ -23,6 +23,7 @@ import VisualizarGastosFarmaciaPage from '@/pages/VisualizarGastosFarmaciaPage';
 import VisualizarCuadresPage from '@/pages/VisualizarCuadresPage';
 import AgregarInventarioPage from '@/pages/AgregarInventarioPage';
 import VisualizarInventariosPage from '@/pages/VisualizarInventariosPage';
+import RetiroPage from '@/pages/RetiroPage';
 
 const AppRouter = () => (
     <Routes>
@@ -122,7 +123,7 @@ const AppRouter = () => (
         <Route
             path="/cajeros"
             element={
-                <PermissionRoute permiso="acceso_admin">
+                <PermissionRoute permiso="cajeros">
                     <AdminCajerosPage />
                 </PermissionRoute>
             }
@@ -130,7 +131,7 @@ const AppRouter = () => (
         <Route
             path="/comisiones"
             element={
-                <PermissionRoute permiso="acceso_admin">
+                <PermissionRoute permiso="comisiones">
                     <ComisionesPorTurnoPage />
                 </PermissionRoute>
             }
@@ -138,7 +139,7 @@ const AppRouter = () => (
         <Route
             path="/comisionesgenerales"
             element={
-                <PermissionRoute permiso="acceso_admin">
+                <PermissionRoute permiso="comisiones">
                     <ComisionesEspecialesPage />
                 </PermissionRoute>
             }
@@ -188,6 +189,14 @@ const AppRouter = () => (
             element={
                 <PermissionRoute permiso="acceso_admin">
                     <VisualizarInventariosPage />
+                </PermissionRoute>
+            }
+        />
+        <Route
+            path="/retiros"
+            element={
+                <PermissionRoute permiso="acceso_admin">
+                    <RetiroPage />
                 </PermissionRoute>
             }
         />
