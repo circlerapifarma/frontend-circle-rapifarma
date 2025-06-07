@@ -32,18 +32,11 @@ const allLinks = [
         category: 'Administración',
         icon: Users,
         items: [
-<<<<<<< HEAD
-            { to: '/cajeros', label: 'Vendedores', permiso: 'cajeros' },
-            { to: '/retiros', label: 'Retiro', permiso: 'acceso_admin' },
-            { to: '/comisiones', label: 'Comisiones Por Turno', permiso: 'comisiones' },
-            { to: '/comisionesgenerales', label: 'Comisiones Generales', permiso: 'comisiones' },
-            { to: '/cuentasporpagar', label: 'Cuentas por Pagar', permiso: 'acceso_admin' },
-=======
             { to: '/cajeros', label: 'Vendedores', permiso: 'acceso_admin' },
+            { to: '/retiros', label: 'Retiro', permiso: 'acceso_admin' },
             { to: '/comisiones', label: 'Comisiones Por Turno', permiso: 'acceso_admin' },
             { to: '/comisionesgenerales', label: 'Comisiones Generales', permiso: 'acceso_admin' },
             { to: '/cuentasporpagar', label: 'Agregar Cuenta Por Pagar', permiso: 'agregar_cuadre' },
->>>>>>> 0f1dfea4122e828f71c778ac289277732fc82c1f
             { to: '/vercuentasporpagar', label: 'Ver Cuentas por Pagar', permiso: 'acceso_admin' },
             { to: '/agregarinventariocosto', label: 'Agregar Costo Inv', permiso: 'acceso_admin' },
             { to: '/verinventarios', label: 'Ver Inventarios', permiso: 'acceso_admin' },
