@@ -147,7 +147,7 @@ const AppRouter = () => (
         <Route
             path="/cuentasporpagar"
             element={
-                <PermissionRoute permiso="acceso_admin">
+                <PermissionRoute permiso="agregar_cuadre">
                     <CuentasPorPagarPage />
                 </PermissionRoute>
             }
