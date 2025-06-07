@@ -42,6 +42,7 @@ const allLinks = [
             { to: '/verinventarios', label: 'Ver Inventarios', permiso: 'acceso_admin' },
         ]
     },
+    
     {
         category: 'Inicio',
         icon: Home,
