@@ -15,7 +15,7 @@ const allLinks = [
             { to: '/cuadresporfarmacia', label: 'Mis Cuadres', permiso: 'agregar_cuadre' },
             { to: '/verificacion-cuadres', label: 'Verificación Cuadres', permiso: 'verificar_cuadres' },
             { to: '/ver-cuadres-dia', label: 'Cuadres por Día', permiso: 'ver_cuadres_dia' },
-            { to: '/visualizarcuadres', label: 'Visualizar Cuadres', permiso: 'acceso_admin' },
+            { to: '/visualizarcuadres', label: 'Visualizar Cuadres', permiso: 'ver_cuadres_dia' },
         ]
     },
     {
