@@ -111,6 +111,15 @@ const AdminCajerosPage: React.FC = () => {
           </button>
         )}
       </div>
+      {/* Botón para abrir modal de crear cajero */}
+      <div className="mb-6 text-right">
+        <button
+          className="bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-2 rounded shadow"
+          onClick={() => setModalCrearOpen(true)}
+        >
+          + Agregar Cajero
+        </button>
+      </div>
       {/* Lista filtrada de cajeros */}
       {cajerosFiltrados.length === 0 ? (
         <div className="text-center text-gray-500">No hay cajeros registrados.</div>
