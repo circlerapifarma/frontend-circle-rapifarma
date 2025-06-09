@@ -171,7 +171,7 @@ const AppRouter = () => (
         <Route
             path="/visualizarcuadres"
             element={
-                <PermissionRoute permiso="acceso_admin">
+                <PermissionRoute permiso="ver_cuadres_dia">
                     <VisualizarCuadresPage />
                 </PermissionRoute>
             }
