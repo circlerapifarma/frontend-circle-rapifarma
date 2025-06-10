@@ -25,7 +25,7 @@ const allLinks = [
             { to: '/agregargastos', label: 'Agregar Gasto', permiso: 'agregar_cuadre' },
             { to: '/gastosporusuario', label: 'Mis Gastos', permiso: 'agregar_cuadre' },
             { to: '/verificaciongastos', label: 'Verificación Gastos', permiso: 'verificar_gastos' },
-            { to: '/vergastos', label: 'Ver Gastos (Admin)', permiso: 'acceso_admin' },
+            { to: '/vergastos', label: 'Ver Gastos (Admin)', permiso: 'verificar_gastos' },
         ]
     },
     {
@@ -37,8 +37,8 @@ const allLinks = [
             { to: '/comisiones', label: 'Comisiones Por Turno', permiso: 'comisiones' },
             { to: '/comisionesgenerales', label: 'Comisiones Generales', permiso: 'comisiones' },
             { to: '/cuentasporpagar', label: 'Agregar Cuenta Por Pagar', permiso: 'agregar_cuadre' },
-            { to: '/vercuentasporpagar', label: 'Ver Cuentas por Pagar', permiso: 'acceso_admin' },
-            { to: '/verificacioncuentasporpagar', label: 'Verificación Cuentas por Pagar', permiso: 'acceso_admin' },
+            { to: '/vercuentasporpagar', label: 'Ver Cuentas por Pagar', permiso: 'verificar_gastos' },
+            { to: '/verificacioncuentasporpagar', label: 'Verificación Cuentas por Pagar', permiso: 'verificar_gastos' },
             { to: '/agregarinventariocosto', label: 'Agregar Costo Inv', permiso: 'acceso_admin' },
             { to: '/verinventarios', label: 'Ver Inventarios', permiso: 'acceso_admin' },
         ]
