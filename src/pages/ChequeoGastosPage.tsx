@@ -145,36 +145,51 @@ const ChequeoGastosPage: React.FC = () => {
               {gastosPorLocalidad[localidadSeleccionadaId]?.filter((gasto) => gasto.estado === "wait").length === 0 ? (
                 <p className="text-center text-gray-500 text-xl py-10">¡No hay gastos pendientes para esta localidad!</p>
               ) : (
-                gastosPorLocalidad[localidadSeleccionadaId]?.filter((gasto) => gasto.estado === "wait").map((gasto) => (
-                  <Card key={gasto._id} className="p-6 border-2 border-red-300 rounded-xl shadow-lg bg-red-50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div className="flex-grow">
-                      <div className="text-xl font-bold text-gray-900 mb-1">{gasto.titulo}</div>
-                      <div className="text-lg text-gray-700">Monto: <span className="font-semibold text-green-700">${gasto.monto.toFixed(2)}</span></div>
-                      <div className="text-base text-gray-600 mt-1">Descripción: {gasto.descripcion}</div>
-                      <div className="text-sm text-gray-500 mt-1">Fecha: {new Date(gasto.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-3 mt-4 md:mt-0">
-                      <Button
-                        onClick={() => verificarGasto(gasto._id, "verified")}
-                        className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-5 rounded-lg shadow-md transition-all duration-300 ease-in-out hover:scale-105"
-                      >
-                        ✅ Verificar
-                      </Button>
-                      <Button
-                        onClick={() => verificarGasto(gasto._id, "denied")}
-                        className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-5 rounded-lg shadow-md transition-all duration-300 ease-in-out hover:scale-105"
-                      >
-                        ❌ Denegar
-                      </Button>
-                      <Button
-                        onClick={() => setConfirmarEliminarGasto(gasto._id)}
-                        className="bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 px-5 rounded-lg shadow-md transition-all duration-300 ease-in-out hover:scale-105"
-                      >
-                        🗑️ Eliminar
-                      </Button>
-                    </div>
-                  </Card>
-                ))
+                gastosPorLocalidad[localidadSeleccionadaId]?.filter((gasto) => gasto.estado === "wait").map((g, idx) => {
+                  const gasto = g as any; // Forzar tipado flexible para acceder a divisa y tasa
+                  let montoUsd = gasto.monto;
+                  if (gasto.divisa === "Bs" && gasto.tasa && gasto.tasa > 0) {
+                    montoUsd = gasto.monto / gasto.tasa;
+                  }
+                  return (
+                    <Card key={gasto._id || idx} className="p-6 border-2 border-red-300 rounded-xl shadow-lg bg-red-50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                      <div className="flex-grow">
+                        <div className="text-xl font-bold text-gray-900 mb-1">{gasto.titulo}</div>
+                        <div className="text-lg text-gray-700">
+                          Monto: <span className="font-semibold text-green-700">{gasto.monto.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {gasto.divisa || ''}</span>
+                          {gasto.divisa === "Bs" && gasto.tasa && gasto.tasa > 0 && (
+                            <span className="ml-2 text-gray-500">(Tasa: {gasto.tasa})</span>
+                          )}
+                        </div>
+                        <div className="text-lg text-gray-700">
+                          Monto en USD: <span className="font-semibold text-blue-700">{montoUsd.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD</span>
+                        </div>
+                        <div className="text-base text-gray-600 mt-1">Descripción: {gasto.descripcion}</div>
+                        <div className="text-sm text-gray-500 mt-1">Fecha: {new Date(gasto.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-3 mt-4 md:mt-0">
+                        <Button
+                          onClick={() => verificarGasto(gasto._id, "verified")}
+                          className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-5 rounded-lg shadow-md transition-all duration-300 ease-in-out hover:scale-105"
+                        >
+                          ✅ Verificar
+                        </Button>
+                        <Button
+                          onClick={() => verificarGasto(gasto._id, "denied")}
+                          className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-5 rounded-lg shadow-md transition-all duration-300 ease-in-out hover:scale-105"
+                        >
+                          ❌ Denegar
+                        </Button>
+                        <Button
+                          onClick={() => setConfirmarEliminarGasto(gasto._id)}
+                          className="bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 px-5 rounded-lg shadow-md transition-all duration-300 ease-in-out hover:scale-105"
+                        >
+                          🗑️ Eliminar
+                        </Button>
+                      </div>
+                    </Card>
+                  );
+                })
               )}
             </div>
 

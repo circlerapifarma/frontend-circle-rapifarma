@@ -8,12 +8,14 @@ interface VerGastosModalProps {
 }
 
 interface Gasto {
-  _id: string; // Cambiado de id a _id
+  _id: string;
   titulo: string;
   descripcion: string;
   monto: number;
-  fecha: string;
+  fecha: string | Date;
   estado: string;
+  divisa?: string;
+  tasa?: number;
 }
 
 const VerGastosModal: React.FC<VerGastosModalProps> = ({ open, onClose, farmaciaId, farmaciaNombre }) => {
@@ -85,34 +87,65 @@ const VerGastosModal: React.FC<VerGastosModalProps> = ({ open, onClose, farmacia
             <div className="text-center text-gray-500">No hay cuadres pendientes para esta farmacia.</div>
           ) : (
             <ul className="divide-y divide-gray-200">
-              {gastos.map(gasto => (
-                <li key={gasto._id} className="py-3 sm:py-4">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0">
-                    <div>
-                      <h3 className="text-base sm:text-lg font-semibold text-gray-800">{gasto.titulo}</h3>
-                      <p className="text-xs sm:text-sm text-gray-600">{gasto.descripcion}</p>
-                      <p className="text-xs sm:text-sm text-gray-600">Fecha: {new Date(gasto.fecha).toLocaleDateString()}</p>
-                      <p className="text-xs sm:text-sm text-gray-600">Estado: {(() => {
-                        switch (gasto.estado) {
-                          case 'wait': return 'Pendiente';
-                          case 'verified': return 'Verificado';
-                          case 'denied': return 'Denegado';
-                          default: return gasto.estado;
-                        }
-                      })()}</p>
+              {gastos.map(gasto => {
+                // Calcular monto en USD
+                let montoUsd = gasto.monto;
+                if (gasto.divisa === "Bs" && gasto.tasa && gasto.tasa > 0) {
+                  montoUsd = gasto.monto / gasto.tasa;
+                }
+                // Formatear fecha
+                let fechaStr = "";
+                if (gasto.fecha instanceof Date) {
+                  fechaStr = gasto.fecha.toLocaleDateString();
+                } else if (typeof gasto.fecha === "string") {
+                  const d = new Date(gasto.fecha);
+                  fechaStr = d.toLocaleDateString();
+                }
+                return (
+                  <li key={gasto._id} className="py-3 sm:py-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0">
+                      <div>
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-800">{gasto.titulo}</h3>
+                        <p className="text-xs sm:text-sm text-gray-600">{gasto.descripcion}</p>
+                        <p className="text-xs sm:text-sm text-gray-600">Fecha: {fechaStr}</p>
+                        <p className="text-xs sm:text-sm text-gray-600">Estado: {(() => {
+                          switch (gasto.estado) {
+                            case 'wait': return 'Pendiente';
+                            case 'verified': return 'Verificado';
+                            case 'denied': return 'Denegado';
+                            default: return gasto.estado;
+                          }
+                        })()}</p>
+                        {gasto.divisa === "Bs" ? (
+                          <>
+                            <p className="text-xs sm:text-sm text-gray-600">
+                              Monto: <span className="font-bold">{gasto.monto.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs</span>
+                              {gasto.tasa && gasto.tasa > 0 && (
+                                <span className="ml-2 text-gray-500">(Tasa: {gasto.tasa})</span>
+                              )}
+                            </p>
+                            <p className="text-xs sm:text-sm text-gray-600">
+                              Monto en USD: <span className="font-bold text-green-700">{montoUsd.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD</span>
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-xs sm:text-sm text-gray-600">
+                            Monto: <span className="font-bold text-green-700">{gasto.monto.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD</span>
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right mt-2 sm:mt-0">
+                        <button
+                          className="text-xs sm:text-sm font-medium text-red-600 hover:underline"
+                          onClick={() => handleDeny(gasto._id)}
+                        >
+                          Denegar
+                        </button>
+                      </div>
                     </div>
-                    <div className="text-right mt-2 sm:mt-0">
-                      <p className="text-base sm:text-lg font-bold text-gray-800">${gasto.monto.toFixed(2)}</p>
-                      <button
-                        className="text-xs sm:text-sm font-medium text-red-600 hover:underline"
-                        onClick={() => handleDeny(gasto._id)}
-                      >
-                        Denegar
-                      </button>
-                    </div>
-                  </div>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
