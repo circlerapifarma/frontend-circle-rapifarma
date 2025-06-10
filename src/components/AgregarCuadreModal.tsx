@@ -32,6 +32,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
     const [zelleUsd, setZelleUsd] = useState<number | undefined>();
 
     const [valesUsd, setValesUsd] = useState<number | undefined>(undefined); // Inicialmente vacío
+    const [costoInventario, setCostoInventario] = useState<number | undefined>(undefined); // Nuevo estado para Costo Inventario
 
     const [error, setError] = useState<string>("");
     const [success, setSuccess] = useState<string>("");
@@ -59,6 +60,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
         if (!turno.trim()) return "El campo 'Turno' es obligatorio.";
         if (cajaNumero <= 0) return "El número de caja debe ser mayor a 0.";
         if ((tasa??0) <= 0) return "La tasa debe ser mayor a 0.";
+        if (costoInventario === undefined || isNaN(costoInventario) || costoInventario <= 0) return "El campo 'Costo Inventario' es obligatorio y debe ser mayor a 0.";
         if ((totalCajaSistemaBs??0) < 0 || (devolucionesBs??0) < 0 || (recargaBs??0) < 0 || (pagomovilBs??0) < 0 ||
             (efectivoBs??0) < 0 ||
             (efectivoUsd??0) < 0 || (zelleUsd??0) < 0) return "Los montos no pueden ser negativos.";
@@ -117,7 +119,8 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                 })();
                 const farmacias = usuario?.farmacias || {};
                 return farmacias[farmacia] || '';
-            })()
+            })(),
+            costoInventario: costoInventario,
         };
 
         console.log("Cuadre object being sent:", cuadre); // Log the cuadre object
@@ -258,6 +261,19 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Pago Móvil Bs</label>
                             <input type="number" step="any" value={pagomovilBs} onChange={e => setPagomovilBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} onWheel={e => e.currentTarget.blur()} />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">Costo Inventario</label>
+                            <input
+                                type="number"
+                                step="any"
+                                value={costoInventario ?? ''}
+                                onChange={e => setCostoInventario(e.target.value === '' ? undefined : Number(e.target.value))}
+                                className="w-full border rounded-lg p-2"
+                                required
+                                min={0.01}
+                                onWheel={e => e.currentTarget.blur()}
+                            />
                         </div>
                         <div className="md:col-span-2">
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Puntos de Venta</label>

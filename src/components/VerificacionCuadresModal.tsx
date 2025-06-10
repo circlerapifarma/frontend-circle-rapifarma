@@ -28,6 +28,9 @@ interface CuadreCaja {
   estado?: string;
   nombreFarmacia?: string;
   codigoFarmacia?: string;
+  costoInventario?: number; // <-- Agregado para soportar nuevos cuadres
+  fecha?: string; // <-- Para mostrar la fecha de registro
+  hora?: string;  // <-- Para mostrar la hora de registro
 }
 
 interface Props {
@@ -44,7 +47,6 @@ const VerificacionCuadresModal: React.FC<Props> = ({ open, onClose, farmaciaId, 
   const [cuadres, setCuadres] = useState<CuadreCaja[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [costoCuadre, setCostoCuadre] = useState<Record<string, string>>({}); // Nuevo estado
 
   useEffect(() => {
     if (!open || !farmaciaId) return;
@@ -63,11 +65,10 @@ const VerificacionCuadresModal: React.FC<Props> = ({ open, onClose, farmaciaId, 
   const actualizarEstado = async (cuadre: CuadreCaja, nuevoEstado: "verified" | "denied") => {
     if (!farmaciaId || !cuadre._id) return;
     try {
-      const costo = costoCuadre[cuadre._id] ? parseFloat(costoCuadre[cuadre._id]) : undefined;
       const res = await fetch(`${API_BASE_URL}/cuadres/${farmaciaId}/${cuadre._id}/estado`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ estado: nuevoEstado, costo }), // Enviar costo
+        body: JSON.stringify({ estado: nuevoEstado }), // Enviar costo
       });
       if (!res.ok) throw new Error();
       setCuadres(prev => prev.filter(c => c._id !== cuadre._id));
@@ -132,16 +133,13 @@ const VerificacionCuadresModal: React.FC<Props> = ({ open, onClose, farmaciaId, 
                 )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 sm:gap-x-8 gap-y-1 text-sm sm:text-base">
                   <div>
-                    <b>Costo del cuadre:</b>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      className="ml-2 border rounded px-2 py-1 w-24"
-                      value={costoCuadre[c._id] || ""}
-                      onChange={e => setCostoCuadre(prev => ({ ...prev, [c._id]: e.target.value }))}
-                      placeholder="0.00"
-                    />
+                    <b>Costo Inventario:</b> {typeof c.costoInventario !== 'undefined' ? c.costoInventario : <span className="text-gray-400">No registrado</span>}
+                  </div>
+                  <div>
+                    <b>Fecha registro:</b> {c.fecha ? c.fecha : <span className="text-gray-400">No registrada</span>}
+                  </div>
+                  <div>
+                    <b>Hora registro:</b> {c.hora ? c.hora : <span className="text-gray-400">No registrada</span>}
                   </div>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mt-4 justify-end">

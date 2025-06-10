@@ -26,7 +26,10 @@ const CuadreDetalleModal: React.FC<CuadreDetalleModalProps> = ({ open, onClose, 
         </button>
         <h2 className="text-xl font-bold mb-4 text-blue-800">Detalle del Cuadre</h2>
         <div className="space-y-2 text-sm">
-          <div><b>Fecha:</b> {cuadre.dia}</div>
+          <div><b>Fecha real cuadre (dia):</b> {cuadre.dia || <span className="text-gray-400">No registrada</span>}</div>
+          <div><b>Hora real cuadre:</b> {cuadre.hora || <span className="text-gray-400">No registrada</span>}</div>
+          <div><b>Fecha seleccionada por cajero:</b> {cuadre.fechaCajero || <span className="text-gray-400">No registrada</span>}</div>
+          <div><b>Costo Inventario:</b> {typeof cuadre.costoInventario !== 'undefined' ? cuadre.costoInventario : <span className="text-gray-400">No registrado</span>}</div>
           <div><b>Caja:</b> {cuadre.cajaNumero}</div>
           <div><b>Tasa:</b> {cuadre.tasa}</div>
           <div><b>Turno:</b> {cuadre.turno}</div>
