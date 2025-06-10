@@ -2,12 +2,14 @@ import React, { useState } from "react";
 
 interface CuentaPorPagar {
   fechaEmision: string;
+  fechaRecepcion: string;
   diasCredito: number;
   numeroFactura: string;
   numeroControl: string;
   proveedor: string;
   descripcion: string;
   monto: number;
+  retencion: number;
   divisa: "USD" | "Bs";
   tasa: number;
   estatus: string;
@@ -35,12 +37,14 @@ const CuentasPorPagarPage: React.FC = () => {
 
   const [form, setForm] = useState<CuentaPorPagar>({
     fechaEmision: "",
+    fechaRecepcion: "",
     diasCredito: 0,
     numeroFactura: "",
     numeroControl: "",
     proveedor: "",
     descripcion: "",
     monto: 0,
+    retencion: 0,
     divisa: "USD",
     tasa: 0,
     estatus: "activa",
@@ -55,7 +59,7 @@ const CuentasPorPagarPage: React.FC = () => {
     const { name, value } = e.target;
     setForm(prev => ({
       ...prev,
-      [name]: name === "diasCredito" || name === "monto" ? Number(value) : value
+      [name]: name === "diasCredito" || name === "monto" || name === "retencion" ? Number(value) : value
     }));
   };
 
@@ -84,12 +88,14 @@ const CuentasPorPagarPage: React.FC = () => {
       setSuccess("Cuenta por pagar registrada exitosamente.");
       setForm({
         fechaEmision: "",
+        fechaRecepcion: "",
         diasCredito: 0,
         numeroFactura: "",
         numeroControl: "",
         proveedor: "",
         descripcion: "",
         monto: 0,
+        retencion: 0,
         divisa: "USD",
         tasa: 0,
         estatus: "activa",
@@ -129,6 +135,10 @@ const CuentasPorPagarPage: React.FC = () => {
           <input type="date" name="fechaEmision" value={form.fechaEmision} onChange={handleChange} className="w-full border rounded px-2 py-1" required />
         </div>
         <div>
+          <label className="block text-sm font-medium text-gray-700">Fecha de Recepción</label>
+          <input type="date" name="fechaRecepcion" value={form.fechaRecepcion} onChange={handleChange} className="w-full border rounded px-2 py-1" required />
+        </div>
+        <div>
           <label className="block text-sm font-medium text-gray-700">Días de Crédito</label>
           <input type="number" name="diasCredito" value={form.diasCredito} onChange={handleChange} min={0} className="w-full border rounded px-2 py-1" required onWheel={e => e.currentTarget.blur()} />
         </div>
@@ -151,6 +161,10 @@ const CuentasPorPagarPage: React.FC = () => {
         <div>
           <label className="block text-sm font-medium text-gray-700">Monto a Pagar</label>
           <input type="number" name="monto" value={form.monto} onChange={handleChange} min={0} step="0.01" className="w-full border rounded px-2 py-1" required onWheel={e => e.currentTarget.blur()} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Retención</label>
+          <input type="number" name="retencion" value={form.retencion} onChange={handleChange} min={0} step="0.01" className="w-full border rounded px-2 py-1" required onWheel={e => e.currentTarget.blur()} />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">Divisa</label>

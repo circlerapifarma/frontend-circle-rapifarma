@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface CuentaPorPagar {
   _id: string;
@@ -14,6 +15,8 @@ interface CuentaPorPagar {
   estatus: string;
   usuarioCorreo: string;
   farmacia: string;
+  retencion: number;
+  fechaRecepcion: string;
 }
 
 interface FarmaciaChip {
@@ -23,7 +26,7 @@ interface FarmaciaChip {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-const ESTATUS_OPCIONES = ["activa", "inactiva", "pagada", "anulada"];
+const ESTATUS_OPCIONES = ["wait", "activa", "inactiva", "pagada", "anulada"];
 
 function calcularDiasRestantes(fechaEmision: string, diasCredito: number) {
   const fechaEmi = new Date(fechaEmision);
@@ -60,6 +63,22 @@ const EstatusBadge: React.FC<{ estatus: string }> = ({ estatus }) => {
   );
 };
 
+const formatFecha = (fechaISO: string) => {
+  if (!fechaISO) return "-";
+  const date = new Date(fechaISO);
+  const userTimezoneOffset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() + userTimezoneOffset).toLocaleDateString('es-VE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+};
+
+const getCurrencyCode = (divisa: string) => {
+  if (divisa === "Bs") return "VES";
+  if (divisa === "USD") return "USD";
+  return divisa;
+};
 
 const VisualizarCuentasPorPagarPage: React.FC = () => {
   const [cuentas, setCuentas] = useState<CuentaPorPagar[]>([]);
@@ -72,7 +91,7 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
   const [proveedorFiltro, setProveedorFiltro] = useState<string>("");
   const [fechaInicio, setFechaInicio] = useState<string>("");
   const [fechaFin, setFechaFin] = useState<string>("");
-  const [estatusFiltro, setEstatusFiltro] = useState<string>("activa");
+  const [estatusFiltro, setEstatusFiltro] = useState<string>("wait");
   const [descripcionExpandida, setDescripcionExpandida] = useState<string | null>(null);
 
   const fetchCuentas = async () => {
@@ -279,7 +298,7 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
                 <thead className="bg-slate-100">
                   <tr>
                     {/* Cabeceras de tabla con más padding y estilo uniforme */}
-                    {['Fecha', 'Factura', 'Control', 'Proveedor', 'Descripción', 'Monto', 'Moneda', 'Tasa', 'Usuario', 'Farmacia', 'Estatus', 'Días Vencer', 'Acción'].map(header => (
+                    {['Fecha', 'Recepción', 'Factura', 'Control', 'Proveedor', 'Descripción', 'Monto', 'Retención', 'Moneda', 'Tasa', 'Usuario', 'Farmacia', 'Estatus', 'Días Vencer', 'Acción'].map(header => (
                       <th key={header} scope="col" className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">
                         {header}
                       </th>
@@ -300,44 +319,64 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
 
                     return (
                       <tr key={c._id} className="hover:bg-slate-50 transition-colors duration-150 ease-in-out">
-                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.fechaEmision?.slice(0,10)}</td>
+                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{formatFecha(c.fechaEmision)}</td>
+                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{formatFecha(c.fechaRecepcion)}</td>
                         <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.numeroFactura}</td>
                         <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.numeroControl}</td>
                         <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 font-medium">{c.proveedor}</td>
-                        <td className="px-5 py-4 text-sm text-slate-700 max-w-sm"> {/* Permitir que la descripción se expanda un poco más */}
-                          {descripcionExpandida === c._id ? (
-                            <>
-                              <span className="whitespace-normal">{c.descripcion}</span>
-                              <button className="ml-2 text-xs text-indigo-600 hover:text-indigo-800 font-medium" onClick={() => setDescripcionExpandida(null)}>Ocultar</button>
-                            </>
-                          ) : (
-                            <>
-                              <span>{c.descripcion.length > 40 ? c.descripcion.slice(0, 40) + '...' : c.descripcion}</span>
-                              {c.descripcion.length > 40 && (
-                                <button className="ml-2 text-xs text-indigo-600 hover:text-indigo-800 font-medium" onClick={() => setDescripcionExpandida(c._id)}>Ver más</button>
-                              )}
-                            </>
+                        <td className="px-5 py-4 text-sm text-slate-700 max-w-sm truncate">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span
+                                  className="cursor-pointer underline decoration-dotted"
+                                  tabIndex={0}
+                                >
+                                  {c.descripcion.length > 50 ? c.descripcion.slice(0, 50) + '…' : c.descripcion}
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" align="center" className="max-w-xs break-words whitespace-pre-line bg-white border border-slate-200 shadow-lg p-4 rounded-md text-slate-800 text-sm font-normal">
+                                {c.descripcion}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </td>
+                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">
+                          <div className="font-bold text-indigo-700">
+                            {c.monto?.toLocaleString('es-VE', { style: 'currency', currency: getCurrencyCode(c.divisa) })}
+                          </div>
+                          {c.divisa === "Bs" && c.tasa > 0 && (
+                            <div className="text-xs text-slate-500 font-medium">
+                              ≈ {(c.monto / c.tasa).toLocaleString('en-US', { style: 'currency', currency: 'USD' })} USD
+                            </div>
                           )}
                         </td>
-                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{c.monto.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">
+                          <div className="font-bold text-indigo-700">
+                            {c.retencion?.toLocaleString('es-VE', { style: 'currency', currency: getCurrencyCode(c.divisa) })}
+                          </div>
+                          {c.divisa === "Bs" && c.tasa > 0 && (
+                            <div className="text-xs text-slate-500 font-medium">
+                              ≈ {(c.retencion / c.tasa).toLocaleString('en-US', { style: 'currency', currency: 'USD' })} USD
+                            </div>
+                          )}
+                        </td>
                         <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.divisa}</td>
-                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{c.tasa > 0 ? c.tasa.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "-"}</td>
-                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-500">{c.usuarioCorreo}</td>
+                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.tasa}</td>
+                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.usuarioCorreo}</td>
                         <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.farmacia}</td>
-                        <td className="px-5 py-4 whitespace-nowrap">
-                          <EstatusBadge estatus={c.estatus} />
-                        </td>
-                        <td className={`px-5 py-4 whitespace-nowrap text-sm ${diasVencerClasses}`}>
-                          {diasRestantes <= 0 ? `Vencido (${diasRestantes} días)` : `${diasRestantes} días`}
-                        </td>
-                        <td className="px-5 py-4 whitespace-nowrap text-sm">
+                        <td className="px-5 py-4 whitespace-nowrap text-sm"><EstatusBadge estatus={c.estatus} /></td>
+                        <td className={`px-5 py-4 whitespace-nowrap text-sm text-center ${diasVencerClasses}`}>{diasRestantes}</td>
+                        <td className="px-5 py-4 whitespace-nowrap text-sm text-center">
                           <select
                             value={c.estatus}
                             onChange={e => handleEstadoChange(c._id, e.target.value)}
-                            className="border-slate-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 py-1.5 px-2 text-xs" // Ligeramente más pequeño para la tabla
+                            className="border border-slate-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white text-slate-700"
                           >
                             {ESTATUS_OPCIONES.map(opt => (
-                              <option key={opt} value={opt}>{opt.charAt(0).toUpperCase() + opt.slice(1)}</option>
+                              <option key={opt} value={opt} disabled={opt === c.estatus}>
+                                {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                              </option>
                             ))}
                           </select>
                         </td>
