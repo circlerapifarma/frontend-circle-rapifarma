@@ -80,20 +80,6 @@ const AgregarGastos: React.FC<{ onSubmitSuccess?: () => void }> = ({ onSubmitSuc
     <div className="max-w-xl mx-auto bg-white rounded-2xl shadow-lg p-8 sm:p-10">
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label htmlFor="monto" className="block text-sm font-medium text-gray-700 mb-1">Monto</label>
-          <input
-            type="number"
-            name="monto"
-            id="monto"
-            value={formData.monto}
-            onChange={handleChange}
-            className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm shadow-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
-            required
-            onWheel={e => e.currentTarget.blur()}
-          />
-        </div>
-
-        <div>
           <label htmlFor="titulo" className="block text-sm font-medium text-gray-700 mb-1">Título</label>
           <input
             type="text"
@@ -120,33 +106,19 @@ const AgregarGastos: React.FC<{ onSubmitSuccess?: () => void }> = ({ onSubmitSuc
         </div>
 
         <div>
-          <label htmlFor="localidad" className="block text-sm font-medium text-gray-700 mb-1">Localidad</label>
+          <label htmlFor="divisa" className="block text-sm font-medium text-gray-700 mb-1">Moneda</label>
           <select
-            name="localidad"
-            id="localidad"
-            value={formData.localidad}
+            name="divisa"
+            id="divisa"
+            value={formData.divisa}
             onChange={handleChange}
             className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm shadow-sm bg-white focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
             required
           >
-            <option value="">Seleccione una opción</option>
-            {localidades.map(loc => (
-              <option key={loc.id} value={loc.id}>{loc.nombre}</option>
-            ))}
+            <option value="">Seleccione una moneda</option>
+            <option value="USD">USD</option>
+            <option value="Bs">Bs</option>
           </select>
-        </div>
-
-        <div>
-          <label htmlFor="fecha" className="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
-          <input
-            type="date"
-            name="fecha"
-            id="fecha"
-            value={formData.fecha}
-            onChange={handleChange}
-            className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm shadow-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
-            required
-          />
         </div>
 
         <div>
@@ -165,18 +137,46 @@ const AgregarGastos: React.FC<{ onSubmitSuccess?: () => void }> = ({ onSubmitSuc
         </div>
 
         <div>
-          <label htmlFor="divisa" className="block text-sm font-medium text-gray-700 mb-1">Moneda</label>
+          <label htmlFor="monto" className="block text-sm font-medium text-gray-700 mb-1">Monto</label>
+          <input
+            type="number"
+            name="monto"
+            id="monto"
+            value={formData.monto}
+            onChange={handleChange}
+            className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm shadow-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+            required
+            onWheel={e => e.currentTarget.blur()}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="fecha" className="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
+          <input
+            type="date"
+            name="fecha"
+            id="fecha"
+            value={formData.fecha}
+            onChange={handleChange}
+            className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm shadow-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+            required
+          />
+        </div>
+
+        <div>
+          <label htmlFor="localidad" className="block text-sm font-medium text-gray-700 mb-1">Localidad</label>
           <select
-            name="divisa"
-            id="divisa"
-            value={formData.divisa}
+            name="localidad"
+            id="localidad"
+            value={formData.localidad}
             onChange={handleChange}
             className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm shadow-sm bg-white focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
             required
           >
-            <option value="">Seleccione una moneda</option>
-            <option value="USD">USD</option>
-            <option value="Bs">Bs</option>
+            <option value="">Seleccione una opción</option>
+            {localidades.map(loc => (
+              <option key={loc.id} value={loc.id}>{loc.nombre}</option>
+            ))}
           </select>
         </div>
 

@@ -8,6 +8,8 @@ interface Gasto {
   fecha: string;
   estado: string; // "wait", "verified", "denied"
   localidad: string;
+  divisa?: string; // Puede venir en nuevos registros
+  tasa?: number;   // Puede venir en nuevos registros
 }
 
 interface FarmaciaChip {
@@ -177,7 +179,7 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
     .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8">
+    <div className="h-1 bg-slate-50 py-8">
       <div className="w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
         <h1 className="text-3xl font-bold text-red-700 mb-8 text-center">Gestión de Gastos</h1>
         
@@ -282,9 +284,9 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
         ) : (
           <>
             {/* Vista de tabla para pantallas medianas y grandes */}
-            <div className="hidden sm:block bg-white rounded-lg shadow-xl overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-slate-200">
+            <div className=" max-h-96 hidden sm:block bg-white rounded-lg shadow-xl overflow-auto max-w-full">
+              <div className="overflow-x-auto w-full">
+                <table className="min-w-full divide-y divide-slate-200 table-fixed" style={{ maxWidth: '100vw' }}>
                   <thead className="bg-red-50">
                     <tr>
                       {['Fecha', 'Título', 'Descripción', 'Monto', 'Estado', 'Acción'].map(header => (
@@ -301,7 +303,11 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
                         <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-800 font-medium">{g.titulo}</td>
                         <td className="px-5 py-4 text-sm text-slate-600 max-w-md truncate" title={g.descripcion}>{g.descripcion}</td>
                         <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-800 font-semibold text-right">
-                          ${g.monto.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {g.divisa === 'Bs' && g.tasa ?
+                            `Bs ${(g.monto).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / Tasa: ${g.tasa}\n$${(g.monto / g.tasa).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                            :
+                            `$${g.monto.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                          }
                         </td>
                         <td className="px-5 py-4 whitespace-nowrap">
                           <EstadoGastoBadge estado={g.estado} />
@@ -338,7 +344,11 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
                   <p className="text-sm text-slate-600 line-clamp-3" title={g.descripcion}>{g.descripcion || "Sin descripción"}</p>
                   <div className="flex justify-between items-center mt-2 pt-2 border-t border-slate-100">
                     <span className="font-bold text-lg text-slate-800">
-                      ${g.monto.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {g.divisa === 'Bs' && g.tasa ?
+                        `Bs ${(g.monto).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / Tasa: ${g.tasa}\n$${(g.monto / g.tasa).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                        :
+                        `$${g.monto.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                      }
                     </span>
                     <select
                       value={g.estado}
