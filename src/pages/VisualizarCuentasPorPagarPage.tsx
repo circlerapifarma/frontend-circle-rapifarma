@@ -92,7 +92,6 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
   const [fechaInicio, setFechaInicio] = useState<string>("");
   const [fechaFin, setFechaFin] = useState<string>("");
   const [estatusFiltro, setEstatusFiltro] = useState<string>("wait");
-  const [descripcionExpandida, setDescripcionExpandida] = useState<string | null>(null);
 
   const fetchCuentas = async () => {
     setLoading(true);

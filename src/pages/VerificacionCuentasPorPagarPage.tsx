@@ -17,15 +17,15 @@ interface CuentaPorPagar {
   descripcion: string;
   monto: number;
   divisa: string;
-  tasa?: number;
+  tasa: number;
   numeroFactura: string;
   numeroControl: string;
   fechaEmision: string;
   diasCredito: number;
   estatus: string;
   farmacia: string;
-  retencion?: number;
-  fechaRecepcion?: string;
+  retencion: number;
+  fechaRecepcion: string;
 }
 
 const VerificacionCuentasPorPagarPage: React.FC = () => {

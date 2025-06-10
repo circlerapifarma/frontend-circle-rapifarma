@@ -8,7 +8,7 @@ interface CuentaPorPagar {
   descripcion: string;
   monto: number;
   divisa: string;
-  tasa?: number;
+  tasa: number;
   numeroFactura: string;
   numeroControl: string;
   fechaEmision: string;
