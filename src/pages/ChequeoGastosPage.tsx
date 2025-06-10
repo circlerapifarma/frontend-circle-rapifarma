@@ -166,6 +166,9 @@ const ChequeoGastosPage: React.FC = () => {
                         </div>
                         <div className="text-base text-gray-600 mt-1">Descripción: {gasto.descripcion}</div>
                         <div className="text-sm text-gray-500 mt-1">Fecha: {new Date(gasto.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>
+                        {gasto.fechaRegistro && (
+                          <div className="text-sm text-gray-500 mt-1">Fecha de registro: {new Date(gasto.fechaRegistro).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>
+                        )}
                       </div>
                       <div className="flex flex-col sm:flex-row gap-3 mt-4 md:mt-0">
                         <Button

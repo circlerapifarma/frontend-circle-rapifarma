@@ -7,7 +7,10 @@ interface Gasto {
   descripcion: string;
   localidad: string; // Este campo es el ID de la localidad
   fecha: string;
+  fechaRegistro?: string; // <-- Nueva fecha de registro
   estado: string;
+  divisa?: string;
+  tasa?: number;
 }
 
 interface Localidad {

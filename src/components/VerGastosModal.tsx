@@ -13,6 +13,7 @@ interface Gasto {
   descripcion: string;
   monto: number;
   fecha: string | Date;
+  fechaRegistro?: string | Date; // <-- Nueva fecha de registro
   estado: string;
   divisa?: string;
   tasa?: number;
@@ -93,7 +94,7 @@ const VerGastosModal: React.FC<VerGastosModalProps> = ({ open, onClose, farmacia
                 if (gasto.divisa === "Bs" && gasto.tasa && gasto.tasa > 0) {
                   montoUsd = gasto.monto / gasto.tasa;
                 }
-                // Formatear fecha
+                // Formatear fecha del usuario
                 let fechaStr = "";
                 if (gasto.fecha instanceof Date) {
                   fechaStr = gasto.fecha.toLocaleDateString();
@@ -101,13 +102,24 @@ const VerGastosModal: React.FC<VerGastosModalProps> = ({ open, onClose, farmacia
                   const d = new Date(gasto.fecha);
                   fechaStr = d.toLocaleDateString();
                 }
+                // Formatear fecha de registro
+                let fechaRegistroStr = "";
+                if (gasto.fechaRegistro instanceof Date) {
+                  fechaRegistroStr = gasto.fechaRegistro.toLocaleDateString();
+                } else if (typeof gasto.fechaRegistro === "string" && gasto.fechaRegistro) {
+                  const d = new Date(gasto.fechaRegistro);
+                  fechaRegistroStr = d.toLocaleDateString();
+                }
                 return (
                   <li key={gasto._id} className="py-3 sm:py-4">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0">
                       <div>
                         <h3 className="text-base sm:text-lg font-semibold text-gray-800">{gasto.titulo}</h3>
                         <p className="text-xs sm:text-sm text-gray-600">{gasto.descripcion}</p>
-                        <p className="text-xs sm:text-sm text-gray-600">Fecha: {fechaStr}</p>
+                        <p className="text-xs sm:text-sm text-gray-600">Fecha del usuario: {fechaStr}</p>
+                        {fechaRegistroStr && (
+                          <p className="text-xs sm:text-sm text-gray-600">Fecha de registro: {fechaRegistroStr}</p>
+                        )}
                         <p className="text-xs sm:text-sm text-gray-600">Estado: {(() => {
                           switch (gasto.estado) {
                             case 'wait': return 'Pendiente';
