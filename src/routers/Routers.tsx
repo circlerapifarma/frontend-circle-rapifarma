@@ -156,7 +156,7 @@ const AppRouter = () => (
         <Route
             path="/vercuentasporpagar"
             element={
-                <PermissionRoute permiso="acceso_admin">
+                <PermissionRoute permiso="verificar_gastos">
                     <VisualizarCuentasPorPagarPage />
                 </PermissionRoute>
             }
@@ -164,7 +164,7 @@ const AppRouter = () => (
         <Route
             path="/vergastos"
             element={
-                <PermissionRoute permiso="acceso_admin">
+                <PermissionRoute permiso="verificar_gastos">
                     <VisualizarGastosFarmaciaPage />
                 </PermissionRoute>
             }
@@ -204,7 +204,7 @@ const AppRouter = () => (
         <Route
             path="/verificacioncuentasporpagar"
             element={
-                <PermissionRoute permiso="acceso_admin">
+                <PermissionRoute permiso="verificar_gastos">
                     <VerificacionCuentasPorPagarPage />
                 </PermissionRoute>
             }
