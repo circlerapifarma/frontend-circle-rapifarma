@@ -236,7 +236,7 @@ const VisualizarInventariosPage: React.FC = () => {
         )}
         {/* Modal de confirmación */}
         {showConfirmModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-white bg-opacity-30">
             <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
               <h3 className="text-lg font-semibold mb-3 text-slate-800">Confirmar cambio de estado</h3>
               <p className="mb-5 text-slate-600 text-sm">

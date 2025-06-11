@@ -1,8 +1,11 @@
 import React, { useState } from "react";
+import UpFileCuentasPorPagar from "../components/upfile/UpFileCuentasPorPagar";
 
 interface CuentaPorPagar {
   fechaEmision: string;
   fechaRecepcion: string;
+  fechaVencimiento?: string; // Nuevo campo
+  fechaRegistro?: string; // Nuevo campo
   diasCredito: number;
   numeroFactura: string;
   numeroControl: string;
@@ -15,6 +18,7 @@ interface CuentaPorPagar {
   estatus: string;
   usuarioCorreo: string;
   farmacia: string;
+  imagenesCuentaPorPagar?: string[];
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -38,6 +42,8 @@ const CuentasPorPagarPage: React.FC = () => {
   const [form, setForm] = useState<CuentaPorPagar>({
     fechaEmision: "",
     fechaRecepcion: "",
+    fechaVencimiento: "",
+    fechaRegistro: new Date().toISOString().slice(0, 10),
     diasCredito: 0,
     numeroFactura: "",
     numeroControl: "",
@@ -49,8 +55,10 @@ const CuentasPorPagarPage: React.FC = () => {
     tasa: 0,
     estatus: "activa",
     usuarioCorreo: usuario?.correo || "",
-    farmacia: ""
+    farmacia: "",
+    imagenesCuentaPorPagar: []
   });
+  const [imagenesCuentaPorPagar, setImagenesCuentaPorPagar] = useState<Array<string | null>>([null, null, null]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -63,13 +71,51 @@ const CuentasPorPagarPage: React.FC = () => {
     }));
   };
 
+  // Cálculo automático de días de crédito
+  const handleFechaRecepcionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fechaRecepcion = e.target.value;
+    setForm(prev => {
+      const diasCredito = prev.fechaVencimiento && fechaRecepcion
+        ? Math.max(0, Math.ceil((new Date(prev.fechaVencimiento).getTime() - new Date(fechaRecepcion).getTime()) / (1000 * 60 * 60 * 24)))
+        : prev.diasCredito;
+      return { ...prev, fechaRecepcion, diasCredito };
+    });
+  };
+  const handleFechaVencimientoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fechaVencimiento = e.target.value;
+    setForm(prev => {
+      const diasCredito = prev.fechaRecepcion && fechaVencimiento
+        ? Math.max(0, Math.ceil((new Date(fechaVencimiento).getTime() - new Date(prev.fechaRecepcion).getTime()) / (1000 * 60 * 60 * 24)))
+        : prev.diasCredito;
+      return { ...prev, fechaVencimiento, diasCredito };
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
     setLoading(true);
+    // Validar que haya al menos una imagen
+    const imagenesValidas = imagenesCuentaPorPagar.filter((img): img is string => !!img);
+    if (imagenesValidas.length === 0) {
+      setError("Debe adjuntar al menos una imagen (máx. 3).");
+      setLoading(false);
+      return;
+    }
+    // Mensaje de advertencia antes de enviar
+    if (!window.confirm("¿Está seguro de registrar esta cuenta por pagar? Verifique que los datos y las imágenes sean correctos.")) {
+      setLoading(false);
+      return;
+    }
     try {
-      const payload = { ...form, usuarioCorreo: usuario?.correo || "", farmacia };
+      const payload = {
+        ...form,
+        usuarioCorreo: usuario?.correo || "",
+        farmacia,
+        imagenesCuentaPorPagar: imagenesValidas.slice(0, 3),
+        fechaRegistro: new Date().toISOString().slice(0, 10),
+      };
       // Obtener token JWT del localStorage (guardado como string plano bajo la key "token")
       const token = localStorage.getItem("token");
       if (!token) throw new Error("No se encontró el token de autenticación");
@@ -89,6 +135,8 @@ const CuentasPorPagarPage: React.FC = () => {
       setForm({
         fechaEmision: "",
         fechaRecepcion: "",
+        fechaVencimiento: "",
+        fechaRegistro: new Date().toISOString().slice(0, 10),
         diasCredito: 0,
         numeroFactura: "",
         numeroControl: "",
@@ -100,9 +148,11 @@ const CuentasPorPagarPage: React.FC = () => {
         tasa: 0,
         estatus: "activa",
         usuarioCorreo: usuario?.correo || "",
-        farmacia: ""
+        farmacia: "",
+        imagenesCuentaPorPagar: []
       });
       setFarmacia(farmaciasArr.length === 1 ? farmaciasArr[0][0] : "");
+      setImagenesCuentaPorPagar([null, null, null]); // Limpieza de fotos
     } catch (err: any) {
       setError(err.message || "Error al registrar la cuenta por pagar");
     } finally {
@@ -136,11 +186,15 @@ const CuentasPorPagarPage: React.FC = () => {
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">Fecha de Recepción</label>
-          <input type="date" name="fechaRecepcion" value={form.fechaRecepcion} onChange={handleChange} className="w-full border rounded px-2 py-1" required />
+          <input type="date" name="fechaRecepcion" value={form.fechaRecepcion} onChange={handleFechaRecepcionChange} className="w-full border rounded px-2 py-1" required />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Fecha de Vencimiento</label>
+          <input type="date" name="fechaVencimiento" value={form.fechaVencimiento} onChange={handleFechaVencimientoChange} className="w-full border rounded px-2 py-1" required />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">Días de Crédito</label>
-          <input type="number" name="diasCredito" value={form.diasCredito} onChange={handleChange} min={0} className="w-full border rounded px-2 py-1" required onWheel={e => e.currentTarget.blur()} />
+          <input type="number" name="diasCredito" value={form.diasCredito} readOnly className="w-full border rounded px-2 py-1 bg-gray-100" />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">Número de Factura</label>
@@ -183,6 +237,43 @@ const CuentasPorPagarPage: React.FC = () => {
             <option value="activa">Activa</option>
             <option value="inactiva">Inactiva</option>
           </select>
+        </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Adjuntar imágenes (máx. 3)</label>
+          <div className="flex flex-wrap gap-4">
+            {[0, 1, 2].map(idx => (
+              <div key={idx} className="flex flex-col items-start relative group">
+                <UpFileCuentasPorPagar
+                  onUploadSuccess={(objectName: string) => {
+                    setImagenesCuentaPorPagar(prev => {
+                      const newArr = [...prev];
+                      newArr[idx] = objectName;
+                      return newArr;
+                    });
+                  }}
+                  label={`Imagen ${idx + 1}`}
+                  maxSizeMB={2}
+                  initialFileUrl={imagenesCuentaPorPagar[idx] || undefined}
+                />
+                {imagenesCuentaPorPagar[idx] && (
+                  <button
+                    type="button"
+                    className="absolute top-2 right-2 bg-white bg-opacity-80 rounded-full p-1 shadow text-red-600 hover:bg-red-100 hover:text-red-800 transition-colors z-20 opacity-80 group-hover:opacity-100"
+                    title="Eliminar imagen"
+                    onClick={() => {
+                      setImagenesCuentaPorPagar(prev => {
+                        const newArr = [...prev];
+                        newArr[idx] = null;
+                        return newArr;
+                      });
+                    }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
         <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded w-full mt-2" disabled={loading}>
           {loading ? "Guardando..." : "Registrar"}

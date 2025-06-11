@@ -1,7 +1,7 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import UpFile from "./upfile/UpFile";
+import ImageDisplay from "./upfile/ImageDisplay";
 
 interface CuentaPorPagar {
   _id: string;
@@ -18,6 +18,9 @@ interface CuentaPorPagar {
   farmacia: string;
   retencion: number;
   fechaRecepcion: string;
+  fechaVencimiento?: string; // Nuevo campo
+  fechaRegistro?: string; // Nuevo campo
+  imagenesCuentaPorPagar?: string[]; // <-- Añadido para las imágenes
 }
 
 interface ModalCuentasPorPagarProps {
@@ -53,7 +56,16 @@ const ModalCuentasPorPagar: React.FC<ModalCuentasPorPagarProps> = ({ cuentas, fa
                 <div className="text-base text-gray-700 mb-1">Retención: <span className="font-semibold text-blue-700">{c.divisa === 'Bs' && c.tasa ? `Bs ${c.retencion?.toLocaleString('es-VE', { minimumFractionDigits: 2 })} / Tasa: ${c.tasa} | $${(c.retencion / c.tasa).toLocaleString('es-VE', { minimumFractionDigits: 2 })}` : `$${c.retencion?.toLocaleString('es-VE', { minimumFractionDigits: 2 })}`}</span></div>
                 <div className="text-base text-gray-700 mb-1">Fecha Emisión: {c.fechaEmision}</div>
                 <div className="text-base text-gray-700 mb-1">Fecha Recepción: {c.fechaRecepcion}</div>
+                <div className="text-base text-gray-700 mb-1">Fecha Vencimiento: {c.fechaVencimiento}</div>
                 <div className="text-base text-gray-700 mb-1">Días Crédito: {c.diasCredito}</div>
+                {/* Mostrar imágenes si existen */}
+                {Array.isArray((c as any).imagenesCuentaPorPagar) && (c as any).imagenesCuentaPorPagar.length > 0 && (
+                  <div className="flex gap-2 mt-2">
+                    {(c as any).imagenesCuentaPorPagar.map((img: string, idx: number) => (
+                      <ImageDisplay key={img + idx} imageName={img} alt={`Comprobante ${idx + 1}`} style={{ maxWidth: 80, maxHeight: 80, borderRadius: 8, border: '1px solid #ccc', boxShadow: '0 1px 4px #0002', cursor: 'pointer' }} />
+                    ))}
+                  </div>
+                )}
                 <div className="flex gap-3 mt-2">
                   <Button
                     onClick={() => onConfirm(c._id, "verified")}
@@ -68,7 +80,6 @@ const ModalCuentasPorPagar: React.FC<ModalCuentasPorPagarProps> = ({ cuentas, fa
                     ❌ Rechazar
                   </Button>
                 </div>
-                <UpFile/>
                 
               </Card>
             ))}

@@ -83,7 +83,7 @@ const VerificacionCuadresModal: React.FC<Props> = ({ open, onClose, farmaciaId, 
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-white bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl p-4 sm:p-8 relative border-4 border-blue-700 mx-2 sm:mx-0">
         <button className="absolute top-2 right-3 sm:top-3 sm:right-5 text-2xl sm:text-3xl text-gray-500 hover:text-red-600 font-bold" onClick={onClose}>&times;</button>
         <h2 className="text-2xl sm:text-3xl font-extrabold text-blue-800 mb-4 sm:mb-6 text-center tracking-wide drop-shadow">Verificar Cuadres - {farmaciaNombre}</h2>

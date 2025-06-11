@@ -390,7 +390,7 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
 
         {/* Diálogo de confirmación con mejor estilo */}
         {confirmDialog.open && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-white bg-opacity-50 backdrop-blur-sm p-4">
             <div className="bg-white p-6 sm:p-8 rounded-lg shadow-2xl max-w-md w-full">
               <h2 className="text-xl font-semibold text-slate-800 mb-2">Confirmar Cambio de Estatus</h2>
               <p className="text-slate-600 mb-4">
