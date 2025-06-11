@@ -1,4 +1,5 @@
 import React from "react";
+import ImageDisplay from "./upfile/ImageDisplay";
 
 interface PuntoVenta {
   banco: string;
@@ -26,9 +27,9 @@ const CuadreDetalleModal: React.FC<CuadreDetalleModalProps> = ({ open, onClose, 
         </button>
         <h2 className="text-xl font-bold mb-4 text-blue-800">Detalle del Cuadre</h2>
         <div className="space-y-2 text-sm">
-          <div><b>Fecha real cuadre (dia):</b> {cuadre.dia || <span className="text-gray-400">No registrada</span>}</div>
-          <div><b>Hora real cuadre:</b> {cuadre.hora || <span className="text-gray-400">No registrada</span>}</div>
-          <div><b>Fecha seleccionada por cajero:</b> {cuadre.fechaCajero || <span className="text-gray-400">No registrada</span>}</div>
+          <div><b>Fecha Cuadre:</b> {cuadre.dia || <span className="text-gray-400">No registrada</span>}</div>
+          <div><b>Hora Registro:</b> {cuadre.hora || <span className="text-gray-400">No registrada</span>}</div>
+          <div><b>Fecha Registro:</b> {cuadre.fecha || <span className="text-gray-400">No registrada</span>}</div>
           <div><b>Costo Inventario:</b> {typeof cuadre.costoInventario !== 'undefined' ? cuadre.costoInventario : <span className="text-gray-400">No registrado</span>}</div>
           <div><b>Caja:</b> {cuadre.cajaNumero}</div>
           <div><b>Tasa:</b> {cuadre.tasa}</div>
@@ -60,6 +61,20 @@ const CuadreDetalleModal: React.FC<CuadreDetalleModalProps> = ({ open, onClose, 
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+
+          {/* Mostrar imágenes del cuadre si existen */}
+          {cuadre.imagenesCuadre && cuadre.imagenesCuadre.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {cuadre.imagenesCuadre.map((img: string, idx: number) => (
+                <ImageDisplay
+                  key={img + idx}
+                  imageName={img}
+                  alt={`Comprobante ${idx + 1}`}
+                  style={{ maxWidth: 120, maxHeight: 120, borderRadius: 8, border: '1px solid #ccc', boxShadow: '0 1px 4px #0002', cursor: 'pointer' }}
+                />
+              ))}
             </div>
           )}
         </div>

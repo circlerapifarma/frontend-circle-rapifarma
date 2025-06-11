@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { FaRegFileAlt } from "react-icons/fa";
+import ModalCuentasPorPagar from "@/components/ModalCuentasPorPagar";
 
 interface CuentaPorPagar {
   _id: string;
@@ -92,6 +94,8 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
   const [fechaInicio, setFechaInicio] = useState<string>("");
   const [fechaFin, setFechaFin] = useState<string>("");
   const [estatusFiltro, setEstatusFiltro] = useState<string>("wait");
+  const [detalleModalOpen, setDetalleModalOpen] = useState(false);
+  const [cuentaSeleccionada, setCuentaSeleccionada] = useState<CuentaPorPagar | null>(null);
 
   const fetchCuentas = async () => {
     setLoading(true);
@@ -296,6 +300,7 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
               <table className="min-w-full divide-y divide-slate-200">
                 <thead className="bg-slate-100">
                   <tr>
+                    <th className="px-2 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap"></th>
                     {/* Cabeceras de tabla con más padding y estilo uniforme */}
                     {['Fecha', 'Recepción', 'Factura', 'Control', 'Proveedor', 'Descripción', 'Monto', 'Retención', 'Moneda', 'Tasa', 'Usuario', 'Farmacia', 'Estatus', 'Días Vencer', 'Acción'].map(header => (
                       <th key={header} scope="col" className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">
@@ -318,6 +323,15 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
 
                     return (
                       <tr key={c._id} className="hover:bg-slate-50 transition-colors duration-150 ease-in-out">
+                        <td className="px-2 py-4 whitespace-nowrap text-sm">
+                          <button
+                            className="text-blue-600 hover:text-blue-800"
+                            title="Ver detalles de la cuenta por pagar"
+                            onClick={() => { setCuentaSeleccionada(c); setDetalleModalOpen(true); }}
+                          >
+                            <FaRegFileAlt />
+                          </button>
+                        </td>
                         <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{formatFecha(c.fechaEmision)}</td>
                         <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{formatFecha(c.fechaRecepcion)}</td>
                         <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.numeroFactura}</td>
@@ -418,6 +432,17 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {cuentaSeleccionada && detalleModalOpen && (
+          <ModalCuentasPorPagar
+            cuentas={[cuentaSeleccionada]}
+            farmaciaNombre={cuentaSeleccionada.farmacia}
+            onConfirm={() => {}}
+            onClose={() => { setDetalleModalOpen(false); setCuentaSeleccionada(null); }}
+            loading={false}
+            error={null}
+          />
         )}
       </div>
     </div>
