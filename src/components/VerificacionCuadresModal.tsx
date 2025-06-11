@@ -103,7 +103,6 @@ const VerificacionCuadresModal: React.FC<Props> = ({ open, onClose, farmaciaId, 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 sm:gap-x-8 gap-y-1 text-sm sm:text-base">
                   <div><b>Tasa:</b> {c.tasa}</div>
                   <div><b>Total Caja Sistema Bs:</b> {c.totalCajaSistemaBs}</div>
-                  <div><b>Devoluciones Bs:</b> {c.devolucionesBs}</div>
                   <div><b>Recarga Bs:</b> {c.recargaBs}</div>
                   <div><b>Pago Móvil Bs:</b> {c.pagomovilBs}</div>
                   <div><b>Efectivo Bs:</b> {c.efectivoBs}</div>
