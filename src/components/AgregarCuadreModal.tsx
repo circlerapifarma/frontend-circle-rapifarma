@@ -446,7 +446,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                                                 return newArr;
                                             });
                                         }}
-                                        label={`Adjuntar imagen ${idx + 1} (opcional)`}
+                                        label={`Adjuntar imagen ${idx + 1}`}
                                         maxSizeMB={2}
                                         initialFileUrl={imagenesCuadre[idx] || undefined}
                                     />
