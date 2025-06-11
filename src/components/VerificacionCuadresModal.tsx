@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import ImageDisplay from "./upfile/ImageDisplay";
 
 interface CuadreCaja {
   _id: string;
@@ -31,6 +32,8 @@ interface CuadreCaja {
   costoInventario?: number; // <-- Agregado para soportar nuevos cuadres
   fecha?: string; // <-- Para mostrar la fecha de registro
   hora?: string;  // <-- Para mostrar la hora de registro
+  imagenesCuadre?: string[]; // Nombres de los objetos de imagen en R2 (hasta 3)
+  // imagenCuadre?: string; // DEPRECATED
 }
 
 interface Props {
@@ -142,6 +145,17 @@ const VerificacionCuadresModal: React.FC<Props> = ({ open, onClose, farmaciaId, 
                     <b>Hora registro:</b> {c.hora ? c.hora : <span className="text-gray-400">No registrada</span>}
                   </div>
                 </div>
+                {/* Mostrar imágenes adjuntas si existen */}
+                {Array.isArray(c.imagenesCuadre) && c.imagenesCuadre.length > 0 && (
+                  <div className="mt-2">
+                    <span className="text-xs text-gray-700">Imágenes adjuntas:</span>
+                    <div className="flex gap-2 mt-1 flex-wrap">
+                      {c.imagenesCuadre.map((img, idx) => (
+                        <ImageDisplay key={img || idx} imageName={img} style={{ maxWidth: 200, maxHeight: 200, borderRadius: 8, marginTop: 8 }} />
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mt-4 justify-end">
                   {!soloDenegar && (
                     <Button variant="default" size="lg" className="w-full sm:w-auto px-6 py-2 text-base sm:text-lg font-bold" onClick={() => actualizarEstado(c, "verified")}>Verificar</Button>

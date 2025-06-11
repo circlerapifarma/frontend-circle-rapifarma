@@ -1,6 +1,7 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import UpFile from "./upfile/UpFile";
 
 interface CuentaPorPagar {
   _id: string;
@@ -67,6 +68,8 @@ const ModalCuentasPorPagar: React.FC<ModalCuentasPorPagarProps> = ({ cuentas, fa
                     ❌ Rechazar
                   </Button>
                 </div>
+                <UpFile/>
+                
               </Card>
             ))}
           </div>

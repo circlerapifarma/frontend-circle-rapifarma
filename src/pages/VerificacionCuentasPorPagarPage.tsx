@@ -10,6 +10,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import ModalCuentasPorPagar from "@/components/ModalCuentasPorPagar";
+import UpFile from "@/components/upfile/UpFile";
 
 interface CuentaPorPagar {
   _id: string;
@@ -190,6 +191,7 @@ const VerificacionCuentasPorPagarPage: React.FC = () => {
                 >
                   Aceptar
                 </Button>
+                <UpFile/>
               </DialogFooter>
             </DialogContent>
           </Dialog>

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import UpFile from "./upfile/UpFile";
+import ImageDisplay from "./upfile/ImageDisplay";
 
 interface Props {
     farmacia: string;
@@ -45,6 +47,8 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
     ]);
 
     const [cajeros, setCajeros] = useState<Cajero[]>([]);
+    // Para guardar hasta 3 objectNames, inicializado con 3 nulos
+    const [imagenesCuadre, setImagenesCuadre] = useState<Array<string | null>>([null, null, null]);
 
     // Cálculos automáticos
     // Recarga Bs y Devoluciones Bs son solo visuales, no afectan los totales
@@ -75,6 +79,12 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
         const errorMsg = validar();
         if (errorMsg) {
             setError(errorMsg);
+            return;
+        }
+        // Validar imágenes: debe haber al menos una
+        const imagenesValidas = imagenesCuadre.filter((img): img is string => !!img);
+        if (imagenesValidas.length === 0) {
+            setError("Debe adjuntar al menos una imagen (máx. 3).");
             return;
         }
         // Mostrar confirmación siempre
@@ -121,6 +131,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                 return farmacias[farmacia] || '';
             })(),
             costoInventario: costoInventario,
+            imagenesCuadre: imagenesCuadre.filter((img): img is string => img !== null).slice(0, 3),
         };
 
         console.log("Cuadre object being sent:", cuadre); // Log the cuadre object
@@ -423,6 +434,43 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                                 readOnly
                                 className="w-full border rounded-lg p-2 bg-gray-100 text-gray-700"
                             />
+                        </div>
+                        <div className="grid grid-cols-1 gap-3 md:grid-cols-1 md:gap-4">
+                            {[0, 1, 2].map(idx => (
+                                <div key={idx} className="flex flex-col items-start relative group">
+                                    <UpFile
+                                        onUploadSuccess={(objectName: string) => {
+                                            setImagenesCuadre(prev => {
+                                                const newArr = [...prev];
+                                                newArr[idx] = objectName;
+                                                return newArr;
+                                            });
+                                        }}
+                                        label={`Adjuntar imagen ${idx + 1} (opcional)`}
+                                        maxSizeMB={2}
+                                        initialFileUrl={imagenesCuadre[idx] || undefined}
+                                    />
+                                    {imagenesCuadre[idx] && (
+                                        <div className="mt-1 relative inline-block">
+                                            <ImageDisplay imageName={imagenesCuadre[idx]!} style={{ maxWidth: 200, maxHeight: 200, borderRadius: 8, marginTop: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }} />
+                                            <button
+                                                type="button"
+                                                className="absolute top-2 right-2 bg-white bg-opacity-80 rounded-full p-1 shadow-md text-red-600 hover:bg-red-100 hover:text-red-800 transition-colors z-20 opacity-80 group-hover:opacity-100"
+                                                title="Eliminar imagen"
+                                                onClick={() => {
+                                                    setImagenesCuadre(prev => {
+                                                        const newArr = [...prev];
+                                                        newArr[idx] = null;
+                                                        return newArr;
+                                                    });
+                                                }}
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
                         </div>
                     </div>
                     <button
