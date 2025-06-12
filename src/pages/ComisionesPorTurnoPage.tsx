@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { animate } from 'animejs';
 
 type Comision = {
   cajero: string;
@@ -9,6 +10,7 @@ type Comision = {
   faltante?: number;
   farmacias?: Record<string, string> | string[];
   comisionPorcentaje?: number;
+  dia?: string; // <-- Agregado para la fecha
 };
 
 const ComisionesPorTurnoPage: React.FC = () => {
@@ -18,6 +20,7 @@ const ComisionesPorTurnoPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [farmaciaFiltro, setFarmaciaFiltro] = useState<string>("");
+  const [openCajero, setOpenCajero] = useState<string | null>(null);
 
   // Adjusted to handle updated backend response structure
   const handleFetchComisiones = async () => {
@@ -46,6 +49,7 @@ const ComisionesPorTurnoPage: React.FC = () => {
               faltante: item.faltante || 0,
               farmacias: item.farmacias || [],
               comisionPorcentaje: item.comisionPorcentaje || 0,
+              dia: item.dia || undefined, // <-- Mapear el campo dia
             }))
           : []
       );
@@ -109,7 +113,7 @@ const ComisionesPorTurnoPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
+    <div className="max-w-4xl mx-auto py-4 px-2 sm:px-4 md:px-6 lg:px-8">
       <h1 className="text-2xl font-bold text-blue-800 mb-2 text-center">
         Comisiones por Turno
       </h1>
@@ -156,13 +160,13 @@ const ComisionesPorTurnoPage: React.FC = () => {
       <button
         onClick={handleFetchComisiones}
         disabled={loading}
-        className="bg-blue-500 text-white py-2 px-4 rounded-lg shadow hover:bg-blue-600 transition mb-6 disabled:opacity-50"
+        className="w-full sm:w-auto bg-blue-500 text-white py-2 px-4 rounded-lg shadow hover:bg-blue-600 transition mb-6 disabled:opacity-50"
       >
         {loading ? "Cargando..." : "Obtener Comisiones"}
       </button>
 
       {/* Chips de filtro por farmacia */}
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="mb-4 flex flex-wrap gap-2 overflow-x-auto">
         {farmaciasUnicas.map((f) => (
           <button
             key={f}
@@ -198,39 +202,75 @@ const ComisionesPorTurnoPage: React.FC = () => {
             const totalVentas = lista.reduce((acc, item) => acc + (Number(item.totalVentas) || 0), 0);
             const totalSobrante = lista.reduce((acc, item) => acc + (Number(item.sobrante) || 0), 0);
             const totalFaltante = lista.reduce((acc, item) => acc + (Number(item.faltante) || 0), 0);
+            const isOpen = openCajero === cajero;
             return (
-              <div key={cajero} className="border p-4 rounded-lg shadow">
-                <h2 className="text-lg font-semibold text-gray-800 mb-2">
-                  {cajero}
-                  {lista[0].farmacias && (
-                    <span className="block text-xs text-blue-700 font-normal mt-1">
-                      Farmacia(s): {Array.isArray(lista[0].farmacias) ? lista[0].farmacias.join(", ") : Object.values(lista[0].farmacias).join(", ")}
-                    </span>
-                  )}
-                  <span className="block text-xs text-green-700 font-normal mt-1">
+              <div key={cajero} className="border rounded-lg shadow bg-white overflow-x-auto">
+                <button
+                  className="w-full flex items-center justify-between px-4 py-3 text-lg font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 transition bg-blue-50 hover:bg-blue-100 rounded-t-lg"
+                  onClick={() => {
+                    setOpenCajero(isOpen ? null : cajero);
+                  }}
+                  aria-expanded={isOpen}
+                  aria-controls={`panel-${cajero}`}
+                  ref={el => {
+                    if (el && !isOpen) {
+                      animate(el, {
+                        opacity: [0, 1],
+                        translateY: [-24, 0],
+                        duration: 400,
+                        easing: 'outCubic'
+                      });
+                    }
+                  }}
+                >
+                  <span>{cajero}</span>
+                  <span className="ml-2 text-xs text-blue-700 font-normal">
+                    {lista[0].farmacias && (
+                      <>Farmacia(s): {Array.isArray(lista[0].farmacias) ? lista[0].farmacias.join(", ") : Object.values(lista[0].farmacias).join(", ")}</>
+                    )}
+                  </span>
+                  <span className="ml-2 text-xs text-green-700 font-normal">
                     % Comisión: {lista[0].comisionPorcentaje ?? 0}
                   </span>
-                </h2>
-                <ul className="divide-y divide-gray-200">
-                  {lista.map((item, index) => (
-                    <li key={index} className="py-2 flex flex-col sm:flex-row sm:justify-between text-sm text-gray-700 gap-2">
-                      <span>Nombre: <strong>{item.cajero}</strong></span>
-                      <span>Turno: <strong>{item.turno}</strong></span>
-                      <span>Total vendido: <strong>${Number(item.totalVentas ?? 0).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
-                      <span>Sobrante: <strong className="text-green-700">${Number(item.sobrante ?? 0).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
-                      <span>Faltante: <strong className="text-red-700">${Number(item.faltante ?? 0).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
-                      <span>Comisión: <strong>${Number(item.comision ?? 0).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
-                    </li>
-                  ))}
-                  {/* Fila de totales por cajero */}
-                  <li className="pt-2 mt-2 border-t flex flex-col sm:flex-row sm:justify-between text-sm font-bold text-blue-900 bg-blue-50 rounded">
-                    <span>Total</span>
-                    <span>Comisión: ${totalComision.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                    <span>Total vendido: ${totalVentas.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                    <span>Sobrante: <span className="text-green-700">${totalSobrante.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></span>
-                    <span>Faltante: <span className="text-red-700">${totalFaltante.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></span>
-                  </li>
-                </ul>
+                  <svg className={`ml-4 w-5 h-5 transform transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                </button>
+                {/* Totales SIEMPRE visibles */}
+                <div className="flex flex-col xs:flex-row xs:flex-wrap sm:flex-row sm:justify-between text-sm font-bold text-blue-900 bg-blue-50 rounded-b px-4 py-2 gap-2 sm:gap-0 border-t">
+                  <span className="block min-w-[80px]">Total</span>
+                  <span className="block min-w-[120px]">Comisión: ${Number(totalComision).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="block min-w-[140px]">Total vendido: ${Number(totalVentas).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="block min-w-[110px]">Sobrante: ${Number(totalSobrante).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="block min-w-[110px] text-red-600">Faltante: ${Number(totalFaltante).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+                {/* Lista de turnos desplegable */}
+                {isOpen && (
+                  <ul id={`panel-${cajero}`} className="divide-y divide-gray-200 min-w-[340px] sm:min-w-0 px-2 pb-2"
+                    ref={el => {
+                      if (el) {
+                        animate(el, {
+                          opacity: [0, 1],
+                          translateY: [-24, 0],
+                          duration: 400,
+                          easing: 'outCubic'
+                        });
+                      }
+                    }}
+                  >
+                    {lista.map((item, index) => (
+                      <li key={index} className="py-2 flex flex-col xs:flex-row xs:flex-wrap sm:flex-row sm:justify-between text-sm text-gray-700 gap-2 sm:gap-0">
+                        <span className="block min-w-[120px]">Nombre: <strong>{item.cajero}</strong></span>
+                        <span className="block min-w-[100px]">Turno: <strong>{item.turno}</strong></span>
+                        {item.dia && typeof item.dia === 'string' && (
+                          <span className="block min-w-[110px]">Día: <strong>{item.dia.slice(0, 10)}</strong></span>
+                        )}
+                        <span className="block min-w-[140px]">Total vendido: <strong>${Number(item.totalVentas ?? 0).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
+                        <span className="block min-w-[110px]">Sobrante: <strong className="text-green-700">${Number(item.sobrante ?? 0).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
+                        <span className="block min-w-[110px]">Faltante: <strong className="text-red-700">${Number(item.faltante ?? 0).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
+                        <span className="block min-w-[120px]">Comisión: <strong>${Number(item.comision ?? 0).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             );
           })}
