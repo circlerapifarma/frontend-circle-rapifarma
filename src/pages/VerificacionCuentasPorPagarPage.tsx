@@ -86,7 +86,7 @@ const VerificacionCuentasPorPagarPage: React.FC = () => {
       const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/cuentas-por-pagar/${confirmDialog.cuentaId}/estatus`, {
         method: "PATCH",
         headers,
-        body: JSON.stringify({ estatus: "verified" })
+        body: JSON.stringify({ estatus: "activa" })
       });
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Error desconocido al actualizar estatus" }));
