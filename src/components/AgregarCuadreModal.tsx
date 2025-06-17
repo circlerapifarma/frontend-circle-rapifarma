@@ -235,7 +235,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                             <select value={turno} onChange={e => setTurno(e.target.value)} className="w-full border rounded-lg p-2">
                                 <option value="Mañana">Mañana</option>
                                 <option value="Tarde">Tarde</option>
-                                <option value="Noche">Noche</option>
+                                <option value="De Turno">De Turno</option>
                             </select>
                         </div>
                         <div className="md:col-span-2">
