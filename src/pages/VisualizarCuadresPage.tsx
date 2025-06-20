@@ -456,8 +456,7 @@ const VisualizarCuadresPage: React.FC = () => {
                       <div className="text-2xl font-extrabold text-green-800 mt-1">{cuadresFiltrados.reduce((acc, c) => acc + (Number(c.sobranteUsd) || 0), 0).toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</div>
                       <div className="text-sm text-green-700 mt-1">Sobrante Bs: {
                         cuadresFiltrados.reduce((acc, c) => {
-                          const tasa = c.tasa !== undefined && c.tasa !== null ? Number(Number(c.tasa).toFixed(4)) : 1;
-                          return acc + ((Number(c.sobranteUsd) || 0) * tasa);
+                          return acc + ((Number(c.sobranteUsd) || 0) * (c.tasa !== undefined && c.tasa !== null ? Number(Number(c.tasa).toFixed(4)) : 1));
                         }, 0).toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })
                       }</div>
                     </div>
@@ -466,8 +465,7 @@ const VisualizarCuadresPage: React.FC = () => {
                       <div className="text-2xl font-extrabold text-red-800 mt-1">{cuadresFiltrados.reduce((acc, c) => acc + (Number(c.faltanteUsd) || 0), 0).toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</div>
                       <div className="text-sm text-red-700 mt-1">Faltante Bs: {
                         cuadresFiltrados.reduce((acc, c) => {
-                          const tasa = c.tasa !== undefined && c.tasa !== null ? Number(Number(c.tasa).toFixed(4)) : 1;
-                          return acc + ((Number(c.faltanteUsd) || 0) * tasa);
+                          return acc + ((Number(c.faltanteUsd) || 0) * (c.tasa !== undefined && c.tasa !== null ? Number(Number(c.tasa).toFixed(4)) : 1));
                         }, 0).toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })
                       }</div>
                     </div>
@@ -550,11 +548,9 @@ const VisualizarCuadresPage: React.FC = () => {
                               }, 0);
                               // Sumar faltante y restar sobrante (convertidos a USD)
                               const totalFaltanteUsd = cuadresFiltrados.reduce((acc, c) => {
-                                const tasa = c.tasa !== undefined && c.tasa !== null ? Number(Number(c.tasa).toFixed(4)) : 1;
                                 return acc + ((Number(c.faltanteUsd) || 0));
                               }, 0);
                               const totalSobranteUsd = cuadresFiltrados.reduce((acc, c) => {
-                                const tasa = c.tasa !== undefined && c.tasa !== null ? Number(Number(c.tasa).toFixed(4)) : 1;
                                 return acc + ((Number(c.sobranteUsd) || 0));
                               }, 0);
                               const totalFinal = totalUsd + totalFaltanteUsd - totalSobranteUsd;
