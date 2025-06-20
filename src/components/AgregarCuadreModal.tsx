@@ -510,10 +510,10 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                                     <p className="mb-2 text-gray-700">Hay un {diferenciaUsd > 0 ? 'sobrante' : 'faltante'} en el cuadre.</p>
                                     <div className="mb-4 text-center">
                                         {diferenciaUsd > 0 && (
-                                            <span className="text-green-700 font-semibold">Sobrante: ${diferenciaUsd.toFixed(2)}</span>
+                                            <span className="text-green-700 font-semibold">Sobrante: ${diferenciaUsd.toFixed(4)}</span>
                                         )}
                                         {diferenciaUsd < 0 && (
-                                            <span className="text-red-700 font-semibold">Faltante: ${Math.abs(diferenciaUsd).toFixed(2)}</span>
+                                            <span className="text-red-700 font-semibold">Faltante: ${Math.abs(diferenciaUsd).toFixed(4)}</span>
                                         )}
                                     </div>
                                 </>
