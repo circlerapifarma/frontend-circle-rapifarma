@@ -405,16 +405,16 @@ const VisualizarCuadresPage: React.FC = () => {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-blue-100">
-                          <tr><td>Efectivo</td><td className="text-right">{totalesCalculados.efectivoBs.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</td><td className="text-right">{totalesCalculados.efectivoBsEnUsd.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</td></tr>
-                          <tr><td>Pago Móvil</td><td className="text-right">{totalesCalculados.pagoMovilBs.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</td><td className="text-right">{totalesCalculados.pagoMovilBsEnUsd.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</td></tr>
-                          <tr><td>Débito</td><td className="text-right">{totalesCalculados.debitoBs.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</td><td className="text-right">{totalesCalculados.debitoUsd.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</td></tr>
-                          <tr><td>Crédito</td><td className="text-right">{totalesCalculados.creditoBs.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</td><td className="text-right">{totalesCalculados.creditoUsd.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</td></tr>
+                          <tr><td>Efectivo</td><td className="text-right">{totalesCalculados.efectivoBs.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td><td className="text-right">{totalesCalculados.efectivoBsEnUsd.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td></tr>
+                          <tr><td>Pago Móvil</td><td className="text-right">{totalesCalculados.pagoMovilBs.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td><td className="text-right">{totalesCalculados.pagoMovilBsEnUsd.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td></tr>
+                          <tr><td>Débito</td><td className="text-right">{totalesCalculados.debitoBs.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td><td className="text-right">{totalesCalculados.debitoUsd.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td></tr>
+                          <tr><td>Crédito</td><td className="text-right">{totalesCalculados.creditoBs.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td><td className="text-right">{totalesCalculados.creditoUsd.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td></tr>
                         </tbody>
                         <tfoot>
                           <tr className="font-bold border-t border-blue-200">
                             <td>Total Bs</td>
-                            <td className="text-right text-blue-900">{(totalesCalculados.efectivoBs + totalesCalculados.pagoMovilBs + totalesCalculados.debitoBs + totalesCalculados.creditoBs).toLocaleString("es-VE", { minimumFractionDigits: 2 })}</td>
-                            <td className="text-right text-blue-900">{(totalesCalculados.efectivoBsEnUsd + totalesCalculados.pagoMovilBsEnUsd + totalesCalculados.debitoUsd + totalesCalculados.creditoUsd).toLocaleString("es-VE", { minimumFractionDigits: 2 })}</td>
+                            <td className="text-right text-blue-900">{(totalesCalculados.efectivoBs + totalesCalculados.pagoMovilBs + totalesCalculados.debitoBs + totalesCalculados.creditoBs).toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td>
+                            <td className="text-right text-blue-900">{(totalesCalculados.efectivoBsEnUsd + totalesCalculados.pagoMovilBsEnUsd + totalesCalculados.debitoUsd + totalesCalculados.creditoUsd).toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td>
                           </tr>
                         </tfoot>
                       </table>
@@ -434,14 +434,14 @@ const VisualizarCuadresPage: React.FC = () => {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-green-100">
-                          <tr><td>Efectivo</td><td className="text-right">{totalesCalculados.efectivoUsd.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</td><td className="text-right">{totalesCalculados.efectivoUsdEnBs.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</td></tr>
-                          <tr><td>Zelle</td><td className="text-right">{totalesCalculados.zelleUsd.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</td><td className="text-right">{totalesCalculados.zelleUsdEnBs.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</td></tr>
+                          <tr><td>Efectivo</td><td className="text-right">{totalesCalculados.efectivoUsd.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td><td className="text-right">{totalesCalculados.efectivoUsdEnBs.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td></tr>
+                          <tr><td>Zelle</td><td className="text-right">{totalesCalculados.zelleUsd.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td><td className="text-right">{totalesCalculados.zelleUsdEnBs.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td></tr>
                         </tbody>
                         <tfoot>
                           <tr className="font-bold border-t border-green-200">
                             <td>Total USD</td>
-                            <td className="text-right text-green-900">{(totalesCalculados.efectivoUsd + totalesCalculados.zelleUsd).toLocaleString("es-VE", { minimumFractionDigits: 2 })}</td>
-                            <td className="text-right text-green-900">{(totalesCalculados.efectivoUsdEnBs + totalesCalculados.zelleUsdEnBs).toLocaleString("es-VE", { minimumFractionDigits: 2 })}</td>
+                            <td className="text-right text-green-900">{(totalesCalculados.efectivoUsd + totalesCalculados.zelleUsd).toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td>
+                            <td className="text-right text-green-900">{(totalesCalculados.efectivoUsdEnBs + totalesCalculados.zelleUsdEnBs).toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td>
                           </tr>
                         </tfoot>
                       </table>
@@ -453,11 +453,23 @@ const VisualizarCuadresPage: React.FC = () => {
                   <div className="mt-6 flex flex-col md:flex-row gap-6 items-center justify-center animate-totales-detallados">
                     <div className="flex-1 bg-gradient-to-r from-green-100 to-green-50 rounded-xl p-6 shadow text-center border-2 border-green-200">
                       <span className="text-lg font-bold text-green-700">Sobrante USD</span>
-                      <div className="text-2xl font-extrabold text-green-800 mt-1">{cuadresFiltrados.reduce((acc, c) => acc + (Number(c.sobranteUsd) || 0), 0).toLocaleString("es-VE", { minimumFractionDigits: 2 })}</div>
+                      <div className="text-2xl font-extrabold text-green-800 mt-1">{cuadresFiltrados.reduce((acc, c) => acc + (Number(c.sobranteUsd) || 0), 0).toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</div>
+                      <div className="text-sm text-green-700 mt-1">Sobrante Bs: {
+                        cuadresFiltrados.reduce((acc, c) => {
+                          const tasa = c.tasa !== undefined && c.tasa !== null ? Number(Number(c.tasa).toFixed(4)) : 1;
+                          return acc + ((Number(c.sobranteUsd) || 0) * tasa);
+                        }, 0).toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })
+                      }</div>
                     </div>
                     <div className="flex-1 bg-gradient-to-r from-red-100 to-red-50 rounded-xl p-6 shadow text-center border-2 border-red-200">
                       <span className="text-lg font-bold text-red-700">Faltante USD</span>
-                      <div className="text-2xl font-extrabold text-red-800 mt-1">{cuadresFiltrados.reduce((acc, c) => acc + (Number(c.faltanteUsd) || 0), 0).toLocaleString("es-VE", { minimumFractionDigits: 2 })}</div>
+                      <div className="text-2xl font-extrabold text-red-800 mt-1">{cuadresFiltrados.reduce((acc, c) => acc + (Number(c.faltanteUsd) || 0), 0).toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</div>
+                      <div className="text-sm text-red-700 mt-1">Faltante Bs: {
+                        cuadresFiltrados.reduce((acc, c) => {
+                          const tasa = c.tasa !== undefined && c.tasa !== null ? Number(Number(c.tasa).toFixed(4)) : 1;
+                          return acc + ((Number(c.faltanteUsd) || 0) * tasa);
+                        }, 0).toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })
+                      }</div>
                     </div>
                   </div>
                 )}
@@ -465,7 +477,7 @@ const VisualizarCuadresPage: React.FC = () => {
                 {cuadresFiltrados.length > 0 && (
                   <div className="mt-6 bg-gradient-to-r from-yellow-100 to-yellow-50 rounded-xl p-6 shadow flex flex-col items-center justify-center border-2 border-yellow-200 animate-totales-detallados">
                     <div className="text-xl font-bold text-yellow-700 text-center">
-                      Total Caja Sistema Bs: {cuadresFiltrados.reduce((acc, c) => acc + (Number(c.totalCajaSistemaBs) || 0), 0).toLocaleString("es-VE", { minimumFractionDigits: 2 })}
+                      Total Caja Sistema Bs: {cuadresFiltrados.reduce((acc, c) => acc + (Number(c.totalCajaSistemaBs) || 0), 0).toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}
                     </div>
                   </div>
                 )}
@@ -473,7 +485,7 @@ const VisualizarCuadresPage: React.FC = () => {
                 {cuadresFiltrados.length > 0 && (
                   <div className="mt-6 bg-gradient-to-r from-purple-100 to-purple-50 rounded-xl p-6 shadow flex flex-col items-center justify-center border-2 border-purple-200 animate-totales-detallados">
                     <div className="text-xl font-bold text-purple-700 text-center">
-                      Total Vales USD: {cuadresFiltrados.reduce((acc, c) => acc + (Number(c.valesUsd) || 0), 0).toLocaleString("es-VE", { minimumFractionDigits: 2 })}
+                      Total Vales USD: {cuadresFiltrados.reduce((acc, c) => acc + (Number(c.valesUsd) || 0), 0).toLocaleString("es-VE", { minimumFractionDigits: 4 })}
                     </div>
                   </div>
                 )}
@@ -481,7 +493,7 @@ const VisualizarCuadresPage: React.FC = () => {
                 {cuadresFiltrados.length > 0 && (
                   <div className="mt-10 flex flex-col items-center justify-center animate-totales-detallados">
                     <div className="w-full max-w-2xl grid grid-cols-1 md:grid-cols-2 gap-8">
-                      {/* Total en Bs: Bs + USD convertidos a Bs, menos sobrantes en USD convertidos a Bs */}
+                      {/* Total en Bs: Suma Bs y USD a Bs, restando sobrante y sumando faltante */}
                       <div className="rounded-2xl bg-gradient-to-br from-blue-200 to-blue-50 shadow-xl p-8 flex flex-col items-center border-2 border-blue-400 transition-transform hover:scale-105 duration-300">
                         <span className="text-2xl font-extrabold text-blue-900 mb-2 flex items-center gap-2">
                           <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3zm0 0V4m0 16v-4m8-4h-4m-8 0H4" /></svg>
@@ -489,23 +501,34 @@ const VisualizarCuadresPage: React.FC = () => {
                         </span>
                         <span className="text-4xl font-black text-blue-800 mt-2 drop-shadow-lg">
                           {
-                            cuadresFiltrados.reduce((acc, c) => {
-                              const tasa = Number(c.tasa) || 1;
-                              const totalBs = (Number(c.efectivoBs) || 0) + (Number(c.pagomovilBs) || 0) + (Array.isArray(c.puntosVenta) ? c.puntosVenta.reduce((a, pv) => a + (parseFloat(pv.puntoDebito) || 0) + (parseFloat(pv.puntoCredito) || 0), 0) : 0) + ((Number(c.efectivoUsd) || 0) + (Number(c.zelleUsd) || 0)) * tasa;
-                              const sobranteUsd = Number(c.sobranteUsd) || 0;
-                              const sobranteUsdEnBs = sobranteUsd * tasa;
-                              const faltanteUsd = Number(c.faltanteUsd) || 0;
-                              const faltanteUsdEnBs = faltanteUsd * tasa;
-                              const valesUsd = Number(c.valesUsd) || 0;
-                              const valesBs = Number(c.valesBs) || 0;  //#nomenclatura utilizada anterior mente
-                              const valesUsdEnBs = (valesUsd + valesBs) * tasa;
-                              return acc + (totalBs - sobranteUsdEnBs) + (faltanteUsdEnBs + valesUsdEnBs);
-                            }, 0).toLocaleString("es-VE", { minimumFractionDigits: 2 })
+                            (() => {
+                              let totalBs = cuadresFiltrados.reduce((acc, c) => {
+                                const tasa = c.tasa !== undefined && c.tasa !== null ? Number(Number(c.tasa).toFixed(4)) : 1;
+                                const subtotal = (Number(c.efectivoBs) || 0)
+                                  + (Number(c.pagomovilBs) || 0)
+                                  + (Array.isArray(c.puntosVenta)
+                                      ? c.puntosVenta.reduce((a, pv) => a + (parseFloat(pv.puntoDebito) || 0) + (parseFloat(pv.puntoCredito) || 0), 0)
+                                      : 0)
+                                  + (((Number(c.efectivoUsd) || 0) + (Number(c.zelleUsd) || 0)) * tasa);
+                                return acc + subtotal;
+                              }, 0);
+                              // Sumar faltante y restar sobrante (convertidos a Bs)
+                              const totalFaltanteBs = cuadresFiltrados.reduce((acc, c) => {
+                                const tasa = c.tasa !== undefined && c.tasa !== null ? Number(Number(c.tasa).toFixed(4)) : 1;
+                                return acc + ((Number(c.faltanteUsd) || 0) * tasa);
+                              }, 0);
+                              const totalSobranteBs = cuadresFiltrados.reduce((acc, c) => {
+                                const tasa = c.tasa !== undefined && c.tasa !== null ? Number(Number(c.tasa).toFixed(4)) : 1;
+                                return acc + ((Number(c.sobranteUsd) || 0) * tasa);
+                              }, 0);
+                              const totalFinal = totalBs + totalFaltanteBs - totalSobranteBs;
+                              return totalFinal.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+                            })()
                           }
                         </span>
-                        <span className="text-xs text-blue-700 mt-1">Incluye Bs + USD convertidos a Bs según tasa de cada cuadre, menos sobrantes en USD convertidos a Bs</span>
+                        <span className="text-xs text-blue-700 mt-1">Suma de Bs y USD a Bs según tasa de cada cuadre (faltante suma, sobrante resta)</span>
                       </div>
-                      {/* Total en USD: USD + Bs convertidos a USD, menos sobrantes en USD */}
+                      {/* Total en USD: Suma USD y Bs a USD, restando sobrante y sumando faltante */}
                       <div className="rounded-2xl bg-gradient-to-br from-green-200 to-green-50 shadow-xl p-8 flex flex-col items-center border-2 border-green-400 transition-transform hover:scale-105 duration-300">
                         <span className="text-2xl font-extrabold text-green-900 mb-2 flex items-center gap-2">
                           <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3zm0 0V4m0 16v-4m8-4h-4m-8 0H4" /></svg>
@@ -513,19 +536,33 @@ const VisualizarCuadresPage: React.FC = () => {
                         </span>
                         <span className="text-4xl font-black text-green-800 mt-2 drop-shadow-lg">
                           {
-                            cuadresFiltrados.reduce((acc, c) => {
-                              const tasa = Number(c.tasa) || 1;
-                              const totalUsd = (Number(c.efectivoUsd) || 0) + (Number(c.zelleUsd) || 0) + ((Number(c.efectivoBs) || 0) + (Number(c.pagomovilBs) || 0) + (Array.isArray(c.puntosVenta) ? c.puntosVenta.reduce((a, pv) => a + (parseFloat(pv.puntoDebito) || 0) + (parseFloat(pv.puntoCredito) || 0), 0) : 0)) / tasa;
-                              const sobranteUsd = Number(c.sobranteUsd) || 0;
-                              const faltanteUsd = Number(c.faltanteUsd) || 0;
-                              const valesUsd = Number(c.valesUsd) || 0;
-                              const valesBs = Number(c.valesBs) || 0;  //#nomenclatura utilizada anterior mente
-                              const valesUsdEnBs = (valesUsd + valesBs) * tasa;
-                              return acc + totalUsd - sobranteUsd + faltanteUsd + valesUsdEnBs;
-                            }, 0).toLocaleString("es-VE", { minimumFractionDigits: 2 })
+                            (() => {
+                              let totalUsd = cuadresFiltrados.reduce((acc, c) => {
+                                const tasa = c.tasa !== undefined && c.tasa !== null ? Number(Number(c.tasa).toFixed(4)) : 1;
+                                const subtotal = (Number(c.efectivoUsd) || 0)
+                                  + (Number(c.zelleUsd) || 0)
+                                  + (((Number(c.efectivoBs) || 0)
+                                      + (Number(c.pagomovilBs) || 0)
+                                      + (Array.isArray(c.puntosVenta)
+                                          ? c.puntosVenta.reduce((a, pv) => a + (parseFloat(pv.puntoDebito) || 0) + (parseFloat(pv.puntoCredito) || 0), 0)
+                                          : 0)) / tasa);
+                                return acc + subtotal;
+                              }, 0);
+                              // Sumar faltante y restar sobrante (convertidos a USD)
+                              const totalFaltanteUsd = cuadresFiltrados.reduce((acc, c) => {
+                                const tasa = c.tasa !== undefined && c.tasa !== null ? Number(Number(c.tasa).toFixed(4)) : 1;
+                                return acc + ((Number(c.faltanteUsd) || 0));
+                              }, 0);
+                              const totalSobranteUsd = cuadresFiltrados.reduce((acc, c) => {
+                                const tasa = c.tasa !== undefined && c.tasa !== null ? Number(Number(c.tasa).toFixed(4)) : 1;
+                                return acc + ((Number(c.sobranteUsd) || 0));
+                              }, 0);
+                              const totalFinal = totalUsd + totalFaltanteUsd - totalSobranteUsd;
+                              return totalFinal.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+                            })()
                           }
                         </span>
-                        <span className="text-xs text-green-700 mt-1">Incluye USD + Bs convertidos a USD según tasa de cada cuadre, menos sobrantes en USD</span>
+                        <span className="text-xs text-green-700 mt-1">Suma de USD y Bs a USD según tasa de cada cuadre (faltante suma, sobrante resta)</span>
                       </div>
                     </div>
                   </div>

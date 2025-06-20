@@ -57,7 +57,8 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
     const totalCajaSistemaMenosVales = (totalCajaSistemaBs??0) - (valesUsd ? valesUsd * (tasa??0) : 0);
     const totalBsEnUsd = (tasa??0) > 0 ? totalBsMenosVales / (tasa??0) : 0;
     const totalGeneralUsd = totalBsEnUsd + (efectivoUsd??0) + (zelleUsd??0);
-    const diferenciaUsd = (tasa??0) > 0 ? Number((totalGeneralUsd - (totalCajaSistemaMenosVales / (tasa??0))).toFixed(2)) : 0;
+    // Cálculo de diferenciaUsd, sobranteUsd y faltanteUsd con 4 decimales para guardar en la base de datos
+    const diferenciaUsd = (tasa??0) > 0 ? Number((totalGeneralUsd - (totalCajaSistemaMenosVales / (tasa??0))).toFixed(4)) : 0;
 
     const validar = () => {
         if (!cajero.trim()) return "El campo 'Cajero' es obligatorio.";
@@ -107,15 +108,15 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
             puntosVenta,
             efectivoBs,
             valesUsd: valesUsd ?? 0,
-            totalBs: totalBsMenosVales,
-            totalBsEnUsd: Number(totalBsEnUsd.toFixed(2)),
-            totalCajaSistemaMenosVales,
+            totalBs: Number(totalBsMenosVales.toFixed(4)),
+            totalBsEnUsd: Number(totalBsEnUsd.toFixed(4)),
+            totalCajaSistemaMenosVales: Number(totalCajaSistemaMenosVales.toFixed(4)),
             efectivoUsd,
             zelleUsd,
-            totalGeneralUsd: Number(totalGeneralUsd.toFixed(2)),
+            totalGeneralUsd: Number(totalGeneralUsd.toFixed(4)),
             diferenciaUsd,
-            sobranteUsd: diferenciaUsd > 0 ? diferenciaUsd : 0,
-            faltanteUsd: diferenciaUsd < 0 ? Math.abs(diferenciaUsd) : 0,
+            sobranteUsd: diferenciaUsd > 0 ? Number(diferenciaUsd.toFixed(4)) : 0,
+            faltanteUsd: diferenciaUsd < 0 ? Number(Math.abs(diferenciaUsd).toFixed(4)) : 0,
             delete: false,
             estado: 'wait',
             nombreFarmacia: (() => {
@@ -421,7 +422,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Total General $ (calculado)</label>
                             <input
                                 type="number"
-                                value={Number(totalGeneralUsd.toFixed(2))}
+                                value={Number(totalGeneralUsd.toFixed(4))}
                                 readOnly
                                 className="w-full border rounded-lg p-2 bg-gray-100 text-gray-700"
                             />
@@ -433,6 +434,24 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                                 value={diferenciaUsd.toFixed(4)}
                                 readOnly
                                 className="w-full border rounded-lg p-2 bg-gray-100 text-gray-700"
+                            />
+                        </div>
+                        <div className="md:col-span-2">
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">Sobrante $ (calculado)</label>
+                            <input
+                                type="number"
+                                value={diferenciaUsd > 0 ? diferenciaUsd.toFixed(4) : '0.0000'}
+                                readOnly
+                                className="w-full border rounded-lg p-2 bg-gray-100 text-green-700"
+                            />
+                        </div>
+                        <div className="md:col-span-2">
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">Faltante $ (calculado)</label>
+                            <input
+                                type="number"
+                                value={diferenciaUsd < 0 ? Math.abs(diferenciaUsd).toFixed(4) : '0.0000'}
+                                readOnly
+                                className="w-full border rounded-lg p-2 bg-gray-100 text-red-700"
                             />
                         </div>
                         <div className="grid grid-cols-1 gap-3 md:grid-cols-1 md:gap-4">
