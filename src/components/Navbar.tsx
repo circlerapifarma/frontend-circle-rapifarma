@@ -41,6 +41,7 @@ const allLinks = [
             { to: '/verificacioncuentasporpagar', label: 'Verificación Cuentas por Pagar', permiso: 'verificar_gastos' },
             { to: '/agregarinventariocosto', label: 'Agregar Costo Inv', permiso: 'acceso_admin' },
             { to: '/verinventarios', label: 'Ver Inventarios', permiso: 'acceso_admin' },
+            { to: '/pagoscpp', label: 'Ver Pagos CxP', permiso: 'verificar_gastos' },
         ]
     },
     

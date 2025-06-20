@@ -25,6 +25,7 @@ import AgregarInventarioPage from '@/pages/AgregarInventarioPage';
 import VisualizarInventariosPage from '@/pages/VisualizarInventariosPage';
 import RetiroPage from '@/pages/RetiroPage';
 import VerificacionCuentasPorPagarPage from '@/pages/VerificacionCuentasPorPagarPage';
+import VisualizarPagosCPPPage from '@/pages/VisualizarPagosCPPPage';
 
 const AppRouter = () => (
     <Routes>
@@ -206,6 +207,14 @@ const AppRouter = () => (
             element={
                 <PermissionRoute permiso="verificar_gastos">
                     <VerificacionCuentasPorPagarPage />
+                </PermissionRoute>
+            }
+        />
+        <Route
+            path="/pagoscpp"
+            element={
+                <PermissionRoute permiso="verificar_gastos">
+                    <VisualizarPagosCPPPage />
                 </PermissionRoute>
             }
         />

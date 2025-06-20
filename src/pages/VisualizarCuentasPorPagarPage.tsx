@@ -1,7 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { FaRegFileAlt } from "react-icons/fa";
 import ModalCuentasPorPagar from "@/components/ModalCuentasPorPagar";
+import AbonoModal from '../components/AbonoModal';
+import type { AbonoFormData } from '../components/AbonoModal';
+import { animate, stagger } from 'animejs';
+import PagosDropdown from "../components/PagosDropdown";
+import PagoMasivoModal from "../components/PagoMasivoModal";
+
+export type { CuentaPorPagar };
 
 interface CuentaPorPagar {
   _id: string;
@@ -96,6 +102,15 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
   const [estatusFiltro, setEstatusFiltro] = useState<string>("wait");
   const [detalleModalOpen, setDetalleModalOpen] = useState(false);
   const [cuentaSeleccionada, setCuentaSeleccionada] = useState<CuentaPorPagar | null>(null);
+  const [abonoModalOpen, setAbonoModalOpen] = useState<string | null>(null); // id de la cuenta
+  const [abonoCuenta, setAbonoCuenta] = useState<any>(null);
+  const [pagosPorCuenta, setPagosPorCuenta] = useState<{ [key: string]: { loading: boolean, error?: string, pagos?: any[] } }>({});
+  const [selectedFacturas, setSelectedFacturas] = useState<string[]>([]);
+  const [pagoMasivoModalOpen, setPagoMasivoModalOpen] = useState(false);
+  const [pagoMasivoLoading, setPagoMasivoLoading] = useState(false);
+  const [pagoMasivoError, setPagoMasivoError] = useState<string | null>(null);
+  // Moneda seleccionada para conversión masiva (sincronizada con el modal)
+  const [monedaConversion, setMonedaConversion] = useState<'USD' | 'Bs'>('USD');
 
   const fetchCuentas = async () => {
     setLoading(true);
@@ -135,6 +150,43 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
     }
   }, []);
 
+  // Declarar cuentasFiltradas antes del useEffect de abonosPorCuenta
+  const cuentasFiltradas = cuentas
+    .filter(c => !selectedFarmacia || c.farmacia === selectedFarmacia)
+    .filter(c => !proveedorFiltro || c.proveedor.toLowerCase().includes(proveedorFiltro.toLowerCase()))
+    .filter(c => !estatusFiltro || c.estatus === estatusFiltro)
+    .filter(c => {
+      if (!fechaInicio && !fechaFin) return true;
+      const fecha = c.fechaEmision.slice(0, 10);
+      if (fechaInicio && fecha < fechaInicio) return false;
+      if (fechaFin && fecha > fechaFin) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      const diasA = calcularDiasRestantes(a.fechaEmision, a.diasCredito);
+      const diasB = calcularDiasRestantes(b.fechaEmision, b.diasCredito);
+      return diasA - diasB;
+    });
+
+  // Memo para calcular montos convertidos por factura según moneda seleccionada
+  const montosConvertidos = useMemo(() => {
+    return cuentasFiltradas.reduce((acc, c) => {
+      let montoConvertido = c.monto;
+      let retencionConvertida = c.retencion;
+      if (monedaConversion !== c.divisa && c.tasa && c.tasa > 0) {
+        if (monedaConversion === 'USD' && c.divisa === 'Bs') {
+          montoConvertido = Number((c.monto / c.tasa).toFixed(2));
+          retencionConvertida = Number((c.retencion / c.tasa).toFixed(2));
+        } else if (monedaConversion === 'Bs' && c.divisa === 'USD') {
+          montoConvertido = Number((c.monto * c.tasa).toFixed(2));
+          retencionConvertida = Number((c.retencion * c.tasa).toFixed(2));
+        }
+      }
+      acc[c._id] = { monto: montoConvertido, retencion: retencionConvertida };
+      return acc;
+    }, {} as Record<string, { monto: number, retencion: number }>);
+  }, [cuentasFiltradas, monedaConversion]);
+
   const handleEstadoChange = (id: string, nuevoEstatus: string) => {
     setConfirmDialog({ open: true, id, nuevoEstatus });
   };
@@ -171,29 +223,131 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
     setConfirmDialog({ open: false, id: null, nuevoEstatus: "" });
   };
 
-  const cuentasFiltradas = cuentas
-    .filter(c => !selectedFarmacia || c.farmacia === selectedFarmacia)
-    .filter(c => !proveedorFiltro || c.proveedor.toLowerCase().includes(proveedorFiltro.toLowerCase()))
-    .filter(c => !estatusFiltro || c.estatus === estatusFiltro)
-    .filter(c => {
-      if (!fechaInicio && !fechaFin) return true;
-      const fecha = c.fechaEmision.slice(0, 10);
-      if (fechaInicio && fecha < fechaInicio) return false;
-      if (fechaFin && fecha > fechaFin) return false;
-      return true;
-    })
-    .sort((a, b) => {
-      const diasA = calcularDiasRestantes(a.fechaEmision, a.diasCredito);
-      const diasB = calcularDiasRestantes(b.fechaEmision, b.diasCredito);
-      return diasA - diasB;
-    });
+  const handlePagosDropdownOpen = (open: boolean, cuenta: CuentaPorPagar) => {
+    if (open && !pagosPorCuenta[cuenta._id]?.pagos) {
+      setPagosPorCuenta(prev => ({
+        ...prev,
+        [cuenta._id]: { loading: true }
+      }));
+      fetch(`${API_BASE_URL}/api/pagoscpp?cuentaPorPagarId=${cuenta._id}`, {
+        headers: {
+          "Authorization": `Bearer ${localStorage.getItem("token")}`
+        }
+      })
+        .then(res => {
+          if (!res.ok) throw new Error("Error al obtener pagos");
+          return res.json();
+        })
+        .then(data => {
+          setPagosPorCuenta(prev => ({
+            ...prev,
+            [cuenta._id]: { loading: false, pagos: data }
+          }));
+          setTimeout(() => {
+            animate(`.pagos-dropdown-item-${cuenta._id}`, {
+              opacity: [0, 1],
+              y: [20, 0],
+              duration: 400,
+              delay: stagger(60),
+              ease: 'outCubic'
+            });
+          }, 10);
+        })
+        .catch(err => {
+          setPagosPorCuenta(prev => ({
+            ...prev,
+            [cuenta._id]: { loading: false, error: err.message || "Error al obtener pagos" }
+          }));
+        });
+    }
+  };
+
+  // Filtrar solo pagos aprobados antes de pasar a PagosDropdown
+  const pagosAprobadosPorCuenta: { [key: string]: { loading: boolean, error?: string, pagos?: any[] } } = {};
+  Object.entries(pagosPorCuenta).forEach(([cuentaId, info]) => {
+    pagosAprobadosPorCuenta[cuentaId] = {
+      ...info,
+      pagos: info.pagos ? info.pagos.filter(p => p.estado === 'aprobado') : info.pagos
+    };
+  });
+
+  // Selección múltiple
+  const isAllSelected = cuentasFiltradas.length > 0 && selectedFacturas.length === cuentasFiltradas.length;
+  const isIndeterminate = selectedFacturas.length > 0 && selectedFacturas.length < cuentasFiltradas.length;
+
+  const handleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedFacturas([]);
+    } else {
+      setSelectedFacturas(cuentasFiltradas.map(c => c._id));
+    }
+  };
+
+  const handleSelectFactura = (id: string) => {
+    setSelectedFacturas(prev =>
+      prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]
+    );
+  };
+
+  // Lógica para registrar pago masivo (conversión individual por cuenta)
+  const handlePagoMasivo = async (form: any) => {
+    setPagoMasivoLoading(true);
+    setPagoMasivoError(null);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("No se encontró el token de autenticación");
+      // Construir abonos discriminados por factura, usando el monto convertido según la moneda seleccionada
+      const abonos = selectedFacturas.map(facturaId => {
+        const cuenta = cuentas.find(c => c._id === facturaId);
+        if (!cuenta) return null;
+        // Usar el monto convertido calculado en montosConvertidos
+        const monto = montosConvertidos[cuenta._id]?.monto ?? cuenta.monto;
+        const moneda = monedaConversion;
+        return {
+          fecha: form.fecha,
+          moneda,
+          monto,
+          referencia: form.referencia,
+          usuario: form.usuario,
+          bancoEmisor: form.bancoEmisor,
+          bancoReceptor: form.bancoReceptor,
+          tasa: cuenta.tasa,
+          imagenPago: form.imagenPago,
+          farmaciaId: cuenta.farmacia,
+          estado: 'en_espera',
+          cuentaPorPagarId: cuenta._id,
+        };
+      }).filter(Boolean);
+      const body = { abonos };
+      const res = await fetch(`${API_BASE_URL}/api/pagoscpp/masivo`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.detail || "Error al registrar pago masivo");
+      }
+      setSuccess("Pago registrado para todas las facturas seleccionadas");
+      setPagoMasivoModalOpen(false);
+      setSelectedFacturas([]);
+      fetchCuentas();
+    } catch (err: any) {
+      setPagoMasivoError(err.message || "Error al registrar pago");
+    } finally {
+      setPagoMasivoLoading(false);
+    }
+  };
 
   return (
     // Contenedor principal con un fondo sutil para la página
     <div className="min-h-screen bg-slate-50 py-8">
       <div className="w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
         <h1 className="text-3xl font-bold text-slate-800 mb-8 text-center">Cuentas por Pagar</h1>
-        
+
         {/* Mensajes de error/éxito con mejor estilo */}
         {error && (
           <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md shadow" role="alert">
@@ -211,7 +365,7 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
         {/* Sección de Filtros con un card y mejor layout */}
         <div className="bg-white p-6 rounded-lg shadow-lg mb-8">
           <h2 className="text-xl font-semibold text-slate-700 mb-4">Filtros</h2>
-          
+
           {farmacias.length > 1 && (
             <div className="mb-6">
               <span className="font-medium text-slate-700 mr-3">Farmacias:</span>
@@ -220,9 +374,9 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
                   <button
                     key={f.id}
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-150 ease-in-out
-                                ${selectedFarmacia === f.id 
-                                  ? 'bg-indigo-600 text-white shadow-md ring-2 ring-indigo-300' 
-                                  : 'bg-slate-100 text-slate-700 hover:bg-indigo-100 hover:text-indigo-700 border border-slate-300'}`}
+                                ${selectedFarmacia === f.id
+                        ? 'bg-indigo-600 text-white shadow-md ring-2 ring-indigo-300'
+                        : 'bg-slate-100 text-slate-700 hover:bg-indigo-100 hover:text-indigo-700 border border-slate-300'}`}
                     onClick={() => setSelectedFarmacia(f.id === selectedFarmacia ? "" : f.id)}
                   >
                     {f.nombre}
@@ -235,20 +389,20 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
             <div>
               <label htmlFor="proveedorFiltro" className="block text-sm font-medium text-slate-600 mb-1">Proveedor</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 id="proveedorFiltro"
-                value={proveedorFiltro} 
-                onChange={e => setProveedorFiltro(e.target.value)} 
-                className="w-full border-slate-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 py-2 px-3 text-sm" 
+                value={proveedorFiltro}
+                onChange={e => setProveedorFiltro(e.target.value)}
+                className="w-full border-slate-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 py-2 px-3 text-sm"
                 placeholder="Buscar proveedor..." />
             </div>
             <div>
               <label htmlFor="estatusFiltro" className="block text-sm font-medium text-slate-600 mb-1">Estado</label>
-              <select 
+              <select
                 id="estatusFiltro"
-                value={estatusFiltro} 
-                onChange={e => setEstatusFiltro(e.target.value)} 
+                value={estatusFiltro}
+                onChange={e => setEstatusFiltro(e.target.value)}
                 className="w-full border-slate-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 py-2 px-3 text-sm"
               >
                 <option value="">Todos</option>
@@ -259,20 +413,20 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
             </div>
             <div>
               <label htmlFor="fechaInicio" className="block text-sm font-medium text-slate-600 mb-1">Fecha desde</label>
-              <input 
-                type="date" 
+              <input
+                type="date"
                 id="fechaInicio"
-                value={fechaInicio} 
-                onChange={e => setFechaInicio(e.target.value)} 
+                value={fechaInicio}
+                onChange={e => setFechaInicio(e.target.value)}
                 className="w-full border-slate-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 py-2 px-3 text-sm" />
             </div>
             <div>
               <label htmlFor="fechaFin" className="block text-sm font-medium text-slate-600 mb-1">Fecha hasta</label>
-              <input 
-                type="date" 
+              <input
+                type="date"
                 id="fechaFin"
-                value={fechaFin} 
-                onChange={e => setFechaFin(e.target.value)} 
+                value={fechaFin}
+                onChange={e => setFechaFin(e.target.value)}
                 className="w-full border-slate-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 py-2 px-3 text-sm" />
             </div>
           </div>
@@ -297,105 +451,182 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
         ) : (
           <div className="bg-white rounded-lg shadow-xl overflow-hidden">
             <div className="overflow-x-auto">
+              {/* Botón para pago masivo */}
+              <div className="flex items-center gap-4 p-4">
+                <button
+                  className={`px-5 py-2 rounded-lg font-semibold shadow transition-all duration-200
+                ${selectedFacturas.length === 0 ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700'}`}
+                  disabled={selectedFacturas.length === 0}
+                  onClick={() => setPagoMasivoModalOpen(true)}
+                >
+                  Registrar Pago para Seleccionadas
+                </button>
+                {selectedFacturas.length > 0 && (
+                  <span className="text-sm text-slate-600">{selectedFacturas.length} seleccionadas</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-sm text-slate-600">Mostrar montos convertidos a:</span>
+                <button
+                  className={`px-3 py-1 rounded ${monedaConversion === 'USD' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'}`}
+                  onClick={() => setMonedaConversion('USD')}
+                >USD</button>
+                <button
+                  className={`px-3 py-1 rounded ${monedaConversion === 'Bs' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'}`}
+                  onClick={() => setMonedaConversion('Bs')}
+                >Bs</button>
+              </div>
               <table className="min-w-full divide-y divide-slate-200">
                 <thead className="bg-slate-100">
                   <tr>
-                    <th className="px-2 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap"></th>
-                    {/* Cabeceras de tabla con más padding y estilo uniforme */}
-                    {['Fecha', 'Recepción', 'Factura', 'Control', 'Proveedor', 'Descripción', 'Monto', 'Retención', 'Moneda', 'Tasa', 'Usuario', 'Farmacia', 'Estatus', 'Días Vencer', 'Acción'].map(header => (
-                      <th key={header} scope="col" className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">
-                        {header}
-                      </th>
-                    ))}
+                    <th className="px-2 py-3.5 text-left">
+                      <input
+                        type="checkbox"
+                        checked={isAllSelected}
+                        ref={el => { if (el) el.indeterminate = isIndeterminate; }}
+                        onChange={handleSelectAll}
+                      />
+                    </th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Pagos</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Monto</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Retención</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Días Crédito</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Días para Vencer</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Recepción</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Emisión</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Vencimiento</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Factura</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Control</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Proveedor</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Descripción</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Moneda</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Tasa</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Usuario</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Farmacia</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Estatus</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-slate-200">
-                  {cuentasFiltradas.map(c => {
-                    const diasRestantes = calcularDiasRestantes(c.fechaEmision, c.diasCredito);
-                    let diasVencerClasses = "text-slate-700";
-                    if (diasRestantes <= 0) {
-                      diasVencerClasses = "text-red-600 font-bold";
-                    } else if (diasRestantes <= 3) {
-                      diasVencerClasses = "text-orange-600 font-semibold";
-                    } else if (diasRestantes <= 7) {
-                      diasVencerClasses = "text-yellow-600";
-                    }
-
-                    return (
-                      <tr key={c._id} className="hover:bg-slate-50 transition-colors duration-150 ease-in-out">
-                        <td className="px-2 py-4 whitespace-nowrap text-sm">
-                          <button
-                            className="text-blue-600 hover:text-blue-800"
-                            title="Ver detalles de la cuenta por pagar"
-                            onClick={() => { setCuentaSeleccionada(c); setDetalleModalOpen(true); }}
-                          >
-                            <FaRegFileAlt />
-                          </button>
-                        </td>
-                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{formatFecha(c.fechaEmision)}</td>
-                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{formatFecha(c.fechaRecepcion)}</td>
-                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.numeroFactura}</td>
-                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.numeroControl}</td>
-                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 font-medium">{c.proveedor}</td>
-                        <td className="px-5 py-4 text-sm text-slate-700 max-w-sm truncate">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <span
-                                  className="cursor-pointer underline decoration-dotted"
-                                  tabIndex={0}
-                                >
-                                  {c.descripcion.length > 50 ? c.descripcion.slice(0, 50) + '…' : c.descripcion}
-                                </span>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" align="center" className="max-w-xs break-words whitespace-pre-line bg-white border border-slate-200 shadow-lg p-4 rounded-md text-slate-800 text-sm font-normal">
-                                {c.descripcion}
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </td>
-                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">
-                          <div className="font-bold text-indigo-700">
-                            {c.monto?.toLocaleString('es-VE', { style: 'currency', currency: getCurrencyCode(c.divisa) })}
-                          </div>
-                          {c.divisa === "Bs" && c.tasa > 0 && (
-                            <div className="text-xs text-slate-500 font-medium">
-                              ≈ {(c.monto / c.tasa).toLocaleString('en-US', { style: 'currency', currency: 'USD' })} USD
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">
-                          <div className="font-bold text-indigo-700">
-                            {c.retencion?.toLocaleString('es-VE', { style: 'currency', currency: getCurrencyCode(c.divisa) })}
-                          </div>
-                          {c.divisa === "Bs" && c.tasa > 0 && (
-                            <div className="text-xs text-slate-500 font-medium">
-                              ≈ {(c.retencion / c.tasa).toLocaleString('en-US', { style: 'currency', currency: 'USD' })} USD
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.divisa}</td>
-                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.tasa}</td>
-                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.usuarioCorreo}</td>
-                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.farmacia}</td>
-                        <td className="px-5 py-4 whitespace-nowrap text-sm"><EstatusBadge estatus={c.estatus} /></td>
-                        <td className={`px-5 py-4 whitespace-nowrap text-sm text-center ${diasVencerClasses}`}>{diasRestantes}</td>
-                        <td className="px-5 py-4 whitespace-nowrap text-sm text-center">
-                          <select
-                            value={c.estatus}
-                            onChange={e => handleEstadoChange(c._id, e.target.value)}
-                            className="border border-slate-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white text-slate-700"
-                          >
-                            {ESTATUS_OPCIONES.map(opt => (
-                              <option key={opt} value={opt} disabled={opt === c.estatus}>
-                                {opt.charAt(0).toUpperCase() + opt.slice(1)}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                  {/* Ordenar las cuentas por días restantes (próximas a vencer primero) */}
+                  {cuentasFiltradas
+                    .slice()
+                    .sort((a, b) => {
+                      const diasA = calcularDiasRestantes(a.fechaEmision, a.diasCredito);
+                      const diasB = calcularDiasRestantes(b.fechaEmision, b.diasCredito);
+                      return diasA - diasB;
+                    })
+                    .map(c => {
+                      // Calcular días para vencer y fecha de vencimiento para cada cuenta
+                      const fechaEmision = c.fechaEmision;
+                      const diasCredito = c.diasCredito;
+                      const fechaVencimiento = new Date(new Date(fechaEmision).getTime() + diasCredito * 24 * 60 * 60 * 1000);
+                      const hoy = new Date();
+                      const diasParaVencer = Math.ceil((fechaVencimiento.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
+                      const fechaVencimientoMostrar = fechaVencimiento.toISOString().slice(0, 10);
+                      return (
+                        <React.Fragment key={c._id}>
+                          <tr className="hover:bg-slate-50 transition-colors duration-150 ease-in-out">
+                            <td className="px-2 py-4 text-center">
+                              <input
+                                type="checkbox"
+                                checked={selectedFacturas.includes(c._id)}
+                                onChange={() => handleSelectFactura(c._id)}
+                              />
+                            </td>
+                            <td className="px-2 py-4 whitespace-nowrap text-sm">
+                              <PagosDropdown
+                                cuentaId={c._id}
+                                onOpenChange={open => handlePagosDropdownOpen(open, c)}
+                                pagosInfo={pagosAprobadosPorCuenta[c._id] || {loading: false, pagos: []}}
+                                getCurrencyCode={getCurrencyCode}
+                              />
+                            </td>
+                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">
+                              <div className="font-bold text-indigo-700">
+                                {c.monto?.toLocaleString('es-VE', { style: 'currency', currency: getCurrencyCode(c.divisa) })}
+                              </div>
+                              {montosConvertidos[c._id] && monedaConversion !== c.divisa && (
+                                <div className="text-xs text-slate-500 font-medium">
+                                  ≈ {montosConvertidos[c._id].monto.toLocaleString('es-VE', { style: 'currency', currency: getCurrencyCode(monedaConversion) })} {monedaConversion}
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">
+                              <div className="font-bold text-indigo-700">
+                                {c.retencion?.toLocaleString('es-VE', { style: 'currency', currency: getCurrencyCode(c.divisa) })}
+                              </div>
+                              {montosConvertidos[c._id] && monedaConversion !== c.divisa && (
+                                <div className="text-xs text-slate-500 font-medium">
+                                  ≈ {montosConvertidos[c._id].retencion.toLocaleString('es-VE', { style: 'currency', currency: getCurrencyCode(monedaConversion) })} {monedaConversion}
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-center">{c.diasCredito}</td>
+                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-center">
+                              {diasParaVencer <= 0 ? (
+                                <span className="text-red-600 font-bold">Vencida</span>
+                              ) : (
+                                <span className="text-slate-700 font-semibold">{diasParaVencer} días</span>
+                              )}
+                            </td>
+                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{formatFecha(c.fechaRecepcion)}</td>
+                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{formatFecha(c.fechaEmision)}</td>
+                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{formatFecha(fechaVencimientoMostrar)}</td>
+                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.numeroFactura}</td>
+                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.numeroControl}</td>
+                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 font-medium">{c.proveedor}</td>
+                            <td className="px-5 py-4 text-sm text-slate-700 max-w-sm truncate">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span
+                                      className="cursor-pointer underline decoration-dotted"
+                                      tabIndex={0}
+                                    >
+                                      {c.descripcion.length > 50 ? c.descripcion.slice(0, 50) + '…' : c.descripcion}
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" align="center" className="max-w-xs break-words whitespace-pre-line bg-white border border-slate-200 shadow-lg p-4 rounded-md text-slate-800 text-sm font-normal">
+                                    {c.descripcion}
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </td>
+                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.divisa}</td>
+                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.tasa}</td>
+                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.usuarioCorreo}</td>
+                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.farmacia}</td>
+                            <td className="px-5 py-4 whitespace-nowrap text-sm"><EstatusBadge estatus={c.estatus} /></td>
+                            <td className="px-5 py-4 whitespace-nowrap text-sm text-center">
+                              <select
+                                value={c.estatus}
+                                onChange={e => handleEstadoChange(c._id, e.target.value)}
+                                className="border border-slate-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white text-slate-700"
+                              >
+                                {ESTATUS_OPCIONES.map(opt => (
+                                  <option key={opt} value={opt} disabled={opt === c.estatus}>
+                                    {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                                  </option>
+                                ))}
+                              </select>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td colSpan={18} className="py-2 px-4 bg-slate-50 text-left">
+                              <button
+                                className="px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700 font-medium text-xs shadow"
+                                onClick={() => {
+                                  setAbonoModalOpen(c._id);
+                                  setAbonoCuenta(c);
+                                }}
+                              >
+                                + Agregar pago a esta cuenta
+                              </button>
+                            </td>
+                          </tr>
+                        </React.Fragment>
+                      );
+                    })}
                 </tbody>
               </table>
             </div>
@@ -417,14 +648,14 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
                 </div>
               )}
               <div className="flex justify-end gap-3">
-                <button 
-                  onClick={handleCancelChange} 
+                <button
+                  onClick={handleCancelChange}
                   className="px-5 py-2.5 rounded-md bg-slate-200 text-slate-700 hover:bg-slate-300 font-medium transition-colors duration-150 ease-in-out"
                 >
                   Cancelar
                 </button>
-                <button 
-                  onClick={handleConfirmChange} 
+                <button
+                  onClick={handleConfirmChange}
                   className={`px-5 py-2.5 rounded-md font-medium transition-colors duration-150 ease-in-out shadow-sm hover:shadow-md ${confirmDialog.nuevoEstatus === 'anulada' ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
                 >
                   Aceptar
@@ -438,12 +669,40 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
           <ModalCuentasPorPagar
             cuentas={[cuentaSeleccionada]}
             farmaciaNombre={cuentaSeleccionada.farmacia}
-            onConfirm={() => {}}
+            onConfirm={() => { }}
             onClose={() => { setDetalleModalOpen(false); setCuentaSeleccionada(null); }}
             loading={false}
             error={null}
           />
         )}
+
+        {abonoModalOpen && abonoCuenta && (
+          <AbonoModal
+            open={!!abonoModalOpen}
+            onClose={() => { setAbonoModalOpen(null); setAbonoCuenta(null); }}
+            onSubmit={(data: AbonoFormData) => {
+              setAbonoModalOpen(null);
+              setAbonoCuenta(null);
+              // Opcional: recargar pagos si es necesario
+            }}
+            usuario={abonoCuenta.usuarioCorreo || ''}
+            cuentaPorPagarId={abonoCuenta._id}
+            farmaciaId={abonoCuenta.farmacia}
+          />
+        )}
+
+        {/* Modal para mostrar pagos */}
+        <PagoMasivoModal
+          open={pagoMasivoModalOpen}
+          onClose={() => setPagoMasivoModalOpen(false)}
+          facturaIds={selectedFacturas}
+          cuentas={cuentas}
+          onSubmit={handlePagoMasivo}
+          loading={pagoMasivoLoading}
+          error={pagoMasivoError}
+          monedaConversion={monedaConversion}
+          setMonedaConversion={setMonedaConversion}
+        />
       </div>
     </div>
   );
