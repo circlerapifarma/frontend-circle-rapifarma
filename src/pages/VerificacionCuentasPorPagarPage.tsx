@@ -83,10 +83,11 @@ const VerificacionCuentasPorPagarPage: React.FC = () => {
       const token = localStorage.getItem("token");
       const headers: HeadersInit = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
+      // Usar el valor seleccionado por el usuario (verificado o anulada)
       const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/cuentas-por-pagar/${confirmDialog.cuentaId}/estatus`, {
         method: "PATCH",
         headers,
-        body: JSON.stringify({ estatus: "activa" })
+        body: JSON.stringify({ estatus: confirmDialog.nuevoEstatus })
       });
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Error desconocido al actualizar estatus" }));
@@ -173,8 +174,17 @@ const VerificacionCuentasPorPagarPage: React.FC = () => {
               <DialogHeader>
                 <DialogTitle className="text-2xl font-bold text-blue-600 text-center">Confirmar Acción</DialogTitle>
                 <DialogDescription className="text-center text-gray-700 mt-2">
-                  ¿Está seguro que desea cambiar el estatus de la cuenta por pagar a
-                  <span className={`font-bold ml-1 ${confirmDialog.nuevoEstatus === 'denied' ? 'text-red-600' : 'text-green-600'}`}>{confirmDialog.nuevoEstatus}</span>?
+                  ¿Está seguro que desea cambiar el estatus de la cuenta por pagar?
+                  <div className="mt-4 flex justify-center">
+                    <select
+                      value={confirmDialog.nuevoEstatus}
+                      onChange={e => setConfirmDialog(cd => ({ ...cd, nuevoEstatus: e.target.value }))}
+                      className="border border-blue-300 rounded-md px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-blue-700"
+                    >
+                      <option value="verificado">Verificado</option>
+                      <option value="anulada">Anulada</option>
+                    </select>
+                  </div>
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter className="flex flex-col sm:flex-row justify-center gap-4 mt-6">
@@ -187,6 +197,7 @@ const VerificacionCuentasPorPagarPage: React.FC = () => {
                 <Button
                   onClick={handleConfirmChange}
                   className={`bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition-all`}
+                  disabled={!confirmDialog.nuevoEstatus}
                 >
                   Aceptar
                 </Button>

@@ -214,6 +214,8 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
       }
       setSuccess("Estatus actualizado correctamente");
       setCuentas(prev => prev.map(c => c._id === confirmDialog.id ? { ...c, estatus: confirmDialog.nuevoEstatus } : c));
+      // Alerta visual inmediata
+      alert(`El estatus de la cuenta fue cambiado a: ${confirmDialog.nuevoEstatus.toUpperCase()}`);
     } catch (err: any) {
       setError(err.message || "Error al actualizar estatus");
     } finally {
@@ -316,7 +318,7 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
             tasa: cuenta.tasa,
             imagenPago: form.imagenPago,
             farmaciaId: cuenta.farmacia,
-            estado: 'verificado',
+            estado: 'aprobado',
             cuentaPorPagarId: cuenta._id,
           };
             const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/pagoscpp`, {
