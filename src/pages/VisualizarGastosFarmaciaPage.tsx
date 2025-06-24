@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from "react";
+import { animate, stagger } from 'animejs';
 
 interface Gasto {
   _id: string;
   titulo: string;
   descripcion: string;
   monto: number;
-  fecha: string;
+  fecha: string; // Fecha de gasto (ej: "2025-06-23")
+  fechaRegistro?: string | number | { $date: { $numberLong: string } }; // Puede venir como ISO, timestamp o formato Mongo
   estado: string; // "wait", "verified", "denied"
   localidad: string;
-  divisa?: string; // Puede venir en nuevos registros
-  tasa?: number;   // Puede venir en nuevos registros
+  divisa?: string;
+  tasa?: number;
 }
 
 interface FarmaciaChip {
@@ -20,14 +22,35 @@ interface FarmaciaChip {
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const ESTADO_OPCIONES = ["wait", "verified", "denied"];
 
-function formatFecha(fechaISO: string) {
-  // Asegurarse que la fecha se interpreta correctamente UTC para evitar desfases de un día
+function formatFecha(fechaISO: string, fechaRegistro?: any) {
+  // Si hay fechaRegistro y es un objeto Mongo, usarla para mostrar fecha y hora
+  if (fechaRegistro && typeof fechaRegistro === 'object' && fechaRegistro.$date && fechaRegistro.$date.$numberLong) {
+    const date = new Date(Number(fechaRegistro.$date.$numberLong));
+    return date.toLocaleString('es-VE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+  // Si es string o timestamp
+  if (fechaRegistro && (typeof fechaRegistro === 'string' || typeof fechaRegistro === 'number')) {
+    const date = new Date(fechaRegistro);
+    return date.toLocaleString('es-VE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+  // Fallback: solo fecha simple
   const date = new Date(fechaISO);
-  const userTimezoneOffset = date.getTimezoneOffset() * 60000;
-  return new Date(date.getTime() + userTimezoneOffset).toLocaleDateString('es-VE', {
+  return date.toLocaleDateString('es-VE', {
     day: '2-digit',
     month: '2-digit',
-    year: 'numeric'
+    year: 'numeric',
   });
 }
 
@@ -174,9 +197,30 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
   };
 
   const gastosFiltrados = gastos
-    .filter(g => !estadoFiltro || g.estado === estadoFiltro)
-    .filter(g => !proveedorFiltro || g.titulo.toLowerCase().includes(proveedorFiltro.toLowerCase()) || g.descripcion.toLowerCase().includes(proveedorFiltro.toLowerCase()))
+    .filter(g => {
+      // Si el filtro es "" (Todos), mostrar todos sin filtrar por estado
+      if (!estadoFiltro) return true;
+      return g.estado && g.estado.trim().toLowerCase() === estadoFiltro.trim().toLowerCase();
+    })
+    .filter(g =>
+      !proveedorFiltro ||
+      g.titulo.toLowerCase().includes(proveedorFiltro.toLowerCase()) ||
+      g.descripcion.toLowerCase().includes(proveedorFiltro.toLowerCase())
+    )
     .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+
+  // Debug: mostrar valores de filtro y estados para depuración
+  // console.log('estadoFiltro:', estadoFiltro, 'gastos:', gastos.map(g => g.estado));
+
+  useEffect(() => {
+    // Animar fechas y montos al renderizar la lista filtrada
+    animate('.gasto-fecha, .gasto-monto', {
+      opacity: [0, 1],
+      y: [20, 0],
+      duration: 500,
+      delay: stagger(60)
+    });
+  }, [gastosFiltrados]);
 
   return (
     <div className="h-1 bg-slate-50 py-8">
@@ -299,10 +343,10 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
                   <tbody className="bg-white divide-y divide-slate-200">
                     {gastosFiltrados.map(g => (
                       <tr key={g._id} className="hover:bg-red-50/50 transition-colors duration-150 ease-in-out">
-                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{formatFecha(g.fecha)}</td>
+                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 gasto-fecha">{formatFecha(g.fecha, g.fechaRegistro)}</td>
                         <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-800 font-medium">{g.titulo}</td>
                         <td className="px-5 py-4 text-sm text-slate-600 max-w-md truncate" title={g.descripcion}>{g.descripcion}</td>
-                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-800 font-semibold text-right">
+                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-800 font-semibold text-right gasto-monto">
                           {g.divisa === 'Bs' && g.tasa ?
                             `Bs ${(g.monto).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / Tasa: ${g.tasa}\n$${(g.monto / g.tasa).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                             :
@@ -337,13 +381,13 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
                   <div className="flex justify-between items-start">
                     <div>
                       <div className="font-semibold text-base text-red-700">{g.titulo}</div>
-                      <div className="text-xs text-slate-500">{formatFecha(g.fecha)}</div>
+                      <div className="text-xs text-slate-500 gasto-fecha">{formatFecha(g.fecha, g.fechaRegistro)}</div>
                     </div>
                     <EstadoGastoBadge estado={g.estado} />
                   </div>
                   <p className="text-sm text-slate-600 line-clamp-3" title={g.descripcion}>{g.descripcion || "Sin descripción"}</p>
                   <div className="flex justify-between items-center mt-2 pt-2 border-t border-slate-100">
-                    <span className="font-bold text-lg text-slate-800">
+                    <span className="font-bold text-lg text-slate-800 gasto-monto">
                       {g.divisa === 'Bs' && g.tasa ?
                         `Bs ${(g.monto).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / Tasa: ${g.tasa}\n$${(g.monto / g.tasa).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                         :

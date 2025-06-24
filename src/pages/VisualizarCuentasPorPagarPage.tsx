@@ -2,7 +2,6 @@ import React, { useEffect, useState, useMemo } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import ModalCuentasPorPagar from "@/components/ModalCuentasPorPagar";
 import AbonoModal from '../components/AbonoModal';
-import type { AbonoFormData } from '../components/AbonoModal';
 import { animate, stagger } from 'animejs';
 import PagosDropdown from "../components/PagosDropdown";
 import PagoMasivoModal from "../components/PagoMasivoModal";
@@ -80,12 +79,6 @@ const formatFecha = (fechaISO: string) => {
     month: '2-digit',
     year: 'numeric'
   });
-};
-
-const getCurrencyCode = (divisa: string) => {
-  if (divisa === "Bs") return "VES";
-  if (divisa === "USD") return "USD";
-  return divisa;
 };
 
 const VisualizarCuentasPorPagarPage: React.FC = () => {
@@ -171,21 +164,30 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
   // Memo para calcular montos convertidos por factura según moneda seleccionada
   const montosConvertidos = useMemo(() => {
     return cuentasFiltradas.reduce((acc, c) => {
-      let montoConvertido = c.monto;
-      let retencionConvertida = c.retencion;
-      if (monedaConversion !== c.divisa && c.tasa && c.tasa > 0) {
-        if (monedaConversion === 'USD' && c.divisa === 'Bs') {
-          montoConvertido = Number((c.monto / c.tasa).toFixed(2));
-          retencionConvertida = Number((c.retencion / c.tasa).toFixed(2));
-        } else if (monedaConversion === 'Bs' && c.divisa === 'USD') {
-          montoConvertido = Number((c.monto * c.tasa).toFixed(2));
-          retencionConvertida = Number((c.retencion * c.tasa).toFixed(2));
-        }
+      // Siempre calcular ambos montos: Bs y USD
+      let montoBs = c.monto;
+      let montoUSD = null;
+      let retencionBs = c.retencion ?? 0;
+      let retencionUSD = null;
+      if (c.divisa === 'USD' && c.tasa && c.tasa > 0) {
+        montoBs = c.monto * c.tasa;
+        montoUSD = c.monto;
+        retencionBs = (c.retencion ?? 0) * c.tasa;
+        retencionUSD = c.retencion ?? 0;
+      } else if (c.divisa === 'Bs' && c.tasa && c.tasa > 0) {
+        montoUSD = c.monto / c.tasa;
+        retencionUSD = (c.retencion ?? 0) / c.tasa;
       }
-      acc[c._id] = { monto: montoConvertido, retencion: retencionConvertida };
+      acc[c._id] = {
+        montoBs,
+        montoUSD,
+        retencionBs,
+        retencionUSD,
+        ...c // incluir todos los datos originales de la cuenta
+      };
       return acc;
-    }, {} as Record<string, { monto: number, retencion: number }>);
-  }, [cuentasFiltradas, monedaConversion]);
+    }, {} as Record<string, any>);
+  }, [cuentasFiltradas]);
 
   const handleEstadoChange = (id: string, nuevoEstatus: string) => {
     setConfirmDialog({ open: true, id, nuevoEstatus });
@@ -289,48 +291,49 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
     );
   };
 
-  // Lógica para registrar pago masivo (conversión individual por cuenta)
+  // Lógica para registrar pago masivo (un pago individual por cada cuenta seleccionada)
   const handlePagoMasivo = async (form: any) => {
     setPagoMasivoLoading(true);
     setPagoMasivoError(null);
     try {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("No se encontró el token de autenticación");
-      // Construir abonos discriminados por factura, usando el monto convertido según la moneda seleccionada
-      const abonos = selectedFacturas.map(facturaId => {
-        const cuenta = cuentas.find(c => c._id === facturaId);
-        if (!cuenta) return null;
-        // Usar el monto convertido calculado en montosConvertidos
-        const monto = montosConvertidos[cuenta._id]?.monto ?? cuenta.monto;
-        const moneda = monedaConversion;
-        return {
-          fecha: form.fecha,
-          moneda,
-          monto,
-          referencia: form.referencia,
-          usuario: form.usuario,
-          bancoEmisor: form.bancoEmisor,
-          bancoReceptor: form.bancoReceptor,
-          tasa: cuenta.tasa,
-          imagenPago: form.imagenPago,
-          farmaciaId: cuenta.farmacia,
-          estado: 'en_espera',
-          cuentaPorPagarId: cuenta._id,
-        };
-      }).filter(Boolean);
-      const body = { abonos };
-      const res = await fetch(`${API_BASE_URL}/api/pagoscpp/masivo`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify(body)
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail || "Error al registrar pago masivo");
-      }
+      // Enviar un pago por cada cuenta seleccionada
+      await Promise.all(
+        selectedFacturas.map(async (facturaId) => {
+          const cuenta = cuentasFiltradas.find(c => c._id === facturaId);
+          if (!cuenta) return null;
+          // Usar el monto convertido calculado en montosConvertidos si existe
+          const monto = montosConvertidos[cuenta._id]?.monto ?? cuenta.monto;
+          const payload = {
+            fecha: form.fecha,
+            moneda: form.moneda,
+            monto,
+            referencia: form.referencia,
+            usuario: form.usuario,
+            bancoEmisor: form.bancoEmisor,
+            bancoReceptor: form.bancoReceptor,
+            tasa: cuenta.tasa,
+            imagenPago: form.imagenPago,
+            farmaciaId: cuenta.farmacia,
+            estado: 'verificado',
+            cuentaPorPagarId: cuenta._id,
+          };
+            const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/pagoscpp`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+          });
+          if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.detail || "Error al registrar pago");
+          }
+          return res.json();
+        })
+      );
       setSuccess("Pago registrado para todas las facturas seleccionadas");
       setPagoMasivoModalOpen(false);
       setSelectedFacturas([]);
@@ -341,6 +344,15 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
       setPagoMasivoLoading(false);
     }
   };
+
+  // Función para validar la estructura de pagosInfo
+  function isValidPagosInfo(pagosInfo: any): boolean {
+    if (!pagosInfo || typeof pagosInfo !== 'object') return false;
+    if (typeof pagosInfo.loading !== 'boolean') return false;
+    if ('error' in pagosInfo && typeof pagosInfo.error !== 'string' && typeof pagosInfo.error !== 'undefined') return false;
+    if ('pagos' in pagosInfo && !Array.isArray(pagosInfo.pagos)) return false;
+    return true;
+  }
 
   return (
     // Contenedor principal con un fondo sutil para la página
@@ -490,24 +502,22 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
                     <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Pagos</th>
                     <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Monto</th>
                     <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Retención</th>
-                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Días Crédito</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Tasa</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Moneda</th>
                     <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Días para Vencer</th>
                     <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Recepción</th>
-                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Emisión</th>
-                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Vencimiento</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Proveedor</th>
                     <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Factura</th>
                     <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Control</th>
-                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Proveedor</th>
+                    {/* El resto de columnas */}
                     <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Descripción</th>
-                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Moneda</th>
-                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Tasa</th>
                     <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Usuario</th>
                     <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Farmacia</th>
                     <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Estatus</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-slate-200">
-                  {/* Ordenar las cuentas por días restantes (próximas a vencer primero) */}
                   {cuentasFiltradas
                     .slice()
                     .sort((a, b) => {
@@ -517,12 +527,6 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
                     })
                     .map(c => {
                       // Calcular días para vencer y fecha de vencimiento para cada cuenta
-                      const fechaEmision = c.fechaEmision;
-                      const diasCredito = c.diasCredito;
-                      const fechaVencimiento = new Date(new Date(fechaEmision).getTime() + diasCredito * 24 * 60 * 60 * 1000);
-                      const hoy = new Date();
-                      const diasParaVencer = Math.ceil((fechaVencimiento.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
-                      const fechaVencimientoMostrar = fechaVencimiento.toISOString().slice(0, 10);
                       return (
                         <React.Fragment key={c._id}>
                           <tr className="hover:bg-slate-50 transition-colors duration-150 ease-in-out">
@@ -534,55 +538,118 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
                               />
                             </td>
                             <td className="px-2 py-4 whitespace-nowrap text-sm">
-                              <PagosDropdown
-                                cuentaId={c._id}
-                                onOpenChange={open => handlePagosDropdownOpen(open, c)}
-                                pagosInfo={pagosAprobadosPorCuenta[c._id] || {loading: false, pagos: []}}
-                                getCurrencyCode={getCurrencyCode}
-                              />
+                              {(() => {
+                                let pagosInfo = pagosAprobadosPorCuenta[c._id] || {loading: false, pagos: []};
+                                // Validar y normalizar pagosInfo para asegurar que cada pago tenga la moneda correcta
+                                if (!isValidPagosInfo(pagosInfo)) {
+                                  return (
+                                    <div className="text-xs text-red-500 font-semibold">Error: pagosInfo inválido</div>
+                                  );
+                                }
+                                // Normalizar moneda en cada pago (si falta, usar la moneda de la cuenta)
+                                if (pagosInfo.pagos && Array.isArray(pagosInfo.pagos)) {
+                                  pagosInfo = {
+                                    ...pagosInfo,
+                                    pagos: pagosInfo.pagos.map(p => {
+                                      // Normalizar y priorizar la moneda real del pago
+                                      let monedaPago = (typeof p.moneda === 'string' && p.moneda.trim()) ? p.moneda.toUpperCase() : (typeof c.divisa === 'string' ? c.divisa.toUpperCase() : 'BS');
+                                      return {
+                                        ...p,
+                                        moneda: monedaPago,
+                                        tasa: p.tasa || c.tasa,
+                                        monedaCuenta: typeof c.divisa === 'string' ? c.divisa.toUpperCase() : 'BS',
+                                        tasaCuenta: c.tasa,
+                                        montoTotal: c.monto
+                                      };
+                                    })
+                                  };
+                                }
+                                return (
+                                  <PagosDropdown
+                                    cuentaId={c._id}
+                                    onOpenChange={open => handlePagosDropdownOpen(open, c)}
+                                    pagosInfo={pagosInfo}
+                                    montoTotal={c.monto}
+                                    monedaCuenta={c.divisa}
+                                    tasaCuenta={c.tasa}
+                                  />
+                                );
+                              })()}
                             </td>
                             <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">
+                              {/* Monto 1: siempre Bs (si la cuenta es USD, convertir a Bs). Monto 2: siempre USD (original o convertido). */}
                               <div className="font-bold text-indigo-700">
-                                {c.monto?.toLocaleString('es-VE', { style: 'currency', currency: getCurrencyCode(c.divisa) })}
+                                {(() => {
+                                  const cuenta = c;
+                                  const montoBs = cuenta.divisa === 'USD'
+                                    ? cuenta.monto * (cuenta.tasa || 0)
+                                    : cuenta.monto;
+                                  return montoBs != null && !isNaN(montoBs)
+                                    ? montoBs.toLocaleString('es-VE', { style: 'currency', currency: 'VES' })
+                                    : '--';
+                                })()}
                               </div>
-                              {montosConvertidos[c._id] && monedaConversion !== c.divisa && (
-                                <div className="text-xs text-slate-500 font-medium">
-                                  ≈ {montosConvertidos[c._id].monto.toLocaleString('es-VE', { style: 'currency', currency: getCurrencyCode(monedaConversion) })} {monedaConversion}
-                                </div>
-                              )}
+                              <div className="text-xs text-slate-500 italic">
+                                {(() => {
+                                  const cuenta = c;
+                                  const montoUSD = cuenta.divisa === 'USD'
+                                    ? cuenta.monto
+                                    : cuenta.tasa ? cuenta.monto / cuenta.tasa : null;
+                                  return montoUSD != null && !isNaN(montoUSD)
+                                    ? `Ref: ${montoUSD.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}`
+                                    : 'Ref: --';
+                                })()}
+                              </div>
                             </td>
                             <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">
+                              {/* Retención 1: siempre Bs (si la cuenta es USD, convertir a Bs). Retención 2: siempre USD (original o convertido). */}
                               <div className="font-bold text-indigo-700">
-                                {c.retencion?.toLocaleString('es-VE', { style: 'currency', currency: getCurrencyCode(c.divisa) })}
+                                {(() => {
+                                  const cuenta = c;
+                                  const retencionBs = cuenta.divisa === 'USD'
+                                    ? (cuenta.retencion || 0) * (cuenta.tasa || 0)
+                                    : cuenta.retencion;
+                                  return retencionBs != null && !isNaN(retencionBs)
+                                    ? retencionBs.toLocaleString('es-VE', { style: 'currency', currency: 'VES' })
+                                    : '--';
+                                })()}
                               </div>
-                              {montosConvertidos[c._id] && monedaConversion !== c.divisa && (
-                                <div className="text-xs text-slate-500 font-medium">
-                                  ≈ {montosConvertidos[c._id].retencion.toLocaleString('es-VE', { style: 'currency', currency: getCurrencyCode(monedaConversion) })} {monedaConversion}
-                                </div>
-                              )}
+                              <div className="text-xs text-slate-500 italic">
+                                {(() => {
+                                  const cuenta = c;
+                                  const retencionUSD = cuenta.divisa === 'USD'
+                                    ? cuenta.retencion
+                                    : cuenta.tasa ? (cuenta.retencion || 0) / cuenta.tasa : null;
+                                  return retencionUSD != null && !isNaN(retencionUSD)
+                                    ? `Ref: ${retencionUSD.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}`
+                                    : 'Ref: --';
+                                })()}
+                              </div>
                             </td>
-                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-center">{c.diasCredito}</td>
+                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-center">{c.tasa}</td>
+                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-center">{c.divisa}</td>
                             <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-center">
-                              {diasParaVencer <= 0 ? (
-                                <span className="text-red-600 font-bold">Vencida</span>
-                              ) : (
-                                <span className="text-slate-700 font-semibold">{diasParaVencer} días</span>
-                              )}
+                              {(() => {
+                                const fechaVencimiento = new Date(new Date(c.fechaEmision).getTime() + c.diasCredito * 24 * 60 * 60 * 1000);
+                                const hoy = new Date();
+                                const diasParaVencer = Math.ceil((fechaVencimiento.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
+                                return diasParaVencer <= 0 ? (
+                                  <span className="text-red-600 font-bold">Vencida</span>
+                                ) : (
+                                  <span className="text-slate-700 font-semibold">{diasParaVencer} días</span>
+                                );
+                              })()}
                             </td>
                             <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{formatFecha(c.fechaRecepcion)}</td>
-                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{formatFecha(c.fechaEmision)}</td>
-                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{formatFecha(fechaVencimientoMostrar)}</td>
+                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 font-medium">{c.proveedor}</td>
                             <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.numeroFactura}</td>
                             <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.numeroControl}</td>
-                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 font-medium">{c.proveedor}</td>
+                            {/* El resto de columnas */}
                             <td className="px-5 py-4 text-sm text-slate-700 max-w-sm truncate">
                               <TooltipProvider>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <span
-                                      className="cursor-pointer underline decoration-dotted"
-                                      tabIndex={0}
-                                    >
+                                    <span className="cursor-pointer underline decoration-dotted" tabIndex={0}>
                                       {c.descripcion.length > 50 ? c.descripcion.slice(0, 50) + '…' : c.descripcion}
                                     </span>
                                   </TooltipTrigger>
@@ -592,8 +659,6 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
                                 </Tooltip>
                               </TooltipProvider>
                             </td>
-                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.divisa}</td>
-                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.tasa}</td>
                             <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.usuarioCorreo}</td>
                             <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.farmacia}</td>
                             <td className="px-5 py-4 whitespace-nowrap text-sm"><EstatusBadge estatus={c.estatus} /></td>
@@ -680,7 +745,7 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
           <AbonoModal
             open={!!abonoModalOpen}
             onClose={() => { setAbonoModalOpen(null); setAbonoCuenta(null); }}
-            onSubmit={(data: AbonoFormData) => {
+            onSubmit={() => {
               setAbonoModalOpen(null);
               setAbonoCuenta(null);
               // Opcional: recargar pagos si es necesario
@@ -696,7 +761,22 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
           open={pagoMasivoModalOpen}
           onClose={() => setPagoMasivoModalOpen(false)}
           facturaIds={selectedFacturas}
-          cuentas={cuentas}
+          cuentas={selectedFacturas.map(id => {
+            const cuenta = cuentasFiltradas.find(c => c._id === id);
+            if (!cuenta) return null;
+            // Monto y retención en Bs (si USD, convertir), referencia en USD (si Bs, convertir)
+            const montoBs = cuenta.divisa === 'USD' ? cuenta.monto * (cuenta.tasa || 0) : cuenta.monto;
+            const montoUSD = cuenta.divisa === 'USD' ? cuenta.monto : cuenta.tasa ? cuenta.monto / cuenta.tasa : null;
+            const retencionBs = cuenta.divisa === 'USD' ? (cuenta.retencion || 0) * (cuenta.tasa || 0) : cuenta.retencion;
+            const retencionUSD = cuenta.divisa === 'USD' ? cuenta.retencion : cuenta.tasa ? (cuenta.retencion || 0) / cuenta.tasa : null;
+            return {
+              ...cuenta,
+              monto: montoBs,
+              referenciaUSD: montoUSD,
+              retencion: retencionBs,
+              retencionUSD: retencionUSD
+            };
+          }).filter(Boolean)}
           onSubmit={handlePagoMasivo}
           loading={pagoMasivoLoading}
           error={pagoMasivoError}
