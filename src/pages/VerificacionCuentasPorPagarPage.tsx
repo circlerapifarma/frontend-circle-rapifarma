@@ -181,7 +181,7 @@ const VerificacionCuentasPorPagarPage: React.FC = () => {
                       onChange={e => setConfirmDialog(cd => ({ ...cd, nuevoEstatus: e.target.value }))}
                       className="border border-blue-300 rounded-md px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-blue-700"
                     >
-                      <option value="verificado">Verificado</option>
+                      <option value="activa">Verificado</option>
                       <option value="anulada">Anulada</option>
                     </select>
                   </div>
