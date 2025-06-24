@@ -33,18 +33,32 @@ const VerificacionCuentasPorPagarPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; cuentaId: string | null; nuevoEstatus: string }>({ open: false, cuentaId: null, nuevoEstatus: "" });
+  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; cuentaId: string | null; nuevoEstatus: string }>({ open: false, cuentaId: null, nuevoEstatus: "activa" });
   const [modalAbierto, setModalAbierto] = useState(false);
   const [farmaciaSeleccionada, setFarmaciaSeleccionada] = useState<{ id: string; nombre: string } | null>(null);
   const [farmacias, setFarmacias] = useState<{ id: string; nombre: string }[]>([]);
 
-  const fetchCuentas = async () => {
+  // Fetch farmacias y cuentas
+  useEffect(() => {
+    const usuarioRaw = localStorage.getItem("usuario");
+    if (usuarioRaw) {
+      try {
+        const usuario = JSON.parse(usuarioRaw);
+        const farmaciasObj = usuario.farmacias || {};
+        setFarmacias(Object.entries(farmaciasObj).map(([id, nombre]) => ({ id, nombre: String(nombre) })));
+      } catch {
+        setFarmacias([]);
+      }
+    }
+    fetchCuentas();
+  }, []);
+
+  async function fetchCuentas() {
     setLoading(true);
     setError(null);
     try {
       const token = localStorage.getItem("token");
-      const headers: HeadersInit = {};
-      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const headers: HeadersInit = token ? { "Authorization": `Bearer ${token}` } : {};
       const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/cuentas-por-pagar`, { headers });
       if (!res.ok) throw new Error("Error al obtener cuentas por pagar");
       const data = await res.json();
@@ -54,28 +68,11 @@ const VerificacionCuentasPorPagarPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  useEffect(() => {
-    // Obtener farmacias del usuario
-    const usuarioRaw = localStorage.getItem("usuario");
-    if (usuarioRaw) {
-      try {
-        const usuario = JSON.parse(usuarioRaw);
-        const farmaciasObj = usuario.farmacias || {};
-        const farmaciasArr = Object.entries(farmaciasObj).map(([id, nombre]) => ({ id, nombre: String(nombre) }));
-        setFarmacias(farmaciasArr);
-      } catch {
-        setFarmacias([]);
-      }
-    }
-    fetchCuentas();
-  }, []);
-
-  const handleEstatusSelect = (cuentaId: string, nuevoEstatus: string) => {
-    setConfirmDialog({ open: true, cuentaId, nuevoEstatus });
-  };
-
+  // Cambiar estatus
+  const handleEstatusSelect = (cuentaId: string, nuevoEstatus: string) => setConfirmDialog({ open: true, cuentaId, nuevoEstatus });
+  const handleCancelChange = () => setConfirmDialog({ open: false, cuentaId: null, nuevoEstatus: "" });
   const handleConfirmChange = async () => {
     if (!confirmDialog.cuentaId) return;
     setError(null);
@@ -83,7 +80,6 @@ const VerificacionCuentasPorPagarPage: React.FC = () => {
       const token = localStorage.getItem("token");
       const headers: HeadersInit = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
-      // Usar el valor seleccionado por el usuario (verificado o anulada)
       const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/cuentas-por-pagar/${confirmDialog.cuentaId}/estatus`, {
         method: "PATCH",
         headers,
@@ -104,10 +100,7 @@ const VerificacionCuentasPorPagarPage: React.FC = () => {
     }
   };
 
-  const handleCancelChange = () => {
-    setConfirmDialog({ open: false, cuentaId: null, nuevoEstatus: "" });
-  };
-
+  // Render
   return (
     <div className="min-h-screen bg-slate-50 py-8">
       <div className="w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -130,8 +123,8 @@ const VerificacionCuentasPorPagarPage: React.FC = () => {
             <p className="text-center text-gray-500 text-lg mt-8">No hay farmacias disponibles para mostrar.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8">
-              {farmacias.map((farm) => {
-                const cuentasPendientes = cuentas.filter((c) => c.farmacia === farm.id && c.estatus === "wait").length;
+              {farmacias.map(farm => {
+                const cuentasPendientes = cuentas.filter(c => c.farmacia === farm.id && c.estatus === "wait").length;
                 return (
                   <Card
                     key={farm.id}
@@ -160,7 +153,7 @@ const VerificacionCuentasPorPagarPage: React.FC = () => {
         </section>
         {modalAbierto && farmaciaSeleccionada && (
           <ModalCuentasPorPagar
-            cuentas={cuentas.filter((c) => c.farmacia === farmaciaSeleccionada.id && c.estatus === "wait")}
+            cuentas={cuentas.filter(c => c.farmacia === farmaciaSeleccionada.id && c.estatus === "wait")}
             farmaciaNombre={farmaciaSeleccionada.nombre}
             onConfirm={handleEstatusSelect}
             onClose={() => setModalAbierto(false)}
@@ -181,7 +174,8 @@ const VerificacionCuentasPorPagarPage: React.FC = () => {
                       onChange={e => setConfirmDialog(cd => ({ ...cd, nuevoEstatus: e.target.value }))}
                       className="border border-blue-300 rounded-md px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-blue-700"
                     >
-                      <option value="activa">Verificado</option>
+                      <option value="seleccionar">seleccionar</option>
+                      <option value="activa">Activa</option>
                       <option value="anulada">Anulada</option>
                     </select>
                   </div>

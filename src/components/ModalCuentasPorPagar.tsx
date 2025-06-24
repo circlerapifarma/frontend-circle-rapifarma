@@ -76,13 +76,7 @@ const ModalCuentasPorPagar: React.FC<ModalCuentasPorPagarProps> = ({ cuentas, fa
                     onClick={() => onConfirm(c._id, "verified")}
                     className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-5 rounded-lg shadow-md transition-all duration-300 ease-in-out hover:scale-105"
                   >
-                    ✅ Confirmar
-                  </Button>
-                  <Button
-                    onClick={() => onConfirm(c._id, "denied")}
-                    className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-5 rounded-lg shadow-md transition-all duration-300 ease-in-out hover:scale-105"
-                  >
-                    ❌ Rechazar
+                    validar
                   </Button>
                 </div>
                 
