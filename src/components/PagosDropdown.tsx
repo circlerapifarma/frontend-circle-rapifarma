@@ -1,6 +1,7 @@
 import React from "react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent } from "@/components/ui/dropdown-menu";
 import { animate } from 'animejs';
+import ImageDisplay from "./upfile/ImageDisplay";
 
 interface PagosDropdownProps {
   cuentaId: string;
@@ -137,7 +138,23 @@ const PagosDropdown: React.FC<PagosDropdownProps> = ({ cuentaId, onOpenChange, p
                   <div className="text-slate-500">Banco Emisor: {pago.bancoEmisor} | Banco Receptor: {pago.bancoReceptor}</div>
                   <div className="text-slate-400">Fecha: {pago.fecha}</div>
                   {pago.imagenPago && (
-                    <a href={pago.imagenPago} target="_blank" rel="noopener noreferrer" className="text-indigo-600 underline text-xs mt-1 block">Ver comprobante</a>
+                    <div className="mt-2 flex items-center gap-2">
+                      <div className="border border-slate-200 rounded shadow-sm overflow-hidden bg-slate-50 p-1">
+                      <ImageDisplay
+                        imageName={pago.imagenPago}
+                        alt="Comprobante de pago"
+                        style={{
+                        maxWidth: 120,
+                        maxHeight: 60,
+                        borderRadius: 4,
+                        objectFit: 'cover',
+                        cursor: 'pointer',
+                        transition: 'transform 0.2s',
+                        }}
+                      />
+                      </div>
+                      <span className="text-[10px] text-slate-400">Comprobante</span>
+                    </div>
                   )}
                   <div className="text-slate-400 text-[11px]">Usuario: {pago.usuario || '--'}</div>
                 </div>

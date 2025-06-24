@@ -5,9 +5,10 @@ interface ImageDisplayProps {
   imageName: string;
   alt?: string;
   style?: React.CSSProperties;
+  onClickImage?: (url: string) => void;
 }
 
-const ImageDisplay: React.FC<ImageDisplayProps> = ({ imageName, alt, style }) => {
+const ImageDisplay: React.FC<ImageDisplayProps> = ({ imageName, alt, style, onClickImage }) => {
   const [imageUrl, setImageUrl] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -33,19 +34,28 @@ const ImageDisplay: React.FC<ImageDisplayProps> = ({ imageName, alt, style }) =>
         src={imageUrl}
         alt={alt || imageName}
         style={style || { maxWidth: '100%', height: 'auto', cursor: 'pointer' }}
-        onClick={() => setShowModal(true)}
+        onClick={() => {
+          if (onClickImage) {
+            onClickImage(imageUrl);
+          } else {
+            setShowModal(true);
+          }
+        }}
       />
-      {showModal && (
+      {showModal && !onClickImage && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-white bg-opacity-70"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70"
           onClick={() => setShowModal(false)}
         >
-          <img
-            src={imageUrl}
-            alt={alt || imageName}
-            style={{ maxWidth: '90vw', maxHeight: '90vh', borderRadius: 12, boxShadow: '0 0 24px #0008' }}
-            onClick={e => e.stopPropagation()}
-          />
+          <div className="flex items-center justify-center w-full h-full">
+            <img
+              src={imageUrl}
+              alt={alt || imageName}
+              style={{ maxWidth: '90vw', maxHeight: '90vh', borderRadius: 12, boxShadow: '0 0 24px #0008', background: '#fff' }}
+              onClick={e => e.stopPropagation()}
+              className="mx-auto block"
+            />
+          </div>
         </div>
       )}
     </div>
