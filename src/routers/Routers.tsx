@@ -17,15 +17,15 @@ import AgregarGastos from '@/pages/AgregarGastosPage';
 import AdminCajerosPage from '@/pages/AdminCajerosPage';
 import ComisionesPorTurnoPage from '@/pages/ComisionesPorTurnoPage';
 import ComisionesEspecialesPage from '@/pages/ComisionesEspecialesPage';
-import CuentasPorPagarPage from '@/pages/CuentasPorPagarPage';
-import VisualizarCuentasPorPagarPage from '@/pages/VisualizarCuentasPorPagarPage';
 import VisualizarGastosFarmaciaPage from '@/pages/VisualizarGastosFarmaciaPage';
 import VisualizarCuadresPage from '@/pages/VisualizarCuadresPage';
 import AgregarInventarioPage from '@/pages/AgregarInventarioPage';
 import VisualizarInventariosPage from '@/pages/VisualizarInventariosPage';
 import RetiroPage from '@/pages/RetiroPage';
-import VerificacionCuentasPorPagarPage from '@/pages/VerificacionCuentasPorPagarPage';
-import VisualizarPagosCPPPage from '@/pages/VisualizarPagosCPPPage';
+import VisualizarCuentasPorPagarPage from '@/pages/cuentasPorPagar/visualizarCuentas/VisualizarCuentasPorPagarPage';
+import VerificacionCuentasPorPagarPage from '@/pages/cuentasPorPagar/verificacionCuentas/VerificacionCuentasPorPagarPage';
+import VisualizarPagosCPPPage from '@/pages/cuentasPorPagar/pagos/VisualizarPagosCPPPage';
+import CuentasPorPagarPage from '@/pages/cuentasPorPagar/agregarCuentas/CuentasPorPagarPage';
 
 const AppRouter = () => (
     <Routes>

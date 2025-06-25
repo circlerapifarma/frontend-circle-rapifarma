@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import UpFileCuentasPorPagar from "../components/upfile/UpFileCuentasPorPagar";
+import UpFileCuentasPorPagar from "../../../components/upfile/UpFileCuentasPorPagar";
 
 interface CuentaPorPagar {
   fechaEmision: string;
@@ -213,12 +213,12 @@ const CuentasPorPagarPage: React.FC = () => {
           <textarea name="descripcion" value={form.descripcion} onChange={handleChange} className="w-full border rounded px-2 py-1" required />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">Monto a Pagar</label>
-          <input type="number" name="monto" value={form.monto} onChange={handleChange} min={0} step="0.01" className="w-full border rounded px-2 py-1" required onWheel={e => e.currentTarget.blur()} />
+          <label className="block text-sm font-medium text-gray-700">Monto</label>
+          <input type="number" name="monto" value={form.monto.toFixed(4)} onChange={handleChange} min={0} step="0.0001" className="w-full border rounded px-2 py-1" required onWheel={e => e.currentTarget.blur()} />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">Retención</label>
-          <input type="number" name="retencion" value={form.retencion} onChange={handleChange} min={0} step="0.01" className="w-full border rounded px-2 py-1" required onWheel={e => e.currentTarget.blur()} />
+          <input type="number" name="retencion" value={form.retencion.toFixed(4)} onChange={handleChange} min={0} step="0.0001" className="w-full border rounded px-2 py-1" required onWheel={e => e.currentTarget.blur()} />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">Divisa</label>
@@ -229,7 +229,7 @@ const CuentasPorPagarPage: React.FC = () => {
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">Tasa</label>
-          <input type="number" name="tasa" value={form.tasa} onChange={handleChange} min={0} step="0.01" className="w-full border rounded px-2 py-1" required onWheel={e => e.currentTarget.blur()} />
+          <input type="number" name="tasa" value={form.tasa.toFixed(4)} onChange={handleChange} min={0} step="0.0001" className="w-full border rounded px-2 py-1" required onWheel={e => e.currentTarget.blur()} />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">Estatus</label>

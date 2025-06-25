@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
-import { getCurrencyCode } from "../lib/utils";
 import { animate } from 'animejs';
+import { getCurrencyCode } from "@/lib/utils";
 
 interface PagoCPP {
   _id: string;

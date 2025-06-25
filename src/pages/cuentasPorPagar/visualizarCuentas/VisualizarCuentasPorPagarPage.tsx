@@ -1,0 +1,550 @@
+import React, { useEffect, useState } from "react";
+import { animate, stagger } from 'animejs';
+import PagoMasivoModal from "@/components/PagoMasivoModal";
+import AbonoModal from "@/components/AbonoModal";
+import FiltrosCuentasPorPagar from "./FiltrosCuentasPorPagar";
+import TablaCuentasPorPagar from "./TablaCuentasPorPagar";
+import { useCuentasPorPagar } from "./useCuentasPorPagar";
+import EdicionCuentaModal, { calcularMontosCuenta } from "./EdicionCuentaModal";
+import type { EdicionCuenta } from "./EdicionCuentaModal";
+// Importa el tipo Pago para tipar correctamente pagosAprobadosPorCuenta
+import type { Pago } from "./FilaCuentaPorPagar";
+
+// 1. Unifica el tipo CuentaPorPagar para que divisa sea string en todos los archivos
+export interface CuentaPorPagar {
+  _id: string;
+  monto: number;
+  divisa: string; // <-- string, no 'USD' | 'Bs'
+  tasa: number;
+  retencion?: number;
+  fechaEmision: string;
+  diasCredito: number;
+  fechaRecepcion: string;
+  proveedor: string;
+  numeroFactura: string;
+  numeroControl: string;
+  descripcion: string;
+  usuarioCorreo: string;
+  farmacia: string;
+  estatus: string;
+  [key: string]: any;
+}
+
+interface FarmaciaChip {
+  id: string;
+  nombre: string;
+}
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+const ESTATUS_OPCIONES = ["wait", "activa", "inactiva", "pagada", "anulada"];
+
+function calcularDiasRestantes(fechaEmision: string, diasCredito: number) {
+  const fechaEmi = new Date(fechaEmision);
+  const fechaVenc = new Date(fechaEmi);
+  fechaVenc.setDate(fechaVenc.getDate() + diasCredito);
+  const hoy = new Date();
+  const diff = Math.ceil((fechaVenc.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
+  return diff;
+}
+
+const formatFecha = (fechaISO: string) => {
+  if (!fechaISO) return "-";
+  const date = new Date(fechaISO);
+  const userTimezoneOffset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() + userTimezoneOffset).toLocaleDateString('es-VE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+};
+
+const VisualizarCuentasPorPagarPage: React.FC = () => {
+  const [cuentas, setCuentas] = useState<CuentaPorPagar[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; id: string | null; nuevoEstatus: string }>({ open: false, id: null, nuevoEstatus: "" });
+  const [farmacias, setFarmacias] = useState<FarmaciaChip[]>([]);
+  const [abonoModalOpen, setAbonoModalOpen] = useState<string | null>(null); // id de la cuenta
+  const [abonoCuenta, setAbonoCuenta] = useState<any>(null);
+  const [pagosAprobadosPorCuenta, setPagosAprobadosPorCuenta] = useState<Record<string, { loading: boolean; pagos: Pago[] }>>({});
+  const [selectedCuentas, setSelectedCuentas] = useState<string[]>([]);
+  const [pagoMasivoModalOpen, setPagoMasivoModalOpen] = useState(false);
+  const [pagoMasivoLoading, setPagoMasivoLoading] = useState(false);
+  const [pagoMasivoError, setPagoMasivoError] = useState<string | null>(null);
+  // Moneda seleccionada para conversión masiva (sincronizada con el modal)
+  const [monedaConversion] = useState<'USD' | 'Bs'>('USD');
+
+  // Reemplaza selectedCuentas y edicionCuentas por un solo state
+  const [cuentasParaPagar, setCuentasParaPagar] = useState<Record<string, any>>({});
+
+  // 2. Función para abrir el modal de edición individual
+  const [cuentaEditando, setCuentaEditando] = useState<string | null>(null);
+  const abrirEdicionCuenta = (cuentaId: string) => {
+    if (cuentasParaPagar[cuentaId]) setCuentaEditando(cuentaId);
+  };
+
+  const fetchCuentas = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("No se encontró el token de autenticación");
+      const res = await fetch(`${API_BASE_URL}/cuentas-por-pagar`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error("Error al obtener cuentas por pagar");
+      const data = await res.json();
+      setCuentas(data);
+    } catch (err: any) {
+      setError(err.message || "Error al obtener cuentas por pagar");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCuentas();
+  }, []);
+
+  useEffect(() => {
+    const usuarioRaw = localStorage.getItem("usuario");
+    if (usuarioRaw) {
+      try {
+        const usuario = JSON.parse(usuarioRaw);
+        const farmaciasObj = usuario.farmacias || {};
+        const farmaciasArr = Object.entries(farmaciasObj).map(([id, nombre]) => ({ id, nombre: String(nombre) }));
+        setFarmacias(farmaciasArr);
+        if (farmaciasArr.length === 1) setSelectedFarmacia(farmaciasArr[0].id);
+      } catch {
+        setFarmacias([]);
+      }
+    }
+  }, []);
+
+  // Al seleccionar/deseleccionar una cuenta
+  const handleSelectCuenta = (id: string) => {
+    setCuentasParaPagar(prev => {
+      let nuevo;
+      if (prev[id]) {
+        // Deseleccionar: eliminar del objeto
+        nuevo = { ...prev };
+        delete nuevo[id];
+      } else {
+        // Seleccionar: agregar con datos originales y editables
+        const cuenta = cuentasFiltradas.find(c => c._id === id);
+        if (!cuenta) return prev;
+        nuevo = {
+          ...prev,
+          [id]: {
+            ...cuenta,
+            montoOriginal: cuenta.divisa === 'USD' ? cuenta.monto * (cuenta.tasa || 0) : cuenta.monto,
+            montoEditado: cuenta.divisa === 'USD' ? cuenta.monto * (cuenta.tasa || 0) : cuenta.monto,
+            descuento1: 0,
+            tipoDescuento1: 'monto',
+            descuento2: 0,
+            tipoDescuento2: 'monto',
+            observacion: '',
+            tasa: cuenta.tasa,
+            moneda: 'Bs', // Siempre predeterminado a Bs
+            ...calcularMontosCuenta({
+              montoOriginal: cuenta.divisa === 'USD' ? cuenta.monto * (cuenta.tasa || 0) : cuenta.monto,
+              montoEditado: cuenta.divisa === 'USD' ? cuenta.monto * (cuenta.tasa || 0) : cuenta.monto,
+              descuento1: 0,
+              tipoDescuento1: 'monto',
+              descuento2: 0,
+              tipoDescuento2: 'monto',
+              observacion: '',
+              tasa: cuenta.tasa,
+              moneda: 'Bs', // Siempre predeterminado a Bs
+            })
+          }
+        };
+      }
+      // Sincroniza selectedCuentas con las llaves actuales
+      setSelectedCuentas(Object.keys(nuevo));
+      return nuevo;
+    });
+  };
+
+  // Al editar una cuenta
+  const handleEdicionCuenta = (id: string, newState: Partial<EdicionCuenta>) => {
+    setCuentasParaPagar(prev => {
+      if (!prev[id]) return prev;
+      const edicion = { ...prev[id], ...newState };
+      // Recalcula los montos
+      const calculos = calcularMontosCuenta(edicion);
+      return {
+        ...prev,
+        [id]: { ...edicion, ...calculos }
+      };
+    });
+  };
+
+  // Extraer hooks y lógica de selección/filtrado
+  const {
+    proveedorFiltro,
+    setProveedorFiltro,
+    estatusFiltro,
+    setEstatusFiltro,
+    fechaInicio,
+    setFechaInicio,
+    fechaFin,
+    setFechaFin,
+    selectedFarmacia,
+    setSelectedFarmacia,
+    cuentasFiltradas,
+  } = useCuentasPorPagar({ cuentas, pagosAprobadosPorCuenta, estatusInicial: 'wait' });
+
+  const handleEstadoChange = (id: string, nuevoEstatus: string) => {
+    setConfirmDialog({ open: true, id, nuevoEstatus });
+  };
+
+  const handleConfirmChange = async () => {
+    if (!confirmDialog.id) return;
+    setError(null);
+    setSuccess(null);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("No se encontró el token de autenticación");
+      const res = await fetch(`${API_BASE_URL}/cuentas-por-pagar/${confirmDialog.id}/estatus`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ estatus: confirmDialog.nuevoEstatus })
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.detail || "Error al actualizar estatus");
+      }
+      setSuccess("Estatus actualizado correctamente");
+      setCuentas(prev => prev.map(c => c._id === confirmDialog.id ? { ...c, estatus: confirmDialog.nuevoEstatus } : c));
+      // Alerta visual inmediata
+      alert(`El estatus de la cuenta fue cambiado a: ${confirmDialog.nuevoEstatus.toUpperCase()}`);
+    } catch (err: any) {
+      setError(err.message || "Error al actualizar estatus");
+    } finally {
+      setConfirmDialog({ open: false, id: null, nuevoEstatus: "" });
+    }
+  };
+
+  const handleCancelChange = () => {
+    setConfirmDialog({ open: false, id: null, nuevoEstatus: "" });
+  };
+
+  const handlePagosDropdownOpen = (open: boolean, cuenta: CuentaPorPagar) => {
+    if (open && !pagosAprobadosPorCuenta[cuenta._id]?.pagos) {
+      setPagosAprobadosPorCuenta(prev => ({
+        ...prev,
+        [cuenta._id]: { loading: true, pagos: [] }
+      }));
+      fetch(`${API_BASE_URL}/api/pagoscpp?cuentaPorPagarId=${cuenta._id}`, {
+        headers: {
+          "Authorization": `Bearer ${localStorage.getItem("token")}`
+        }
+      })
+        .then(res => {
+          if (!res.ok) throw new Error("Error al obtener pagos");
+          return res.json();
+        })
+        .then(data => {
+          setPagosAprobadosPorCuenta(prev => ({
+            ...prev,
+            [cuenta._id]: { loading: false, pagos: data }
+          }));
+          setTimeout(() => {
+            animate(`.pagos-dropdown-item-${cuenta._id}`, {
+              opacity: [0, 1],
+              y: [20, 0],
+              duration: 400,
+              delay: stagger(60),
+              ease: 'outCubic'
+            });
+          }, 10);
+        })
+        .catch(err => {
+          setPagosAprobadosPorCuenta(prev => ({
+            ...prev,
+            [cuenta._id]: { loading: false, pagos: [], error: err.message || "Error al obtener pagos" }
+          }));
+        });
+    }
+  };
+
+  // Filtrar solo pagos aprobados antes de pasar a PagosDropdown
+  const pagosAprobadosPorCuentaFiltrados: Record<string, { loading: boolean; pagos: Pago[]; error?: string }> = {};
+  Object.entries(pagosAprobadosPorCuenta).forEach(([cuentaId, info]) => {
+    pagosAprobadosPorCuentaFiltrados[cuentaId] = {
+      ...info,
+      pagos: Array.isArray(info.pagos)
+        ? (info.pagos.filter((p: Pago) => p.estado === 'aprobado') as Pago[])
+        : []
+    };
+  });
+
+  // Lógica para registrar pago masivo (un pago individual por cada cuenta seleccionada)
+  const handlePagoMasivo = async (form: any) => {
+    setPagoMasivoLoading(true);
+    setPagoMasivoError(null);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("No se encontró el token de autenticación");
+      // Enviar un pago por cada cuenta seleccionada
+      await Promise.all(
+        selectedCuentas.map(async (cuentaId) => {
+          const cuenta = cuentasFiltradas.find(c => c._id === cuentaId);
+          if (!cuenta) return null;
+
+          const edicion = cuentasParaPagar[cuentaId];
+          const montoOriginalBs = cuenta.divisa === 'USD' ? cuenta.monto * (cuenta.tasa || 0) : cuenta.monto;
+          const montoAPagar = edicion ? edicion.montoEditado : montoOriginalBs;
+          const descuento = edicion ? edicion.descuento : 0;
+          const observacion = edicion ? edicion.observacion : '';
+
+          const payload = {
+            fecha: form.fecha,
+            moneda: form.moneda,
+            monto: montoAPagar,
+            descuento,
+            observacion,
+            referencia: form.referencia,
+            usuario: form.usuario,
+            bancoEmisor: form.bancoEmisor,
+            bancoReceptor: form.bancoReceptor,
+            tasa: cuenta.tasa,
+            imagenPago: form.imagenPago,
+            farmaciaId: cuenta.farmacia,
+            estado: 'aprobado',
+            cuentaPorPagarId: cuenta._id,
+          };
+          // Si es abono, NO cambiar el estado de la cuenta
+          const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/pagoscpp`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+          });
+          if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.detail || "Error al registrar pago");
+          }
+          // Solo cambiar el estado si no es abono
+          if (!edicion?.esAbono) {
+            await fetch(`${API_BASE_URL}/cuentas-por-pagar/${cuenta._id}/estatus`, {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+              },
+              body: JSON.stringify({ estatus: 'pagada' })
+            });
+          }
+          return res.json();
+        })
+      );
+      setSuccess("Pago registrado para todas las cuentas seleccionadas");
+      setPagoMasivoModalOpen(false);
+      setSelectedCuentas([]);
+      setCuentasParaPagar({}); // Limpiar ediciones después del pago
+      fetchCuentas();
+    } catch (err: any) {
+      setPagoMasivoError(err.message || "Error al registrar pago");
+    } finally {
+      setPagoMasivoLoading(false);
+    }
+  };
+
+  // Función para validar la estructura de pagosInfo
+  function isValidPagosInfo(pagosInfo: any): boolean {
+    if (!pagosInfo || typeof pagosInfo !== 'object') return false;
+    if (typeof pagosInfo.loading !== 'boolean') return false;
+    if ('error' in pagosInfo && typeof pagosInfo.error !== 'string' && typeof pagosInfo.error !== 'undefined') return false;
+    if ('pagos' in pagosInfo && !Array.isArray(pagosInfo.pagos)) return false;
+    return true;
+  }
+
+  const [showMonedaAlert, setShowMonedaAlert] = React.useState(true);
+  React.useEffect(() => { setShowMonedaAlert(true); }, [pagoMasivoModalOpen]);
+
+  return (
+    // Contenedor principal con un fondo sutil para la página
+    <div className="min-h-screen bg-slate-50 py-8">
+      <div className="w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h1 className="text-3xl font-bold text-slate-800 mb-8 text-center">Cuentas por Pagar</h1>
+
+        {/* Mensajes de error/éxito con mejor estilo */}
+        {error && (
+          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md shadow" role="alert">
+            <p className="font-bold">Error</p>
+            <p>{error}</p>
+          </div>
+        )}
+        {success && (
+          <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-md shadow" role="alert">
+            <p className="font-bold">Éxito</p>
+            <p>{success}</p>
+          </div>
+        )}
+
+        {/* Sección de Filtros con un card y mejor layout */}
+        <FiltrosCuentasPorPagar
+          farmacias={farmacias}
+          selectedFarmacia={selectedFarmacia}
+          setSelectedFarmacia={setSelectedFarmacia}
+          proveedorFiltro={proveedorFiltro}
+          setProveedorFiltro={setProveedorFiltro}
+          estatusFiltro={estatusFiltro}
+          setEstatusFiltro={setEstatusFiltro}
+          fechaInicio={fechaInicio}
+          setFechaInicio={setFechaInicio}
+          fechaFin={fechaFin}
+          setFechaFin={setFechaFin}
+          ESTATUS_OPCIONES={ESTATUS_OPCIONES}
+        />
+
+        {loading ? (
+          <div className="text-center py-10 text-slate-500 text-lg">
+            <svg className="animate-spin h-8 w-8 text-indigo-600 mx-auto mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Cargando cuentas...
+          </div>
+        ) : cuentasFiltradas.length === 0 ? (
+          <div className="text-center text-slate-500 py-10 bg-white p-6 rounded-lg shadow-lg">
+            <svg className="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+            </svg>
+            <h3 className="mt-2 text-lg font-medium text-slate-800">No hay cuentas por pagar</h3>
+            <p className="mt-1 text-sm text-slate-500">No se encontraron cuentas que coincidan con los filtros aplicados.</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+            <div className="overflow-x-auto">
+              {/* Botón para pago masivo */}
+              <div className="flex items-center gap-4 p-4">
+                <button
+                  className={`px-5 py-2 rounded-lg font-semibold shadow transition-all duration-200
+                ${selectedCuentas.length === 0 ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700'}`}
+                  disabled={selectedCuentas.length === 0}
+                  onClick={() => setPagoMasivoModalOpen(true)}
+                >
+                  Registrar Pago para Seleccionadas
+                </button>
+              </div>
+              <TablaCuentasPorPagar
+                cuentasFiltradas={cuentasFiltradas}
+                pagosAprobadosPorCuenta={pagosAprobadosPorCuentaFiltrados}
+                cuentasParaPagar={cuentasParaPagar}
+                handleToggleCuentaParaPagar={cuenta => handleSelectCuenta(cuenta._id)}
+                isValidPagosInfo={isValidPagosInfo}
+                handlePagosDropdownOpen={handlePagosDropdownOpen}
+                handleEstadoChange={handleEstadoChange}
+                ESTATUS_OPCIONES={ESTATUS_OPCIONES}
+                formatFecha={formatFecha}
+                calcularDiasRestantes={calcularDiasRestantes}
+                abrirEdicionCuenta={abrirEdicionCuenta}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Diálogo de confirmación con mejor estilo */}
+        {confirmDialog.open && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-white bg-opacity-50 backdrop-blur-sm p-4">
+            <div className="bg-white p-6 sm:p-8 rounded-lg shadow-2xl max-w-md w-full">
+              <h2 className="text-xl font-semibold text-slate-800 mb-2">Confirmar Cambio de Estatus</h2>
+              <p className="text-slate-600 mb-4">
+                ¿Está seguro que desea cambiar el estatus de la cuenta a
+                <span className={`font-bold ml-1 ${confirmDialog.nuevoEstatus === 'anulada' ? 'text-red-600' : confirmDialog.nuevoEstatus === 'pagada' ? 'text-green-600' : 'text-yellow-600'}`}>{confirmDialog.nuevoEstatus}</span>?
+              </p>
+              {confirmDialog.nuevoEstatus === 'anulada' && (
+                <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-3 mb-4 rounded-md text-sm">
+                  <strong>Advertencia:</strong> Esta acción es irreversible. La cuenta será marcada como anulada.
+                </div>
+              )}
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={handleCancelChange}
+                  className="px-5 py-2.5 rounded-md bg-slate-200 text-slate-700 hover:bg-slate-300 font-medium transition-colors duration-150 ease-in-out"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleConfirmChange}
+                  className={`px-5 py-2.5 rounded-md font-medium transition-colors duration-150 ease-in-out shadow-sm hover:shadow-md ${confirmDialog.nuevoEstatus === 'anulada' ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
+                >
+                  Aceptar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {abonoModalOpen && abonoCuenta && (
+          <AbonoModal
+            open={!!abonoModalOpen}
+            onClose={() => { setAbonoModalOpen(null); setAbonoCuenta(null); }}
+            onSubmit={() => {
+              setAbonoModalOpen(null);
+              setAbonoCuenta(null);
+              // Opcional: recargar pagos si es necesario
+            }}
+            usuario={abonoCuenta.usuarioCorreo || ''}
+            cuentaPorPagarId={abonoCuenta._id}
+            farmaciaId={abonoCuenta.farmacia}
+          />
+        )}
+
+        {/* Modal para mostrar pagos */}
+        <PagoMasivoModal
+          open={pagoMasivoModalOpen}
+          onClose={() => setPagoMasivoModalOpen(false)}
+          cuentas={Object.values(cuentasParaPagar)}
+          onSubmit={handlePagoMasivo}
+          loading={pagoMasivoLoading}
+          error={pagoMasivoError}
+          monedaConversion={monedaConversion}
+        />
+        {/* Alerta si las cuentas seleccionadas tienen monedas distintas */}
+        {pagoMasivoModalOpen && Object.values(cuentasParaPagar).length > 1 && (() => {
+          const monedas = Object.values(cuentasParaPagar).map((c: any) => c.moneda).filter(Boolean);
+          const distintas = new Set(monedas).size > 1;
+          if (distintas && showMonedaAlert) {
+            return (
+              <div className="fixed inset-0 z-60 flex items-center justify-center bg-opacity-30">
+                <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded shadow-xl max-w-md mx-auto relative">
+                  <button
+                    className="absolute top-2 right-2 text-yellow-700 hover:text-yellow-900 text-lg font-bold px-2"
+                    onClick={() => setShowMonedaAlert(false)}
+                    aria-label="Cerrar aviso"
+                  >
+                    ×
+                  </button>
+                  <strong>Atención:</strong> Las cuentas seleccionadas tienen monedas distintas. El pago masivo puede requerir revisión manual de tasas y montos.
+                </div>
+              </div>
+            );
+          }
+          return null;
+        })()}
+        <EdicionCuentaModal
+          isOpen={!!cuentaEditando}
+          onClose={() => setCuentaEditando(null)}
+          cuenta={cuentaEditando ? cuentasParaPagar[cuentaEditando] : undefined}
+          edicionState={cuentaEditando ? cuentasParaPagar[cuentaEditando] : undefined}
+          onEdicionStateChange={(newState: Partial<EdicionCuenta>) => {
+            if (cuentaEditando) handleEdicionCuenta(cuentaEditando, newState);
+          }}
+        />
+      </div>
+    </div>
+  );
+};
+
+export default VisualizarCuentasPorPagarPage;

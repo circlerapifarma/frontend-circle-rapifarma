@@ -22,16 +22,14 @@ export interface PagoMasivoFormData {
 interface PagoMasivoModalProps {
   open: boolean;
   onClose: () => void;
-  facturaIds: string[];
-  cuentas: any[]; // Puede ser CuentaPorPagar extendido
+  cuentas: any[]; // Deben venir con todos los montos ya calculados
   onSubmit: (data: PagoMasivoFormData) => void;
   loading: boolean;
   error: string | null;
   monedaConversion: 'USD' | 'Bs';
-  setMonedaConversion: (moneda: 'USD' | 'Bs') => void;
 }
 
-const PagoMasivoModal: React.FC<PagoMasivoModalProps> = ({ open, onClose, facturaIds, cuentas, onSubmit, loading, error, monedaConversion, setMonedaConversion }) => {
+const PagoMasivoModal: React.FC<PagoMasivoModalProps> = ({ open, onClose, cuentas, onSubmit, loading, error, monedaConversion }) => {
   const [form, setForm] = useState<PagoMasivoFormData>({
     fecha: new Date().toISOString().slice(0, 10),
     moneda: monedaConversion,
@@ -40,32 +38,26 @@ const PagoMasivoModal: React.FC<PagoMasivoModalProps> = ({ open, onClose, factur
     usuario: "",
     bancoEmisor: "",
     bancoReceptor: "",
-    tasa: undefined,
+    tasa: undefined, // No se setea tasa global
     imagenPago: undefined,
-    farmaciaId: cuentas[0]?.farmacia || "",
+    farmaciaId: cuentas && cuentas.length > 0 ? cuentas[0]?.farmacia || "" : "",
     estado: 'aprobado',
     cuentaPorPagarId: undefined,
   });
   const [imagenPago, setImagenPago] = useState<string>("");
   const modalRef = useRef<HTMLDivElement>(null);
+  // Los totales se calculan SOLO a partir de los valores ya calculados en las cuentas
+  const totalAPagar = cuentas && cuentas.length > 0 ? cuentas.reduce((acc, c) => acc + (typeof c.totalAcreditar === 'number' ? Number(c.totalAcreditar) : 0), 0) : 0;
+  const totalDescuento = cuentas && cuentas.length > 0 ? cuentas.reduce((acc, c) => acc + (typeof c.totalDescuentos === 'number' ? Number(c.totalDescuentos) : 0), 0) : 0;
 
-  // Calcula el monto total según la moneda seleccionada y la tasa de cada cuenta
+  // Sincroniza el monto y moneda del form con los totales y moneda global, pero NO la tasa
   useEffect(() => {
-    if (facturaIds.length > 0 && cuentas.length > 0) {
-      let total = 0;
-      if (form.moneda === "Bs") {
-        total = cuentas.filter(c => facturaIds.includes(c._id)).reduce((acc, c) => acc + c.monto, 0);
-      } else if (form.moneda === "USD") {
-        total = cuentas.filter(c => facturaIds.includes(c._id)).reduce((acc, c) => {
-          if (c.tasa && c.tasa > 0) {
-            return acc + (c.monto / c.tasa);
-          }
-          return acc;
-        }, 0);
-      }
-      setForm(f => ({ ...f, monto: Number(total.toFixed(2)) }));
-    }
-  }, [facturaIds, cuentas, form.moneda]);
+    setForm(f => ({
+      ...f,
+      monto: Number(totalAPagar.toFixed(4)),
+      moneda: monedaConversion
+    }));
+  }, [totalAPagar, monedaConversion]);
 
   useEffect(() => {
     if (open && modalRef.current) {
@@ -78,25 +70,34 @@ const PagoMasivoModal: React.FC<PagoMasivoModalProps> = ({ open, onClose, factur
     }
   }, [open]);
 
-  // Sincroniza el form.moneda con la moneda global
-  useEffect(() => {
-    setForm(f => ({ ...f, moneda: monedaConversion }));
-  }, [monedaConversion]);
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setForm(f => ({ ...f, [name]: name === "monto" || name === "tasa" ? Number(value) : value }));
   };
 
-  const handleMonedaChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const { value } = e.target;
-    setForm(f => ({ ...f, moneda: value as 'USD' | 'Bs' }));
-    setMonedaConversion(value as 'USD' | 'Bs');
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ ...form, imagenPago });
+    try {
+      await onSubmit({ ...form, imagenPago });
+      // Cambiar el estado de cada cuenta a "pagada" tras el submit
+      if (cuentas && cuentas.length > 0) {
+        await Promise.all(
+          cuentas.map(async (c) => {
+            if (c._id) {
+              await fetch(`/api/cuentas-por-pagar/${c._id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ estatus: 'pagada' })
+              });
+            }
+          })
+        );
+      }
+      onClose();
+    } catch (err) {
+      // Manejo de error opcional
+      console.error('Error al registrar pago masivo o actualizar estado:', err);
+    }
   };
 
   if (!open) return null;
@@ -119,17 +120,10 @@ const PagoMasivoModal: React.FC<PagoMasivoModalProps> = ({ open, onClose, factur
               <label className="block text-sm font-medium text-slate-700 mb-1">Fecha</label>
               <input type="date" name="fecha" value={form.fecha} onChange={handleChange} className="w-full border-slate-300 rounded-md shadow-sm py-2 px-3 text-sm" required />
             </div>
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Moneda</label>
-              <select name="moneda" value={form.moneda} onChange={handleMonedaChange} className="w-full border-slate-300 rounded-md shadow-sm py-2 px-3 text-sm">
-                <option value="Bs">Bs</option>
-                <option value="USD">USD</option>
-              </select>
-            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Monto total</label>
-            <input type="number" name="monto" value={form.monto} onChange={handleChange} min="0" step="0.01" required className="w-full border-slate-300 rounded-md shadow-sm py-2 px-3 text-sm" />
+            <input type="number" name="monto" value={form.monto} onChange={handleChange} min="0" step="0.0001" required className="w-full border-slate-300 rounded-md shadow-sm py-2 px-3 text-sm bg-slate-100" readOnly />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Referencia</label>
@@ -147,10 +141,6 @@ const PagoMasivoModal: React.FC<PagoMasivoModalProps> = ({ open, onClose, factur
             <label className="block text-sm font-medium text-slate-700 mb-1">Banco Receptor</label>
             <input type="text" name="bancoReceptor" value={form.bancoReceptor} onChange={handleChange} className="w-full border-slate-300 rounded-md shadow-sm py-2 px-3 text-sm" required />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Tasa</label>
-            <input type="number" name="tasa" value={form.tasa ?? ''} onChange={handleChange} min="0" step="0.0001" required className="w-full border-slate-300 rounded-md shadow-sm py-2 px-3 text-sm" />
-          </div>
           <UpFile
             label="Agregar imagen de pago"
             allowedFileTypes={["image/*"]}
@@ -160,22 +150,39 @@ const PagoMasivoModal: React.FC<PagoMasivoModalProps> = ({ open, onClose, factur
           <div className="flex justify-end gap-3 mt-2">
             <button type="button" onClick={onClose} className="px-5 py-2 rounded-md bg-slate-200 text-slate-700 hover:bg-slate-300 font-medium">Cancelar</button>
             <button type="submit" className="px-5 py-2 rounded-md bg-green-600 text-white font-semibold hover:bg-green-700 transition-all" disabled={loading}>
-              {loading ? "Registrando..." : "Registrar Pago"}
+              {loading ? "Registrando..." : "Registrar pago para seleccionadas"}
             </button>
           </div>
         </form>
         <div className="mt-4">
-          <h3 className="text-sm font-semibold text-slate-700 mb-1">Facturas seleccionadas:</h3>
+          <h3 className="text-lg font-semibold text-slate-800 mb-2">Resumen de Pago</h3>
+            <div className="text-sm space-y-1 bg-slate-50 p-3 rounded-md">
+                <div className="flex justify-between">
+                    <span className="text-slate-600">Total a Pagar:</span>
+                    <span className="font-bold text-blue-600">{totalAPagar.toFixed(4)}</span>
+                </div>
+                <div className="flex justify-between">
+                    <span className="text-slate-600">Total Descuento:</span>
+                    <span className="font-bold text-green-600">{totalDescuento.toFixed(4)}</span>
+                </div>
+                <hr className="my-1" />
+                <div className="flex justify-between">
+                    <span className="font-semibold text-slate-800">Total Acreditado a Deuda:</span>
+                    <span className="font-bold text-purple-600">{(totalAPagar + totalDescuento).toFixed(4)}</span>
+                </div>
+            </div>
+          <h3 className="text-sm font-semibold text-slate-700 mb-1 mt-4">Cuentas seleccionadas:</h3>
           <ul className="text-xs text-slate-600 max-h-24 overflow-y-auto list-disc pl-5">
-            {cuentas.filter(c => facturaIds.includes(c._id)).map(c => (
-              <li key={c._id}>
-                {c.numeroFactura} - {c.proveedor} - {form.moneda === 'Bs'
-                  ? c.monto.toLocaleString("es-VE", { style: "currency", currency: "VES" })
-                  : c.tasa && c.tasa > 0
-                    ? (c.monto / c.tasa).toLocaleString("en-US", { style: "currency", currency: "USD" })
-                    : "-"}
-              </li>
-            ))}
+            {cuentas && cuentas.map(c => {
+                const totalAcreditar = typeof c.totalAcreditar === 'number' ? c.totalAcreditar : 0;
+                const d1 = typeof c.d1 === 'number' ? c.d1 : 0;
+                const d2 = typeof c.d2 === 'number' ? c.d2 : 0;
+                return (
+                    <li key={c._id}>
+                        {c.numeroFactura} - {c.proveedor} | Pagar: {totalAcreditar.toFixed(4)} {c.moneda ? c.moneda : ''} | Dcto1: {d1.toFixed(4)} | Dcto2: {d2.toFixed(4)}{c.tasa ? ` | Tasa: ${Number(c.tasa).toFixed(4)}` : ''}
+                    </li>
+                );
+            })}
           </ul>
         </div>
       </div>
