@@ -64,26 +64,49 @@ const ListaCuentasPorPagarFarmacia: React.FC<Props> = ({ farmaciaId, fechaInicio
         />
       </div>
       {cuentas && cuentas.length > 0 ? (
-        <ul>
-          {cuentas
-            .filter((cuenta) => {
-              if (fechaInicio && cuenta.fechaRecepcion < fechaInicio) return false;
-              if (fechaFin && cuenta.fechaRecepcion > fechaFin) return false;
-              if (proveedorFiltro && !cuenta.proveedor.toLowerCase().includes(proveedorFiltro.toLowerCase())) return false;
-              return true;
-            })
-            .map((cuenta) => (
-              <li key={cuenta._id} className="mb-2 border-b pb-2 flex flex-wrap items-center gap-2">
-                Factura: <span className="font-mono">{cuenta.numeroFactura}</span> |
-                Proveedor: {cuenta.proveedor} |
-                Monto: <span className="font-semibold">{cuenta.monto.toLocaleString('es-VE', { minimumFractionDigits: 2 })} {cuenta.divisa}</span> |
-                Retención: <span className="font-semibold">{cuenta.retencion != null ? cuenta.retencion.toLocaleString('es-VE', { minimumFractionDigits: 2 }) : 'N/D'}</span> |
-                Tasa: <span className="font-semibold">{cuenta.tasa != null ? cuenta.tasa.toLocaleString('es-VE', { minimumFractionDigits: 2 }) : 'N/D'}</span> |
-                Moneda: <span className="font-semibold">{cuenta.divisa || 'N/D'}</span> |
-                <EstadoChip estatus={cuenta.estatus} />
-              </li>
-            ))}
-        </ul>
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white border border-slate-200 rounded-lg shadow">
+            <thead>
+              <tr className="bg-blue-50 text-blue-900 text-xs uppercase">
+                <th className="px-2 py-2">Factura</th>
+                <th className="px-2 py-2">Proveedor</th>
+                <th className="px-2 py-2">Monto</th>
+                <th className="px-2 py-2">Retención</th>
+                <th className="px-2 py-2">Tasa</th>
+                <th className="px-2 py-2">Moneda</th>
+                <th className="px-2 py-2">F. Emisión</th>
+                <th className="px-2 py-2">F. Recepción</th>
+                <th className="px-2 py-2">F. Vencimiento</th>
+                <th className="px-2 py-2">F. Registro</th>
+                <th className="px-2 py-2">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {cuentas
+                .filter((cuenta) => {
+                  if (fechaInicio && cuenta.fechaRecepcion < fechaInicio) return false;
+                  if (fechaFin && cuenta.fechaRecepcion > fechaFin) return false;
+                  if (proveedorFiltro && !cuenta.proveedor.toLowerCase().includes(proveedorFiltro.toLowerCase())) return false;
+                  return true;
+                })
+                .map((cuenta) => (
+                  <tr key={cuenta._id} className="border-b hover:bg-blue-50 transition">
+                    <td className="px-2 py-2 font-mono text-xs">{cuenta.numeroFactura}</td>
+                    <td className="px-2 py-2 text-xs">{cuenta.proveedor}</td>
+                    <td className="px-2 py-2 font-semibold text-xs">{cuenta.monto.toLocaleString('es-VE', { minimumFractionDigits: 2 })} {cuenta.divisa}</td>
+                    <td className="px-2 py-2 font-semibold text-xs">{cuenta.retencion != null ? cuenta.retencion.toLocaleString('es-VE', { minimumFractionDigits: 2 }) : 'N/D'}</td>
+                    <td className="px-2 py-2 font-semibold text-xs">{cuenta.tasa != null ? cuenta.tasa.toLocaleString('es-VE', { minimumFractionDigits: 2 }) : 'N/D'}</td>
+                    <td className="px-2 py-2 font-semibold text-xs">{cuenta.divisa || 'N/D'}</td>
+                    <td className="px-2 py-2 font-mono text-xs">{cuenta.fechaEmision ? new Date(cuenta.fechaEmision).toLocaleDateString('es-VE') : 'N/D'}</td>
+                    <td className="px-2 py-2 font-mono text-xs">{cuenta.fechaRecepcion ? new Date(cuenta.fechaRecepcion).toLocaleDateString('es-VE') : 'N/D'}</td>
+                    <td className="px-2 py-2 font-mono text-xs">{cuenta.fechaVencimiento ? new Date(cuenta.fechaVencimiento).toLocaleDateString('es-VE') : 'N/D'}</td>
+                    <td className="px-2 py-2 font-mono text-xs">{cuenta.fechaRegistro ? new Date(cuenta.fechaRegistro).toLocaleDateString('es-VE') : 'N/D'}</td>
+                    <td className="px-2 py-2 text-xs"><EstadoChip estatus={cuenta.estatus} /></td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
       ) : (
         <div>No hay cuentas por pagar registradas.</div>
       )}

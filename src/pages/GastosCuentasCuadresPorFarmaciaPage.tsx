@@ -249,7 +249,11 @@ const GastosCuentasCuadresPorFarmaciaPage: React.FC = () => {
                 }
                 style={{ pointerEvents: openCards.cuentas ? 'auto' : 'none' }}
               >
-                <ListaCuentasPorPagarFarmacia farmaciaId={selectedFarmacia.id} fechaInicio={fechaInicio} fechaFin={fechaFin} />
+                <ListaCuentasPorPagarFarmacia 
+                  farmaciaId={selectedFarmacia.id} 
+                  fechaInicio={fechaInicio} 
+                  fechaFin={fechaFin} 
+                />
               </div>
             </Card>
             {/* Card Cuadres */}
