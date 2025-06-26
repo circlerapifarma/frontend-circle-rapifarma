@@ -36,6 +36,7 @@ const TablaCuentasPorPagar: React.FC<TablaCuentasPorPagarProps> = ({
       <thead className="bg-slate-100 sticky top-0 z-10">
         <tr className="text-slate-700 text-xs uppercase">
           <th className="px-2 py-3 text-center">Acciones</th>
+          <th className="px-2 py-3 text-center">Imagen</th>
           <th className="px-2 py-3 text-center">Pagos</th>
           <th className="px-5 py-3 text-right">Monto Bs</th>
           <th className="px-5 py-3 text-right">Retención Bs</th>
@@ -51,7 +52,6 @@ const TablaCuentasPorPagar: React.FC<TablaCuentasPorPagarProps> = ({
           <th className="px-5 py-3 text-center">Farmacia</th>
           <th className="px-5 py-3 text-center">Estatus</th>
           <th className="px-5 py-3 text-center">Cambiar Estatus</th>
-          <th className="px-2 py-3 text-center">Editar</th>
         </tr>
       </thead>
       <tbody className="bg-white divide-y divide-slate-200">
