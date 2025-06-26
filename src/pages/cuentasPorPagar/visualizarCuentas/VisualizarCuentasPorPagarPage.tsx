@@ -371,6 +371,23 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
   const [showMonedaAlert, setShowMonedaAlert] = React.useState(true);
   React.useEffect(() => { setShowMonedaAlert(true); }, [pagoMasivoModalOpen]);
 
+  // Calcular totales globales en USD y Bs para cuentas por pagar
+  const totalUSD = cuentasFiltradas.reduce((acc, c) => {
+    if (c.divisa === 'Bs' && c.tasa) {
+      return acc + (c.monto / c.tasa);
+    }
+    return acc + c.monto;
+  }, 0);
+  const totalBs = cuentasFiltradas.reduce((acc, c) => {
+    if (c.divisa === 'Bs') {
+      return acc + c.monto;
+    }
+    if (c.divisa === 'USD' && c.tasa) {
+      return acc + (c.monto * c.tasa);
+    }
+    return acc;
+  }, 0);
+
   return (
     // Contenedor principal con un fondo sutil para la página
     <div className="min-h-screen bg-slate-50 py-8">
@@ -450,6 +467,11 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
                 calcularDiasRestantes={calcularDiasRestantes}
                 abrirEdicionCuenta={abrirEdicionCuenta}
               />
+            </div>
+            {/* Totales globales de cuentas por pagar */}
+            <div className="flex flex-col sm:flex-row sm:justify-end gap-2 bg-blue-50 border-t border-blue-200 px-5 py-4 mt-2 rounded-lg">
+              <span className="text-lg font-bold text-blue-700">Total Bs: {totalBs.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              <span className="text-lg font-bold text-green-700">Total $: {totalUSD.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
           </div>
         )}
