@@ -9,6 +9,7 @@ const allLinks = [
         category: 'Ventas y Cuadres',
         icon: BarChart,
         items: [
+            { to: '/gastoscxc-cuadres', label: 'Gastos, Cuentas y Cuadres', permiso: 'ver_cuadres_dia' },
             { to: '/resumenfarmacias', label: 'Resumen de Ventas', permiso: 'ver_resumen_mensual' },
             { to: '/ventatotal', label: 'Venta Total', permiso: 'ver_ventas_totales' },
             { to: '/agregarcuadre', label: 'Agregar Cuadre', permiso: 'agregar_cuadre' },
@@ -42,6 +43,7 @@ const allLinks = [
             { to: '/agregarinventariocosto', label: 'Agregar Costo Inv', permiso: 'acceso_admin' },
             { to: '/verinventarios', label: 'Ver Inventarios', permiso: 'acceso_admin' },
             { to: '/pagoscpp', label: 'Ver Pagos CxP', permiso: 'verificar_gastos' },
+            { to: '/cuentasporpagarfarmacia', label: 'Cuentas por Pagar por Farmacia', permiso: 'verificar_gastos' },
         ]
     },
     

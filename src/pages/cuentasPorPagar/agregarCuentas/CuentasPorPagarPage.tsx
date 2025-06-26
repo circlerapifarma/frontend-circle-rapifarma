@@ -63,12 +63,21 @@ const CuentasPorPagarPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  // Sincronizar farmacia seleccionada con el form
+  React.useEffect(() => {
+    setForm(prev => ({ ...prev, farmacia }));
+  }, [farmacia]);
+
+  // Asegurar que los campos numéricos no permitan valores NaN
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setForm(prev => ({
-      ...prev,
-      [name]: name === "diasCredito" || name === "monto" || name === "retencion" ? Number(value) : value
-    }));
+    const { name, value, type } = e.target;
+    setForm(prev => {
+      if (type === "number") {
+        const num = value === "" ? "" : Number(value);
+        return { ...prev, [name]: num };
+      }
+      return { ...prev, [name]: value };
+    });
   };
 
   // Cálculo automático de días de crédito
@@ -77,7 +86,7 @@ const CuentasPorPagarPage: React.FC = () => {
     setForm(prev => {
       const diasCredito = prev.fechaVencimiento && fechaRecepcion
         ? Math.max(0, Math.ceil((new Date(prev.fechaVencimiento).getTime() - new Date(fechaRecepcion).getTime()) / (1000 * 60 * 60 * 24)))
-        : prev.diasCredito;
+        : 0;
       return { ...prev, fechaRecepcion, diasCredito };
     });
   };
@@ -86,7 +95,7 @@ const CuentasPorPagarPage: React.FC = () => {
     setForm(prev => {
       const diasCredito = prev.fechaRecepcion && fechaVencimiento
         ? Math.max(0, Math.ceil((new Date(fechaVencimiento).getTime() - new Date(prev.fechaRecepcion).getTime()) / (1000 * 60 * 60 * 24)))
-        : prev.diasCredito;
+        : 0;
       return { ...prev, fechaVencimiento, diasCredito };
     });
   };
@@ -214,11 +223,11 @@ const CuentasPorPagarPage: React.FC = () => {
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">Monto</label>
-          <input type="number" name="monto" value={form.monto.toFixed(4)} onChange={handleChange} min={0} step="0.0001" className="w-full border rounded px-2 py-1" required onWheel={e => e.currentTarget.blur()} />
+          <input type="number" name="monto" value={form.monto === 0 ? "" : form.monto} onChange={handleChange} min={0} step="0.0001" className="w-full border rounded px-2 py-1" required onWheel={e => e.currentTarget.blur()} />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">Retención</label>
-          <input type="number" name="retencion" value={form.retencion.toFixed(4)} onChange={handleChange} min={0} step="0.0001" className="w-full border rounded px-2 py-1" required onWheel={e => e.currentTarget.blur()} />
+          <input type="number" name="retencion" value={form.retencion === 0 ? "" : form.retencion} onChange={handleChange} min={0} step="0.0001" className="w-full border rounded px-2 py-1" required onWheel={e => e.currentTarget.blur()} />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">Divisa</label>
@@ -229,7 +238,7 @@ const CuentasPorPagarPage: React.FC = () => {
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">Tasa</label>
-          <input type="number" name="tasa" value={form.tasa.toFixed(4)} onChange={handleChange} min={0} step="0.0001" className="w-full border rounded px-2 py-1" required onWheel={e => e.currentTarget.blur()} />
+          <input type="number" name="tasa" value={form.tasa === 0 ? "" : form.tasa} onChange={handleChange} min={0} step="0.0001" className="w-full border rounded px-2 py-1" required onWheel={e => e.currentTarget.blur()} />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">Estatus</label>

@@ -26,6 +26,7 @@ import VisualizarCuentasPorPagarPage from '@/pages/cuentasPorPagar/visualizarCue
 import VerificacionCuentasPorPagarPage from '@/pages/cuentasPorPagar/verificacionCuentas/VerificacionCuentasPorPagarPage';
 import VisualizarPagosCPPPage from '@/pages/cuentasPorPagar/pagos/VisualizarPagosCPPPage';
 import CuentasPorPagarPage from '@/pages/cuentasPorPagar/agregarCuentas/CuentasPorPagarPage';
+import GastosCuentasCuadresPorFarmaciaPage from '@/pages/GastosCuentasCuadresPorFarmaciaPage';
 
 const AppRouter = () => (
     <Routes>
@@ -40,6 +41,14 @@ const AppRouter = () => (
         />
         <Route path="/about" element={<AboutPage />} />
 
+        <Route
+            path="/gastoscxc-cuadres"
+            element={
+                <PermissionRoute permiso="ver_cuadres_dia">
+                    <GastosCuentasCuadresPorFarmaciaPage />
+                </PermissionRoute>
+            }
+        />
         <Route
             path="/agregarcuadre"
             element={
@@ -218,6 +227,17 @@ const AppRouter = () => (
                 </PermissionRoute>
             }
         />
+        {/* Eliminar ruta a cuentasporpagarfarmacia porque el archivo no existe */}
+        {/*
+        <Route
+            path="/cuentasporpagarfarmacia"
+            element={
+                <PermissionRoute permiso="verificar_gastos">
+                    <CuentasPorPagarPorFarmaciaPage />
+                </PermissionRoute>
+            }
+        />
+        */}
         <Route path="*" element={<NotFoundPage />} />
     </Routes>
 );

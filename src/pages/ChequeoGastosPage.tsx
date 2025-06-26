@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog"; // Importamos componentes de Dialog de Shadcn UI
 
 const ChequeoGastosPage: React.FC = () => {
-  const { localidades, gastosPorLocalidad, loading, error, refreshGastos } = useGastos(); // Asumo que useGastos tiene un refreshGastos
+  const { localidades, gastosPorLocalidad = {}, loading, error, refreshGastos } = useGastos(); // fallback a {}
   const [modalGastosAbierto, setModalGastosAbierto] = useState(false); // Renombrado para mayor claridad
   const [modalAgregarAbierto, setModalAgregarAbierto] = useState(false);
   const [localidadSeleccionadaId, setLocalidadSeleccionadaId] = useState(""); // Renombrado para mayor claridad
@@ -104,7 +104,7 @@ const ChequeoGastosPage: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8">
               {localidades.map((loc) => {
-                const gastosPendientes = gastosPorLocalidad[loc.id]?.filter((gasto) => gasto.estado === "wait").length || 0;
+                const gastosPendientes = (gastosPorLocalidad[loc.id] || []).filter((gasto) => gasto.estado === "wait").length;
                 return (
                   <Card
                     key={loc.id}
@@ -142,10 +142,10 @@ const ChequeoGastosPage: React.FC = () => {
             </DialogHeader>
 
             <div className="flex flex-col gap-6 max-h-[70vh] overflow-y-auto pr-2">
-              {gastosPorLocalidad[localidadSeleccionadaId]?.filter((gasto) => gasto.estado === "wait").length === 0 ? (
+              {((gastosPorLocalidad[localidadSeleccionadaId] || []).filter((gasto) => gasto.estado === "wait").length === 0) ? (
                 <p className="text-center text-gray-500 text-xl py-10">¡No hay gastos pendientes para esta localidad!</p>
               ) : (
-                gastosPorLocalidad[localidadSeleccionadaId]?.filter((gasto) => gasto.estado === "wait").map((g, idx) => {
+                (gastosPorLocalidad[localidadSeleccionadaId] || []).filter((gasto) => gasto.estado === "wait").map((g, idx) => {
                   const gasto = g as any; // Forzar tipado flexible para acceder a divisa y tasa
                   let montoUsd = gasto.monto;
                   if (gasto.divisa === "Bs" && gasto.tasa && gasto.tasa > 0) {
