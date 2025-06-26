@@ -35,17 +35,32 @@ const AgregarGastos: React.FC<{ onSubmitSuccess?: () => void }> = ({ onSubmitSuc
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const confirmSave = window.confirm("¿Seguro que desea guardar el gasto?"); // Confirmación antes de guardar
+    // Validación de fecha
+    if (!formData.fecha) {
+      alert("Debe seleccionar una fecha válida.");
+      return;
+    }
+    const hoy = new Date();
+    const fechaSeleccionada = new Date(formData.fecha);
+    hoy.setHours(0,0,0,0);
+    fechaSeleccionada.setHours(0,0,0,0);
+    if (fechaSeleccionada > hoy) {
+      alert("La fecha no puede ser mayor a hoy.");
+      return;
+    }
+    const confirmSave = window.confirm("¿Seguro que desea guardar el gasto?");
     if (!confirmSave) return;
 
-    alert("Guardando el gasto, por favor espere..."); // Alerta antes de guardar
+    alert("Guardando el gasto, por favor espere...");
     try {
+      // Enviar la fecha como string YYYY-MM-DD para evitar desfase de zona horaria
+      const dataToSend = { ...formData, fecha: formData.fecha };
       const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/gastos`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(dataToSend),
       });
 
       if (!res.ok) {
