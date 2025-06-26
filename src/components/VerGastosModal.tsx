@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import ImageDisplay from "./upfile/ImageDisplay";
 
 interface VerGastosModalProps {
   open: boolean;
@@ -17,6 +18,8 @@ interface Gasto {
   estado: string;
   divisa?: string;
   tasa?: number;
+  imagenGasto?: string;
+  imagenesGasto?: string[];
 }
 
 const VerGastosModal: React.FC<VerGastosModalProps> = ({ open, onClose, farmaciaId, farmaciaNombre }) => {
@@ -144,6 +147,19 @@ const VerGastosModal: React.FC<VerGastosModalProps> = ({ open, onClose, farmacia
                           <p className="text-xs sm:text-sm text-gray-600">
                             Monto: <span className="font-bold text-green-700">{gasto.monto.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD</span>
                           </p>
+                        )}
+                        {/* Mostrar imágenes si existen */}
+                        {Array.isArray(gasto.imagenesGasto) && gasto.imagenesGasto.length > 0 && (
+                          <div className="flex gap-2 mt-2 flex-wrap">
+                            {gasto.imagenesGasto.map((img, idx) => (
+                              <ImageDisplay key={img + idx} imageName={img} style={{ maxWidth: 120, maxHeight: 120, borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }} />
+                            ))}
+                          </div>
+                        )}
+                        {gasto.imagenGasto && (!gasto.imagenesGasto || gasto.imagenesGasto.length === 0) && (
+                          <div className="mt-2">
+                            <ImageDisplay imageName={gasto.imagenGasto} style={{ maxWidth: 120, maxHeight: 120, borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }} />
+                          </div>
                         )}
                       </div>
                       <div className="text-right mt-2 sm:mt-0">

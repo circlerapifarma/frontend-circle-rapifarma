@@ -11,6 +11,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog"; // Importamos componentes de Dialog de Shadcn UI
+import ImageDisplay from "@/components/upfile/ImageDisplay";
 
 const ChequeoGastosPage: React.FC = () => {
   const { localidades, gastosPorLocalidad = {}, loading, error, refreshGastos } = useGastos(); // fallback a {}
@@ -168,6 +169,19 @@ const ChequeoGastosPage: React.FC = () => {
                         <div className="text-sm text-gray-500 mt-1">Fecha: {new Date(gasto.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>
                         {gasto.fechaRegistro && (
                           <div className="text-sm text-gray-500 mt-1">Fecha de registro: {new Date(gasto.fechaRegistro).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>
+                        )}
+                        {/* Mostrar imágenes si existen */}
+                        {Array.isArray(gasto.imagenesGasto) && gasto.imagenesGasto.length > 0 && (
+                          <div className="flex gap-2 mt-2 flex-wrap">
+                            {gasto.imagenesGasto.map((img: string, idx: number) => (
+                              <ImageDisplay key={img + idx} imageName={img} style={{ maxWidth: 100, maxHeight: 100, borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }} />
+                            ))}
+                          </div>
+                        )}
+                        {gasto.imagenGasto && (!gasto.imagenesGasto || gasto.imagenesGasto.length === 0) && (
+                          <div className="mt-2">
+                            <ImageDisplay imageName={gasto.imagenGasto} style={{ maxWidth: 100, maxHeight: 100, borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }} />
+                          </div>
                         )}
                       </div>
                       <div className="flex flex-col sm:flex-row gap-3 mt-4 md:mt-0">

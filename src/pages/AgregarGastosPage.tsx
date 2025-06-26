@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import UpFileGasto from "@/components/upfile/UpFileGasto";
+import ImageDisplay from "@/components/upfile/ImageDisplay";
 
 const AgregarGastos: React.FC<{ onSubmitSuccess?: () => void }> = ({ onSubmitSuccess }) => {
   const [formData, setFormData] = useState({
@@ -8,8 +10,10 @@ const AgregarGastos: React.FC<{ onSubmitSuccess?: () => void }> = ({ onSubmitSuc
     localidad: "",
     fecha: "",
     tasa: "",
-    divisa: "", // <-- Añadir divisa
+    divisa: "",
   });
+  // Permitir hasta 3 imágenes
+  const [imagenesGasto, setImagenesGasto] = useState<Array<string | null>>([null, null, null]);
   const [localidades, setLocalidades] = useState<{ id: string; nombre: string }[]>([]);
 
   useEffect(() => {
@@ -40,6 +44,12 @@ const AgregarGastos: React.FC<{ onSubmitSuccess?: () => void }> = ({ onSubmitSuc
       alert("Debe seleccionar una fecha válida.");
       return;
     }
+    // Validar que haya al menos una imagen
+    const imagenesValidas = imagenesGasto.filter((img): img is string => !!img);
+    if (imagenesValidas.length === 0) {
+      alert("Debe adjuntar al menos una imagen del comprobante del gasto.");
+      return;
+    }
     const hoy = new Date();
     const fechaSeleccionada = new Date(formData.fecha);
     hoy.setHours(0,0,0,0);
@@ -54,7 +64,8 @@ const AgregarGastos: React.FC<{ onSubmitSuccess?: () => void }> = ({ onSubmitSuc
     alert("Guardando el gasto, por favor espere...");
     try {
       // Enviar la fecha como string YYYY-MM-DD para evitar desfase de zona horaria
-      const dataToSend = { ...formData, fecha: formData.fecha };
+      // Enviar solo la primera imagen si el backend solo acepta una, o el array si acepta varias
+      const dataToSend = { ...formData, fecha: formData.fecha, imagenGasto: imagenesValidas[0], imagenesGasto: imagenesValidas };
       const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/gastos`, {
         method: "POST",
         headers: {
@@ -79,8 +90,9 @@ const AgregarGastos: React.FC<{ onSubmitSuccess?: () => void }> = ({ onSubmitSuc
         localidad: "",
         fecha: "",
         tasa: "",
-        divisa: "", // <-- Reset divisa
+        divisa: "",
       });
+      setImagenesGasto([null, null, null]);
 
       if (onSubmitSuccess) {
         onSubmitSuccess();
@@ -193,6 +205,47 @@ const AgregarGastos: React.FC<{ onSubmitSuccess?: () => void }> = ({ onSubmitSuc
               <option key={loc.id} value={loc.id}>{loc.nombre}</option>
             ))}
           </select>
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Comprobante(s) del gasto (imagen, máx. 3)</label>
+          <div className="flex flex-col gap-4">
+            {[0, 1, 2].map(idx => (
+              <div key={idx} className="flex flex-col items-start relative group">
+                <UpFileGasto
+                  onUploadSuccess={(objectName: string) => {
+                    setImagenesGasto(prev => {
+                      const newArr = [...prev];
+                      newArr[idx] = objectName;
+                      return newArr;
+                    });
+                  }}
+                  label={`Adjuntar imagen ${idx + 1}`}
+                  maxSizeMB={5}
+                  initialFileUrl={imagenesGasto[idx] || undefined}
+                />
+                {imagenesGasto[idx] && (
+                  <div className="mt-1 relative inline-block">
+                    <ImageDisplay imageName={imagenesGasto[idx]!} style={{ maxWidth: 200, maxHeight: 200, borderRadius: 8, marginTop: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }} />
+                    <button
+                      type="button"
+                      className="absolute top-2 right-2 bg-white bg-opacity-80 rounded-full p-1 shadow-md text-red-600 hover:bg-red-100 hover:text-red-800 transition-colors z-20 opacity-80 group-hover:opacity-100"
+                      title="Eliminar imagen"
+                      onClick={() => {
+                        setImagenesGasto(prev => {
+                          const newArr = [...prev];
+                          newArr[idx] = null;
+                          return newArr;
+                        });
+                      }}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="pt-4">
