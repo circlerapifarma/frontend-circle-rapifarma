@@ -11,6 +11,7 @@ const ListaCuentasPorPagarFarmacia: React.FC<Props> = ({ farmaciaId, fechaInicio
   const [cuentas, setCuentas] = useState<CuentaPorPagar[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [proveedorFiltro, setProveedorFiltro] = useState("");
 
   useEffect(() => {
     const fetchCuentas = async () => {
@@ -53,18 +54,33 @@ const ListaCuentasPorPagarFarmacia: React.FC<Props> = ({ farmaciaId, fechaInicio
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-2">Cuentas por Pagar de farmacia {farmaciaId}</h2>
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="Buscar proveedor..."
+          value={proveedorFiltro}
+          onChange={e => setProveedorFiltro(e.target.value)}
+          className="border border-blue-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400"
+        />
+      </div>
       {cuentas && cuentas.length > 0 ? (
         <ul>
           {cuentas
             .filter((cuenta) => {
               if (fechaInicio && cuenta.fechaRecepcion < fechaInicio) return false;
               if (fechaFin && cuenta.fechaRecepcion > fechaFin) return false;
+              if (proveedorFiltro && !cuenta.proveedor.toLowerCase().includes(proveedorFiltro.toLowerCase())) return false;
               return true;
             })
             .map((cuenta) => (
               <li key={cuenta._id} className="mb-2 border-b pb-2 flex flex-wrap items-center gap-2">
-                Factura: <span className="font-mono">{cuenta.numeroFactura}</span> | Proveedor: {cuenta.proveedor} | Monto: <span className="font-semibold">Bs {cuenta.monto.toLocaleString('es-VE', { minimumFractionDigits: 2 })}</span> | <EstadoChip estatus={cuenta.estatus} />
+                Factura: <span className="font-mono">{cuenta.numeroFactura}</span> |
+                Proveedor: {cuenta.proveedor} |
+                Monto: <span className="font-semibold">{cuenta.monto.toLocaleString('es-VE', { minimumFractionDigits: 2 })} {cuenta.divisa}</span> |
+                Retención: <span className="font-semibold">{cuenta.retencion != null ? cuenta.retencion.toLocaleString('es-VE', { minimumFractionDigits: 2 }) : 'N/D'}</span> |
+                Tasa: <span className="font-semibold">{cuenta.tasa != null ? cuenta.tasa.toLocaleString('es-VE', { minimumFractionDigits: 2 }) : 'N/D'}</span> |
+                Moneda: <span className="font-semibold">{cuenta.divisa || 'N/D'}</span> |
+                <EstadoChip estatus={cuenta.estatus} />
               </li>
             ))}
         </ul>

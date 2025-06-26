@@ -49,12 +49,16 @@ const ListaCuadresFarmacia: React.FC<Props> = ({ farmaciaId, fechaInicio, fechaF
 
     return (
         <div>
-            <h2 className="text-xl font-bold mb-2">Cuadres de farmacia {farmaciaId}</h2>
             {dataFiltrada && dataFiltrada.length > 0 ? (
                 <ul>
                     {dataFiltrada.map((cuadre: any) => (
                         <li key={cuadre._id} className="mb-2 border-b pb-2 flex flex-wrap items-center gap-2">
-                            Día: <span className="font-mono">{cuadre.dia}</span> | Sobrante: <span className="font-semibold">${cuadre.sobranteUsd}</span> | Faltante: <span className="font-semibold">${cuadre.faltanteUsd}</span> | <EstadoChip estado={cuadre.estado} />
+                            Día: <span className="font-mono">{cuadre.dia}</span> |
+                            <span className="">Cajero: <span className="font-semibold">{cuadre.cajero || 'N/D'}</span></span> |
+                            <span className="">Turno: <span className="font-semibold">{cuadre.turno || 'N/D'}</span></span> |
+                            Sobrante: <span className="font-semibold">${cuadre.sobranteUsd}</span> |
+                            Faltante: <span className="font-semibold">${cuadre.faltanteUsd}</span> |
+                            <EstadoChip estado={cuadre.estado} />
                         </li>
                     ))}
                 </ul>

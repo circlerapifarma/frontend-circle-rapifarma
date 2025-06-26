@@ -227,7 +227,7 @@ const GastosCuentasCuadresPorFarmaciaPage: React.FC = () => {
                       ))}
                   </ul>
                 ) : (
-                  <div className="text-slate-500 text-center">No hay gastos registrados.</div>
+                  <div className="text-slate-500 text-center bg-yellow-100 border border-yellow-300 rounded-lg py-4 px-2 font-semibold shadow">No hay gastos registrados para los filtros seleccionados.</div>
                 )}
               </div>
             </Card>
@@ -249,7 +249,7 @@ const GastosCuentasCuadresPorFarmaciaPage: React.FC = () => {
                 }
                 style={{ pointerEvents: openCards.cuentas ? 'auto' : 'none' }}
               >
-                <ListaCuentasPorPagarFarmacia farmaciaId={selectedFarmacia.id} />
+                <ListaCuentasPorPagarFarmacia farmaciaId={selectedFarmacia.id} fechaInicio={fechaInicio} fechaFin={fechaFin} />
               </div>
             </Card>
             {/* Card Cuadres */}

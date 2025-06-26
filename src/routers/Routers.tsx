@@ -44,7 +44,7 @@ const AppRouter = () => (
         <Route
             path="/gastoscxc-cuadres"
             element={
-                <PermissionRoute permiso="ver_cuadres_dia">
+                <PermissionRoute permiso="agregar_cuadre">
                     <GastosCuentasCuadresPorFarmaciaPage />
                 </PermissionRoute>
             }
@@ -227,17 +227,6 @@ const AppRouter = () => (
                 </PermissionRoute>
             }
         />
-        {/* Eliminar ruta a cuentasporpagarfarmacia porque el archivo no existe */}
-        {/*
-        <Route
-            path="/cuentasporpagarfarmacia"
-            element={
-                <PermissionRoute permiso="verificar_gastos">
-                    <CuentasPorPagarPorFarmaciaPage />
-                </PermissionRoute>
-            }
-        />
-        */}
         <Route path="*" element={<NotFoundPage />} />
     </Routes>
 );
