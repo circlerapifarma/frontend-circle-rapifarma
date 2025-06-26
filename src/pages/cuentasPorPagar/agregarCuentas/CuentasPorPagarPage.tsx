@@ -227,7 +227,7 @@ const CuentasPorPagarPage: React.FC = () => {
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">Retención</label>
-          <input type="number" name="retencion" value={form.retencion === 0 ? "" : form.retencion} onChange={handleChange} min={0} step="0.0001" className="w-full border rounded px-2 py-1" required onWheel={e => e.currentTarget.blur()} />
+          <input type="number" name="retencion" value={form.retencion === 0 ? 0 : form.retencion} onChange={handleChange} min={0} step="0.0001" className="w-full border rounded px-2 py-1" required onWheel={e => e.currentTarget.blur()} />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">Divisa</label>
