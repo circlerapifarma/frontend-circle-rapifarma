@@ -103,8 +103,8 @@ const EdicionCuentaModal: React.FC<EdicionCuentaModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" onClick={onClose}>
-      <div className="bg-slate-50 rounded-lg shadow-xl p-6 w-full max-w-3xl relative" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-50" onClick={onClose}>
+      <div className="bg-slate-50 rounded-lg shadow-xl p-6 w-full max-w-3xl relative" onClick={e => e.stopPropagation()} style={{ maxHeight: '90vh', overflowY: 'auto' }}>
         <button onClick={onClose} className="absolute top-4 right-4 text-slate-500 hover:text-slate-800">
           <FaTimes size={20} />
         </button>
@@ -144,6 +144,17 @@ const EdicionCuentaModal: React.FC<EdicionCuentaModalProps> = ({
                   <option value="Bs">Bs</option>
                   <option value="USD">USD</option>
                 </select>
+              </div>
+              <div>
+                <label className="inline-flex items-center gap-2 cursor-pointer select-none pl-1">
+                  <input
+                    type="checkbox"
+                    className="form-checkbox h-5 w-5 text-blue-600"
+                    checked={!!edicionState.esAbono}
+                    onChange={e => onEdicionStateChange({ esAbono: e.target.checked })}
+                  />
+                  <span className="text-sm text-slate-700">Abono</span>
+                </label>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Tasa del Pago</label>
@@ -216,17 +227,6 @@ const EdicionCuentaModal: React.FC<EdicionCuentaModalProps> = ({
                   value={edicionState.observacion}
                   onChange={handleObservacionChange}
                 />
-              </div>
-              <div>
-                <label className="inline-flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    className="form-checkbox h-5 w-5 text-blue-600"
-                    checked={!!edicionState.esAbono}
-                    onChange={e => onEdicionStateChange({ esAbono: e.target.checked })}
-                  />
-                  <span className="text-sm text-slate-700">Abono</span>
-                </label>
               </div>
             </div>
           </div>
