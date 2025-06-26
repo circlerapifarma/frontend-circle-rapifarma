@@ -333,7 +333,7 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
                 <table className="min-w-full divide-y divide-slate-200 table-fixed" style={{ maxWidth: '100vw' }}>
                   <thead className="bg-red-50">
                     <tr>
-                      {['Fecha', 'Título', 'Descripción', 'Monto', 'Estado', 'Acción'].map(header => (
+                      {['Fecha', 'Título', 'Descripción', 'Monto', 'Moneda', 'Tasa', 'Estado', 'Acción'].map(header => (
                         <th key={header} scope="col" className="px-5 py-3.5 text-left text-xs font-semibold text-red-700 uppercase tracking-wider whitespace-nowrap">
                           {header}
                         </th>
@@ -347,12 +347,10 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
                         <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-800 font-medium">{g.titulo}</td>
                         <td className="px-5 py-4 text-sm text-slate-600 max-w-md truncate" title={g.descripcion}>{g.descripcion}</td>
                         <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-800 font-semibold text-right gasto-monto">
-                          {g.divisa === 'Bs' && g.tasa ?
-                            `Bs ${(g.monto).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / Tasa: ${g.tasa}\n$${(g.monto / g.tasa).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                            :
-                            `$${g.monto.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                          }
+                          {g.monto.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
+                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-800">{g.divisa || '-'}</td>
+                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-800">{g.tasa ? g.tasa : '-'}</td>
                         <td className="px-5 py-4 whitespace-nowrap">
                           <EstadoGastoBadge estado={g.estado} />
                         </td>
@@ -372,6 +370,21 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
                   </tbody>
                 </table>
               </div>
+            </div>
+            {/* Total de gastos en tabla, ahora fuera de la tabla */}
+            <div className="flex flex-col sm:flex-row sm:justify-end gap-2 bg-red-50 border-t border-red-200 px-5 py-4 mt-2 rounded-lg">
+              <span className="text-lg font-bold text-red-700">Total Bs: {gastosFiltrados
+                .filter(g => g.divisa === 'Bs')
+                .reduce((acc, g) => acc + g.monto, 0)
+                .toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+              <span className="text-lg font-bold text-blue-700">Total $: {gastosFiltrados.reduce((acc, g) => {
+                if (g.divisa === 'Bs' && g.tasa) {
+                  return acc + (g.monto / g.tasa);
+                }
+                return acc + g.monto;
+              }, 0).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
             </div>
             
             {/* Vista tipo tarjeta para móviles */}
@@ -406,6 +419,21 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
                   </div>
                 </div>
               ))}
+              {/* Total de gastos en vista móvil, ahora fuera de la lista */}
+              <div className="flex flex-col gap-2 bg-red-50 border-t border-red-200 px-4 py-3 mt-2 rounded-lg sm:hidden">
+                <span className="text-base font-bold text-red-700">Total Bs: {gastosFiltrados
+                  .filter(g => g.divisa === 'Bs')
+                  .reduce((acc, g) => acc + g.monto, 0)
+                  .toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+                <span className="text-base font-bold text-blue-700">Total $: {gastosFiltrados.reduce((acc, g) => {
+                  if (g.divisa === 'Bs' && g.tasa) {
+                    return acc + (g.monto / g.tasa);
+                  }
+                  return acc + g.monto;
+                }, 0).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
             </div>
           </>
         )}
