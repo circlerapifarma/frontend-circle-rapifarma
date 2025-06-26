@@ -166,9 +166,9 @@ const ChequeoGastosPage: React.FC = () => {
                           Monto en USD: <span className="font-semibold text-blue-700">{montoUsd.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD</span>
                         </div>
                         <div className="text-base text-gray-600 mt-1">Descripción: {gasto.descripcion}</div>
-                        <div className="text-sm text-gray-500 mt-1">Fecha: {new Date(gasto.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>
+                        <div className="text-sm text-gray-500 mt-1">Fecha: {typeof gasto.fecha === 'string' ? gasto.fecha : ''}</div>
                         {gasto.fechaRegistro && (
-                          <div className="text-sm text-gray-500 mt-1">Fecha de registro: {new Date(gasto.fechaRegistro).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>
+                          <div className="text-sm text-gray-500 mt-1">Fecha de registro: {new Date(gasto.fechaRegistro).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Caracas' })}</div>
                         )}
                         {/* Mostrar imágenes si existen */}
                         {Array.isArray(gasto.imagenesGasto) && gasto.imagenesGasto.length > 0 && (
