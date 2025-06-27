@@ -13,6 +13,7 @@ export interface EdicionCuenta {
   tasa: number; // Nueva propiedad para la tasa del pago
   moneda: 'USD' | 'Bs'; // Nueva propiedad para la moneda del pago
   esAbono?: boolean;
+  // retencion?: number; // Eliminada, ahora se toma de cuenta
 }
 
 // Calcula y retorna los valores finales de la cuenta editada
@@ -133,6 +134,12 @@ const EdicionCuentaModal: React.FC<EdicionCuentaModalProps> = ({
                     Ref: USD {(Number(edicionState.montoOriginal) / Number(cuenta.tasa)).toFixed(4)} @ tasa {Number(cuenta.tasa).toFixed(2)}
                   </div>
                 )}
+                {/* Ref en Bs SIEMPRE que haya tasa original de la cuenta */}
+                {cuenta.tasa && cuenta.tasa > 0 && (
+                  <div className="text-xs text-blue-600 mt-1">
+                    Ref: Bs {(Number(edicionState.montoOriginal)).toFixed(2)} = USD {(Number(edicionState.montoOriginal) / Number(cuenta.tasa)).toFixed(4)} @ tasa {Number(cuenta.tasa).toFixed(2)} (tasa inicial)
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Moneda a realizar el pago</label>
@@ -157,13 +164,22 @@ const EdicionCuentaModal: React.FC<EdicionCuentaModalProps> = ({
                 </label>
               </div>
               <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Tasa Original (no editable)</label>
+                <input
+                  type="number"
+                  className="w-full border rounded px-3 py-2 bg-slate-100"
+                  value={cuenta.tasa !== undefined && cuenta.tasa !== null ? cuenta.tasa : ''}
+                  disabled
+                />
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Tasa del Pago</label>
                 <input
                   type="number"
                   className="w-full border rounded px-3 py-2"
                   min={0}
                   step="0.0001"
-                  value={edicionState.tasa ?? ''}
+                  value={edicionState.tasa !== undefined && edicionState.tasa !== null ? edicionState.tasa : ''}
                   onChange={handleTasaChange}
                 />
               </div>
@@ -251,7 +267,8 @@ const EdicionCuentaModal: React.FC<EdicionCuentaModalProps> = ({
                 let afterD1 = base - d1;
                 let d2 = edicionState.tipoDescuento2 === 'monto' ? (edicionState.descuento2 ?? 0) : (afterD1 * (edicionState.descuento2 ?? 0) / 100);
                 let totalDescuentos = d1 + d2;
-                let totalAcreditar = base - totalDescuentos;
+                let retencion = cuenta.retencion ?? 0;
+                let totalAcreditar = base - totalDescuentos - retencion;
                 let montoOriginalMoneda = edicionState.montoOriginal;
                 if (edicionState.moneda === 'USD' && edicionState.tasa) montoOriginalMoneda = montoOriginalMoneda / edicionState.tasa;
                 let nuevoSaldo = montoOriginalMoneda - totalAcreditar;
@@ -260,6 +277,7 @@ const EdicionCuentaModal: React.FC<EdicionCuentaModalProps> = ({
                     <div className="flex justify-between"><span className="text-slate-600">Descuento 1:</span> <span className="font-mono">{edicionState.tipoDescuento1 === 'porcentaje' ? `${edicionState.descuento1?.toFixed(4)}%` : `${edicionState.moneda} ${(edicionState.descuento1 ?? 0).toFixed(4)}`}</span></div>
                     <div className="flex justify-between"><span className="text-slate-600">Descuento 2:</span> <span className="font-mono">{edicionState.tipoDescuento2 === 'porcentaje' ? `${edicionState.descuento2?.toFixed(4)}%` : `${edicionState.moneda} ${(edicionState.descuento2 ?? 0).toFixed(4)}`}</span></div>
                     <div className="flex justify-between"><span className="text-slate-600">Total Descuentos:</span> <span className="font-mono">{edicionState.moneda} {totalDescuentos.toFixed(4)}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-600">Retención:</span> <span className="font-mono">{edicionState.moneda} {retencion.toFixed(4)}</span></div>
                     <div className="flex justify-between text-green-700 font-semibold"><span>Total a Acreditar:</span> <span className="font-mono">{edicionState.moneda} {totalAcreditar.toFixed(4)}</span></div>
                     <div className="flex justify-between"><span className="text-slate-600">Nuevo Saldo:</span> <span className="font-mono">{edicionState.moneda} {nuevoSaldo.toFixed(4)}</span></div>
                     <hr className="my-2"/>
