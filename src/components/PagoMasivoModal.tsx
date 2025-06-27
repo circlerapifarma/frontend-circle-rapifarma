@@ -49,6 +49,7 @@ const PagoMasivoModal: React.FC<PagoMasivoModalProps> = ({ open, onClose, cuenta
   // Los totales se calculan SOLO a partir de los valores ya calculados en las cuentas
   const totalAPagar = cuentas && cuentas.length > 0 ? cuentas.reduce((acc, c) => acc + (typeof c.totalAcreditar === 'number' ? Number(c.totalAcreditar) : 0), 0) : 0;
   const totalDescuento = cuentas && cuentas.length > 0 ? cuentas.reduce((acc, c) => acc + (typeof c.totalDescuentos === 'number' ? Number(c.totalDescuentos) : 0), 0) : 0;
+  const totalRetencion = cuentas && cuentas.length > 0 ? cuentas.reduce((acc, c) => acc + (typeof c.retencion === 'number' ? Number(c.retencion) : 0), 0) : 0;
 
   // Sincroniza el monto y moneda del form con los totales y moneda global, pero NO la tasa
   useEffect(() => {
@@ -164,6 +165,10 @@ const PagoMasivoModal: React.FC<PagoMasivoModalProps> = ({ open, onClose, cuenta
                 <div className="flex justify-between">
                     <span className="text-slate-600">Total Descuento:</span>
                     <span className="font-bold text-green-600">{totalDescuento.toFixed(4)}</span>
+                </div>
+                <div className="flex justify-between">
+                    <span className="text-slate-600">Total Retención:</span>
+                    <span className="font-bold text-red-600">{totalRetencion.toFixed(4)}</span>
                 </div>
                 <hr className="my-1" />
                 <div className="flex justify-between">

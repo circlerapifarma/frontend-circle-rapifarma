@@ -135,12 +135,15 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
         // Seleccionar: agregar con datos originales y editables
         const cuenta = cuentasFiltradas.find(c => c._id === id);
         if (!cuenta) return prev;
+        const montoOriginal = cuenta.divisa === 'USD' ? cuenta.monto * (cuenta.tasa || 0) : cuenta.monto;
+        const retencion = cuenta.retencion || 0;
+        const montoEditado = montoOriginal - retencion;
         nuevo = {
           ...prev,
           [id]: {
             ...cuenta,
-            montoOriginal: cuenta.divisa === 'USD' ? cuenta.monto * (cuenta.tasa || 0) : cuenta.monto,
-            montoEditado: cuenta.divisa === 'USD' ? cuenta.monto * (cuenta.tasa || 0) : cuenta.monto,
+            montoOriginal,
+            montoEditado,
             descuento1: 0,
             tipoDescuento1: 'monto',
             descuento2: 0,
@@ -149,15 +152,15 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
             tasa: cuenta.tasa,
             moneda: 'Bs', // Siempre predeterminado a Bs
             ...calcularMontosCuenta({
-              montoOriginal: cuenta.divisa === 'USD' ? cuenta.monto * (cuenta.tasa || 0) : cuenta.monto,
-              montoEditado: cuenta.divisa === 'USD' ? cuenta.monto * (cuenta.tasa || 0) : cuenta.monto,
+              montoOriginal,
+              montoEditado,
               descuento1: 0,
               tipoDescuento1: 'monto',
               descuento2: 0,
               tipoDescuento2: 'monto',
               observacion: '',
               tasa: cuenta.tasa,
-              moneda: 'Bs', // Siempre predeterminado a Bs
+              moneda: 'Bs',
             })
           }
         };

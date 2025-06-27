@@ -64,6 +64,18 @@ const EdicionCuentaModal: React.FC<EdicionCuentaModalProps> = ({
     }
   }, [isOpen, edicionState, onEdicionStateChange]);
 
+  React.useEffect(() => {
+    if (isOpen && cuenta && edicionState) {
+      // Si la cuenta tiene retención y el montoEditado aún no ha sido editado manualmente, inicialízalo
+      if (
+        typeof cuenta.retencion === 'number' &&
+        (edicionState.montoEditado === undefined || edicionState.montoEditado === null)
+      ) {
+        onEdicionStateChange({ montoEditado: Number(cuenta.montoOriginal) - Number(cuenta.retencion) });
+      }
+    }
+  }, [isOpen, cuenta, edicionState, onEdicionStateChange]);
+
   const handleMontoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const montoEditado = Number(e.target.value);
     onEdicionStateChange({
@@ -268,7 +280,7 @@ const EdicionCuentaModal: React.FC<EdicionCuentaModalProps> = ({
                 let d2 = edicionState.tipoDescuento2 === 'monto' ? (edicionState.descuento2 ?? 0) : (afterD1 * (edicionState.descuento2 ?? 0) / 100);
                 let totalDescuentos = d1 + d2;
                 let retencion = cuenta.retencion ?? 0;
-                let totalAcreditar = base - totalDescuentos - retencion;
+                let totalAcreditar = base - totalDescuentos - retencion; // Ahora sí se resta la retención
                 let montoOriginalMoneda = edicionState.montoOriginal;
                 if (edicionState.moneda === 'USD' && edicionState.tasa) montoOriginalMoneda = montoOriginalMoneda / edicionState.tasa;
                 let nuevoSaldo = montoOriginalMoneda - totalAcreditar;
