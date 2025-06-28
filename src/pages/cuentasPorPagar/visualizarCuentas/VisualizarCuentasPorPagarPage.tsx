@@ -5,8 +5,9 @@ import AbonoModal from "@/components/AbonoModal";
 import FiltrosCuentasPorPagar from "./FiltrosCuentasPorPagar";
 import TablaCuentasPorPagar from "./TablaCuentasPorPagar";
 import { useCuentasPorPagar } from "./useCuentasPorPagar";
-import EdicionCuentaModal, { calcularMontosCuenta } from "./EdicionCuentaModal";
-import type { EdicionCuenta } from "./EdicionCuentaModal";
+import EdicionCuentaModal from "./EdicionCuentaModal";
+import { calcularMontosCuenta } from "./type";
+import type { EdicionCuenta } from "./type";
 // Importa el tipo Pago para tipar correctamente pagosAprobadosPorCuenta
 import type { Pago } from "./FilaCuentaPorPagar";
 
@@ -37,7 +38,7 @@ interface FarmaciaChip {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-const ESTATUS_OPCIONES = ["wait", "activa", "inactiva", "pagada", "anulada"];
+const ESTATUS_OPCIONES = ["wait", "activa", "inactiva", "pagada", "abonada", "anulada"];
 
 function calcularDiasRestantes(fechaEmision: string, diasCredito: number) {
   const fechaEmi = new Date(fechaEmision);
@@ -135,32 +136,35 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
         // Seleccionar: agregar con datos originales y editables
         const cuenta = cuentasFiltradas.find(c => c._id === id);
         if (!cuenta) return prev;
+        // Calcula montoOriginal y lo pasa como campo editable
         const montoOriginal = cuenta.divisa === 'USD' ? cuenta.monto * (cuenta.tasa || 0) : cuenta.monto;
         const retencion = cuenta.retencion || 0;
         const montoEditado = montoOriginal - retencion;
+        const edicion: EdicionCuenta = {
+          montoOriginal,
+          montoEditado,
+          descuento1: 0,
+          tipoDescuento1: 'monto',
+          descuento2: 0,
+          tipoDescuento2: 'monto',
+          observacion: '',
+          tasa: cuenta.tasa,
+          tasaPago: cuenta.tasa, // Añadido para cumplir con el tipo EdicionCuenta
+          moneda: 'Bs',
+          abono: 0,
+          retencion: retencion,
+        };
         nuevo = {
           ...prev,
           [id]: {
             ...cuenta,
-            montoOriginal,
-            montoEditado,
-            descuento1: 0,
-            tipoDescuento1: 'monto',
-            descuento2: 0,
-            tipoDescuento2: 'monto',
-            observacion: '',
-            tasa: cuenta.tasa,
-            moneda: 'Bs', // Siempre predeterminado a Bs
+            // Forzamos el tipo de divisa a 'USD' | 'Bs' para el cálculo
+            divisa: cuenta.divisa === 'USD' ? 'USD' : 'Bs',
+            ...edicion,
             ...calcularMontosCuenta({
-              montoOriginal,
-              montoEditado,
-              descuento1: 0,
-              tipoDescuento1: 'monto',
-              descuento2: 0,
-              tipoDescuento2: 'monto',
-              observacion: '',
-              tasa: cuenta.tasa,
-              moneda: 'Bs',
+              ...cuenta,
+              divisa: cuenta.divisa === 'USD' ? 'USD' : 'Bs',
+              ...edicion
             })
           }
         };
@@ -244,7 +248,7 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
         ...prev,
         [cuenta._id]: { loading: true, pagos: [] }
       }));
-      fetch(`${API_BASE_URL}/api/pagoscpp?cuentaPorPagarId=${cuenta._id}`, {
+      fetch(`${API_BASE_URL}/pagoscpp?cuentaPorPagarId=${cuenta._id}`, {
         headers: {
           "Authorization": `Bearer ${localStorage.getItem("token")}`
         }
@@ -295,6 +299,9 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("No se encontró el token de autenticación");
+      // Obtener correo del usuario autenticado
+      const usuarioRaw = localStorage.getItem("usuario");
+      const usuarioCorreo = usuarioRaw ? JSON.parse(usuarioRaw).correo : "";
       // Enviar un pago por cada cuenta seleccionada
       await Promise.all(
         selectedCuentas.map(async (cuentaId) => {
@@ -314,7 +321,7 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
             descuento,
             observacion,
             referencia: form.referencia,
-            usuario: form.usuario,
+            usuario: usuarioCorreo, // SIEMPRE el usuario logueado
             bancoEmisor: form.bancoEmisor,
             bancoReceptor: form.bancoReceptor,
             tasa: cuenta.tasa,
@@ -324,7 +331,7 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
             cuentaPorPagarId: cuenta._id,
           };
           // Si es abono, NO cambiar el estado de la cuenta
-          const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/pagoscpp`, {
+          const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/pagoscpp`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -336,8 +343,19 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
             const data = await res.json();
             throw new Error(data.detail || "Error al registrar pago");
           }
-          // Solo cambiar el estado si no es abono
-          if (!edicion?.esAbono) {
+          // Cambiar el estado si es abono o pago total
+          if (edicion?.esAbono) {
+            // Si es abono, marcar como 'abonada'
+            await fetch(`${API_BASE_URL}/cuentas-por-pagar/${cuenta._id}/estatus`, {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+              },
+              body: JSON.stringify({ estatus: 'abonada' })
+            });
+          } else {
+            // Si no es abono, marcar como 'pagada'
             await fetch(`${API_BASE_URL}/cuentas-por-pagar/${cuenta._id}/estatus`, {
               method: "PATCH",
               headers: {
@@ -520,7 +538,7 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
               setAbonoCuenta(null);
               // Opcional: recargar pagos si es necesario
             }}
-            usuario={abonoCuenta.usuarioCorreo || ''}
+            usuario={(JSON.parse(localStorage.getItem("usuario") || '{}').correo) || ''}
             cuentaPorPagarId={abonoCuenta._id}
             farmaciaId={abonoCuenta.farmacia}
           />
@@ -562,7 +580,6 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
           isOpen={!!cuentaEditando}
           onClose={() => setCuentaEditando(null)}
           cuenta={cuentaEditando ? cuentasParaPagar[cuentaEditando] : undefined}
-          edicionState={cuentaEditando ? cuentasParaPagar[cuentaEditando] : undefined}
           onEdicionStateChange={(newState: Partial<EdicionCuenta>) => {
             if (cuentaEditando) handleEdicionCuenta(cuentaEditando, newState);
           }}

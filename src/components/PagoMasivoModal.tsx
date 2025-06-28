@@ -79,7 +79,10 @@ const PagoMasivoModal: React.FC<PagoMasivoModalProps> = ({ open, onClose, cuenta
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await onSubmit({ ...form, imagenPago });
+      // Obtener correo del usuario autenticado
+      const usuarioRaw = localStorage.getItem("usuario");
+      const usuarioCorreo = usuarioRaw ? JSON.parse(usuarioRaw).correo : "";
+      await onSubmit({ ...form, usuario: usuarioCorreo, imagenPago });
       // Cambiar el estado de cada cuenta a "pagada" tras el submit
       if (cuentas && cuentas.length > 0) {
         await Promise.all(
@@ -129,10 +132,6 @@ const PagoMasivoModal: React.FC<PagoMasivoModalProps> = ({ open, onClose, cuenta
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Referencia</label>
             <input type="text" name="referencia" value={form.referencia} onChange={handleChange} className="w-full border-slate-300 rounded-md shadow-sm py-2 px-3 text-sm" required />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Usuario</label>
-            <input type="text" name="usuario" value={form.usuario} onChange={handleChange} className="w-full border-slate-300 rounded-md shadow-sm py-2 px-3 text-sm" required />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Banco Emisor</label>

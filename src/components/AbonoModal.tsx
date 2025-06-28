@@ -51,7 +51,10 @@ const AbonoModal: React.FC<AbonoModalProps> = ({ open, onClose, onSubmit, usuari
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const abonoData = { ...form, imagenPago };
+    // Obtener correo del usuario autenticado
+    const usuarioRaw = localStorage.getItem("usuario");
+    const usuarioCorreo = usuarioRaw ? JSON.parse(usuarioRaw).correo : "";
+    const abonoData = { ...form, usuario: usuarioCorreo, imagenPago };
     console.log(JSON.stringify(abonoData, null, 2));
     try {
       const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
@@ -97,10 +100,6 @@ const AbonoModal: React.FC<AbonoModalProps> = ({ open, onClose, onSubmit, usuari
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Referencia</label>
             <input type="text" name="referencia" value={form.referencia} onChange={handleChange} required className="w-full border-slate-300 rounded-md shadow-sm py-2 px-3 text-sm" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Usuario</label>
-            <input type="text" name="usuario" value={form.usuario} onChange={handleChange} required className="w-full border-slate-300 rounded-md shadow-sm py-2 px-3 text-sm" />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Banco Emisor</label>
