@@ -44,6 +44,7 @@ const allLinks = [
             { to: '/verinventarios', label: 'Ver Inventarios', permiso: 'acceso_admin' },
             { to: '/pagoscpp', label: 'Ver Pagos CxP', permiso: 'verificar_gastos' },
             { to: '/cuentasporpagarfarmacia', label: 'Cuentas por Pagar por Farmacia', permiso: 'verificar_gastos' },
+            { to: '/valesporfarmacia', label: 'Vales por Farmacia', permiso: 'ver_cuadres_dia' },
         ]
     },
     

@@ -27,6 +27,7 @@ import VerificacionCuentasPorPagarPage from '@/pages/cuentasPorPagar/verificacio
 import VisualizarPagosCPPPage from '@/pages/cuentasPorPagar/pagos/VisualizarPagosCPPPage';
 import CuentasPorPagarPage from '@/pages/cuentasPorPagar/agregarCuentas/CuentasPorPagarPage';
 import GastosCuentasCuadresPorFarmaciaPage from '@/pages/GastosCuentasCuadresPorFarmaciaPage';
+import ValesPorFarmaciaPage from '@/pages/vales/ValesPorFarmaciaPage';
 
 const AppRouter = () => (
     <Routes>
@@ -224,6 +225,14 @@ const AppRouter = () => (
             element={
                 <PermissionRoute permiso="verificar_gastos">
                     <VisualizarPagosCPPPage />
+                </PermissionRoute>
+            }
+        />
+        <Route
+            path="/valesporfarmacia"
+            element={
+                <PermissionRoute permiso="ver_cuadres_dia">
+                    <ValesPorFarmaciaPage />
                 </PermissionRoute>
             }
         />

@@ -12,6 +12,7 @@ interface Cuadre {
   efectivoBs: number;
   efectivoUsd: number;
   zelleUsd: number;
+  valesUsd?: number;
   totalGeneralUsd: number;
   diferenciaUsd: number;
   sobranteUsd?: number;
@@ -170,6 +171,9 @@ const CuadresModal: React.FC<CuadresModalProps> = ({ open, onClose, farmaciaId, 
                   <div className="text-sm">Efectivo Bs: <b>{c.efectivoBs}</b></div>
                   <div className="text-sm">Efectivo USD: <b>{c.efectivoUsd}</b></div>
                   <div className="text-sm">Zelle USD: <b>{c.zelleUsd}</b></div>
+                  <div className="text-sm">
+                    Vales USD: <b className="text-green-600 font-bold">{c.valesUsd !== undefined ? c.valesUsd : '-'}</b>
+                  </div>
                   <div className="text-sm">Total General USD: <b>{c.totalGeneralUsd}</b></div>
                   <div className="text-sm">Diferencia USD: <b>{c.diferenciaUsd}</b></div>
                   <div className="text-sm">Sobrante USD: <b>{c.sobranteUsd}</b></div>
