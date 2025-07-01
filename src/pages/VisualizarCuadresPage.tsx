@@ -601,6 +601,25 @@ const VisualizarCuadresPage: React.FC = () => {
                         <span className="text-xs text-green-700 mt-1">Total USD con y sin vales</span>
                       </div>
                     </div>
+                    {/* Total Caja Sistema Bs */}
+                    <div className="mt-8 w-full max-w-2xl flex flex-col items-center">
+                      <div className="rounded-2xl bg-gradient-to-br from-yellow-100 to-yellow-50 shadow-xl p-8 flex flex-col items-center border-2 border-yellow-400 transition-transform hover:scale-105 duration-300">
+                        <span className="text-2xl font-extrabold text-yellow-900 mb-2 flex items-center gap-2">
+                          <svg className="w-8 h-8 text-yellow-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3zm0 0V4m0 16v-4m8-4h-4m-8 0H4" /></svg>
+                          Total Caja Sistema Bs
+                        </span>
+                        <span className="text-3xl font-black text-yellow-800 mt-1">
+                          {
+                            (() => {
+                              // Suma de totalCajaSistemaBs de todos los cuadres filtrados
+                              const totalCajaSistemaBs = cuadresFiltrados.reduce((acc, c) => acc + (Number(c.totalCajaSistemaBs) || 0), 0);
+                              return totalCajaSistemaBs.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+                            })()
+                          }
+                        </span>
+                        <span className="text-xs text-yellow-700 mt-1">Suma de Caja Sistema reportada por cada cuadre</span>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
