@@ -470,17 +470,18 @@ const VisualizarCuadresPage: React.FC = () => {
                     </div>
                   </div>
                 )}
-                {/* Bloque de resumen: Total Bs (Bs + USD a Bs) y Total USD (USD + Bs a USD) con diseño destacado */}
+                {/* Bloque de resumen: Total Bs y Total USD discriminados con y sin vales */}
                 {cuadresFiltrados.length > 0 && (
                   <div className="mt-10 flex flex-col items-center justify-center animate-totales-detallados">
                     <div className="w-full max-w-2xl grid grid-cols-1 md:grid-cols-2 gap-8">
-                      {/* Total en Bs: Suma Bs y USD a Bs, restando sobrante y sumando faltante */}
+                      {/* Total Bs con y sin vales */}
                       <div className="rounded-2xl bg-gradient-to-br from-blue-200 to-blue-50 shadow-xl p-8 flex flex-col items-center border-2 border-blue-400 transition-transform hover:scale-105 duration-300">
                         <span className="text-2xl font-extrabold text-blue-900 mb-2 flex items-center gap-2">
                           <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3zm0 0V4m0 16v-4m8-4h-4m-8 0H4" /></svg>
                           Total Bs
                         </span>
-                        <span className="text-4xl font-black text-blue-800 mt-2 drop-shadow-lg">
+                        <span className="text-lg font-bold text-blue-800 mt-2">Con vales</span>
+                        <span className="text-3xl font-black text-blue-800 mt-1">
                           {
                             (() => {
                               let totalBs = cuadresFiltrados.reduce((acc, c) => {
@@ -490,10 +491,11 @@ const VisualizarCuadresPage: React.FC = () => {
                                   + (Array.isArray(c.puntosVenta)
                                       ? c.puntosVenta.reduce((a, pv) => a + (parseFloat(pv.puntoDebito) || 0) + (parseFloat(pv.puntoCredito) || 0), 0)
                                       : 0)
-                                  + (((Number(c.efectivoUsd) || 0) + (Number(c.zelleUsd) || 0)) * tasa);
+                                  + (((Number(c.efectivoUsd) || 0) + (Number(c.zelleUsd) || 0)) * tasa)
+                                  + (Number(c.valesBs) || 0)
+                                  + ((Number(c.valesUsd) || 0) * tasa);
                                 return acc + subtotal;
                               }, 0);
-                              // Sumar faltante y restar sobrante (convertidos a Bs)
                               const totalFaltanteBs = cuadresFiltrados.reduce((acc, c) => {
                                 const tasa = c.tasa !== undefined && c.tasa !== null ? Number(Number(c.tasa).toFixed(4)) : 1;
                                 return acc + ((Number(c.faltanteUsd) || 0) * tasa);
@@ -507,15 +509,71 @@ const VisualizarCuadresPage: React.FC = () => {
                             })()
                           }
                         </span>
-                        <span className="text-xs text-blue-700 mt-1">Suma de Bs y USD a Bs según tasa de cada cuadre (faltante suma, sobrante resta)</span>
+                        <span className="text-lg font-bold text-blue-800 mt-4">Sin vales</span>
+                        <span className="text-3xl font-black text-blue-800 mt-1">
+                          {
+                            (() => {
+                              let totalBs = cuadresFiltrados.reduce((acc, c) => {
+                                const tasa = c.tasa !== undefined && c.tasa !== null ? Number(Number(c.tasa).toFixed(4)) : 1;
+                                const subtotal = (Number(c.efectivoBs) || 0)
+                                  + (Number(c.pagomovilBs) || 0)
+                                  + (Array.isArray(c.puntosVenta)
+                                      ? c.puntosVenta.reduce((a, pv) => a + (parseFloat(pv.puntoDebito) || 0) + (parseFloat(pv.puntoCredito) || 0), 0)
+                                      : 0)
+                                  + (((Number(c.efectivoUsd) || 0) + (Number(c.zelleUsd) || 0)) * tasa);
+                                return acc + subtotal;
+                              }, 0);
+                              const totalFaltanteBs = cuadresFiltrados.reduce((acc, c) => {
+                                const tasa = c.tasa !== undefined && c.tasa !== null ? Number(Number(c.tasa).toFixed(4)) : 1;
+                                return acc + ((Number(c.faltanteUsd) || 0) * tasa);
+                              }, 0);
+                              const totalSobranteBs = cuadresFiltrados.reduce((acc, c) => {
+                                const tasa = c.tasa !== undefined && c.tasa !== null ? Number(Number(c.tasa).toFixed(4)) : 1;
+                                return acc + ((Number(c.sobranteUsd) || 0) * tasa);
+                              }, 0);
+                              const totalFinal = totalBs + totalFaltanteBs - totalSobranteBs;
+                              return totalFinal.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+                            })()
+                          }
+                        </span>
+                        <span className="text-xs text-blue-700 mt-1">Total Bs con y sin vales</span>
                       </div>
-                      {/* Total en USD: Suma USD y Bs a USD, restando sobrante y sumando faltante */}
+                      {/* Total USD con y sin vales */}
                       <div className="rounded-2xl bg-gradient-to-br from-green-200 to-green-50 shadow-xl p-8 flex flex-col items-center border-2 border-green-400 transition-transform hover:scale-105 duration-300">
                         <span className="text-2xl font-extrabold text-green-900 mb-2 flex items-center gap-2">
                           <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3zm0 0V4m0 16v-4m8-4h-4m-8 0H4" /></svg>
                           Total USD
                         </span>
-                        <span className="text-4xl font-black text-green-800 mt-2 drop-shadow-lg">
+                        <span className="text-lg font-bold text-green-800 mt-2">Con vales</span>
+                        <span className="text-3xl font-black text-green-800 mt-1">
+                          {
+                            (() => {
+                              let totalUsd = cuadresFiltrados.reduce((acc, c) => {
+                                const tasa = c.tasa !== undefined && c.tasa !== null ? Number(Number(c.tasa).toFixed(4)) : 1;
+                                const subtotal = (Number(c.efectivoUsd) || 0)
+                                  + (Number(c.zelleUsd) || 0)
+                                  + (((Number(c.efectivoBs) || 0)
+                                      + (Number(c.pagomovilBs) || 0)
+                                      + (Array.isArray(c.puntosVenta)
+                                          ? c.puntosVenta.reduce((a, pv) => a + (parseFloat(pv.puntoDebito) || 0) + (parseFloat(pv.puntoCredito) || 0), 0)
+                                          : 0)
+                                      + (Number(c.valesBs) || 0)) / tasa)
+                                  + (Number(c.valesUsd) || 0);
+                                return acc + subtotal;
+                              }, 0);
+                              const totalFaltanteUsd = cuadresFiltrados.reduce((acc, c) => {
+                                return acc + ((Number(c.faltanteUsd) || 0));
+                              }, 0);
+                              const totalSobranteUsd = cuadresFiltrados.reduce((acc, c) => {
+                                return acc + ((Number(c.sobranteUsd) || 0));
+                              }, 0);
+                              const totalFinal = totalUsd + totalFaltanteUsd - totalSobranteUsd;
+                              return totalFinal.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+                            })()
+                          }
+                        </span>
+                        <span className="text-lg font-bold text-green-800 mt-4">Sin vales</span>
+                        <span className="text-3xl font-black text-green-800 mt-1">
                           {
                             (() => {
                               let totalUsd = cuadresFiltrados.reduce((acc, c) => {
@@ -529,7 +587,6 @@ const VisualizarCuadresPage: React.FC = () => {
                                           : 0)) / tasa);
                                 return acc + subtotal;
                               }, 0);
-                              // Sumar faltante y restar sobrante (convertidos a USD)
                               const totalFaltanteUsd = cuadresFiltrados.reduce((acc, c) => {
                                 return acc + ((Number(c.faltanteUsd) || 0));
                               }, 0);
@@ -541,7 +598,7 @@ const VisualizarCuadresPage: React.FC = () => {
                             })()
                           }
                         </span>
-                        <span className="text-xs text-green-700 mt-1">Suma de USD y Bs a USD según tasa de cada cuadre (faltante suma, sobrante resta)</span>
+                        <span className="text-xs text-green-700 mt-1">Total USD con y sin vales</span>
                       </div>
                     </div>
                   </div>
