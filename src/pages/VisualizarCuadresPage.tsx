@@ -448,42 +448,25 @@ const VisualizarCuadresPage: React.FC = () => {
                     </div>
                   </div>
                 )}
-                {/* Bloque de sobrante y faltante con diseño destacado */}
-                {totalesCalculados && (
-                  <div className="mt-6 flex flex-col md:flex-row gap-6 items-center justify-center animate-totales-detallados">
-                    <div className="flex-1 bg-gradient-to-r from-green-100 to-green-50 rounded-xl p-6 shadow text-center border-2 border-green-200">
-                      <span className="text-lg font-bold text-green-700">Sobrante USD</span>
-                      <div className="text-2xl font-extrabold text-green-800 mt-1">{cuadresFiltrados.reduce((acc, c) => acc + (Number(c.sobranteUsd) || 0), 0).toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</div>
-                      <div className="text-sm text-green-700 mt-1">Sobrante Bs: {
-                        cuadresFiltrados.reduce((acc, c) => {
-                          return acc + ((Number(c.sobranteUsd) || 0) * (c.tasa !== undefined && c.tasa !== null ? Number(Number(c.tasa).toFixed(4)) : 1));
-                        }, 0).toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })
-                      }</div>
-                    </div>
-                    <div className="flex-1 bg-gradient-to-r from-red-100 to-red-50 rounded-xl p-6 shadow text-center border-2 border-red-200">
-                      <span className="text-lg font-bold text-red-700">Faltante USD</span>
-                      <div className="text-2xl font-extrabold text-red-800 mt-1">{cuadresFiltrados.reduce((acc, c) => acc + (Number(c.faltanteUsd) || 0), 0).toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</div>
-                      <div className="text-sm text-red-700 mt-1">Faltante Bs: {
-                        cuadresFiltrados.reduce((acc, c) => {
-                          return acc + ((Number(c.faltanteUsd) || 0) * (c.tasa !== undefined && c.tasa !== null ? Number(Number(c.tasa).toFixed(4)) : 1));
-                        }, 0).toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })
-                      }</div>
-                    </div>
-                  </div>
-                )}
-                {/* Bloque nuevo: Total Caja Sistema Bs */}
+                {/* Subtotal de Vales */}
                 {cuadresFiltrados.length > 0 && (
-                  <div className="mt-6 bg-gradient-to-r from-yellow-100 to-yellow-50 rounded-xl p-6 shadow flex flex-col items-center justify-center border-2 border-yellow-200 animate-totales-detallados">
-                    <div className="text-xl font-bold text-yellow-700 text-center">
-                      Total Caja Sistema Bs: {cuadresFiltrados.reduce((acc, c) => acc + (Number(c.totalCajaSistemaBs) || 0), 0).toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}
+                  <div className="mt-6 bg-gradient-to-r from-purple-50 to-purple-200 rounded-xl p-6 shadow flex flex-col items-center justify-center border-2 border-purple-300 animate-totales-detallados">
+                    <div className="text-lg font-bold text-purple-800 text-center mb-2">
+                      Subtotal Vales
                     </div>
-                  </div>
-                )}
-                {/* Bloque nuevo: Vales USD */}
-                {cuadresFiltrados.length > 0 && (
-                  <div className="mt-6 bg-gradient-to-r from-purple-100 to-purple-50 rounded-xl p-6 shadow flex flex-col items-center justify-center border-2 border-purple-200 animate-totales-detallados">
-                    <div className="text-xl font-bold text-purple-700 text-center">
-                      Total Vales USD: {cuadresFiltrados.reduce((acc, c) => acc + (Number(c.valesUsd) || 0), 0).toLocaleString("es-VE", { minimumFractionDigits: 4 })}
+                    <div className="flex flex-col md:flex-row gap-6 items-center justify-center">
+                      <div className="flex flex-col items-center">
+                        <span className="text-purple-700 font-semibold">Vales USD</span>
+                        <span className="text-2xl font-extrabold text-purple-900 mt-1">
+                          {cuadresFiltrados.reduce((acc, c) => acc + (Number(c.valesUsd) || 0), 0).toLocaleString("es-VE", { minimumFractionDigits: 4 })}
+                        </span>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <span className="text-purple-700 font-semibold">Vales Bs</span>
+                        <span className="text-2xl font-extrabold text-purple-900 mt-1">
+                          {cuadresFiltrados.reduce((acc, c) => acc + (Number(c.valesBs) || 0), 0).toLocaleString("es-VE", { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 )}
