@@ -456,6 +456,7 @@ const VisualizarCuadresPage: React.FC = () => {
                   </div>
                 </div>
               )}
+              
               {/* Bloque de resumen: Total Bs y Total USD discriminados con y sin vales */}
               {cuadresFiltrados.length > 0 && (
                 <div className="mt-10 flex flex-col items-center justify-center animate-totales-detallados">
