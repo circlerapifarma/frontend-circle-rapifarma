@@ -217,14 +217,30 @@ const GastosCuentasCuadresPorFarmaciaPage: React.FC = () => {
                         if (fechaFin && g.fecha > fechaFin) return false;
                         return true;
                       })
-                      .map((g: any) => (
-                        <li key={g._id} className="py-2 flex flex-col sm:flex-row sm:items-center gap-2">
-                          <span className="font-semibold text-blue-900">{g.titulo}</span>
-                          <span className="text-blue-700">Bs {g.monto}</span>
-                          <span className="text-xs text-slate-500">{g.fecha}</span>
-                          <EstadoChip estado={g.estado} />
-                        </li>
-                      ))}
+                      .map((g: any) => {
+                        // Usar g.divisa en vez de g.moneda
+                        const esUSD = g.divisa === 'USD';
+                        const montoBs = esUSD ? (g.monto * (g.tasa || 1)) : g.monto;
+                        return (
+                          <li key={g._id} className="py-2 flex flex-col sm:flex-row sm:items-center gap-2">
+                            <span className="font-semibold text-blue-900">{g.titulo}</span>
+                            {esUSD ? (
+                              <>
+                                <span className="text-blue-700">$ {g.monto.toFixed(2)} USD</span>
+                                <span className="text-blue-700">/ Bs {montoBs.toFixed(2)}</span>
+                              </>
+                            ) : (
+                              <span className="text-blue-700">Bs {g.monto}</span>
+                            )}
+                            <span className="text-xs text-slate-500">{g.fecha}</span>
+                            <span className="text-xs text-slate-500">Divisa: {g.divisa || 'Bs'}</span>
+                            {g.tasa && (
+                              <span className="text-xs text-slate-500">Tasa: {g.tasa}</span>
+                            )}
+                            <EstadoChip estado={g.estado} />
+                          </li>
+                        );
+                      })}
                   </ul>
                 ) : (
                   <div className="text-slate-500 text-center bg-yellow-100 border border-yellow-300 rounded-lg py-4 px-2 font-semibold shadow">No hay gastos registrados para los filtros seleccionados.</div>
