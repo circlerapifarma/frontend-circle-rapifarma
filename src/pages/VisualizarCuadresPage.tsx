@@ -2,6 +2,14 @@ import React, { useEffect, useState } from "react";
 import { FaRegFileAlt } from "react-icons/fa";
 import CuadresModal from "@/components/CuadresModal";
 import CuadreDetalleModal from "@/components/CuadreDetalleModal";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface Cuadre {
   _id: string;
@@ -195,302 +203,359 @@ const VisualizarCuadresPage: React.FC = () => {
 
   // El return debe estar dentro del cuerpo del componente, no fuera de ninguna función ni bloque
   return (
-      <div className="min-h-screen bg-slate-50 py-8">
-        <div className="w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-3xl font-bold text-slate-800 text-center flex-1">Visualizar Cuadres</h1>
-            <button
-              className="ml-4 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow transition"
-              onClick={() => setModalOpen(true)}
-              title="Ver todos los cuadres"
-            >
-              <FaRegFileAlt className="text-xl" />
-              <span className="hidden sm:inline">Ver Cuadres</span>
-            </button>
+    <div className="min-h-screen bg-slate-50 py-8">
+      <div className="w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold text-slate-800 text-center flex-1">Visualizar Cuadres</h1>
+          <button
+            className="ml-4 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow transition"
+            onClick={() => setModalOpen(true)}
+            title="Ver todos los cuadres"
+          >
+            <FaRegFileAlt className="text-xl" />
+            <span className="hidden sm:inline">Ver Cuadres</span>
+          </button>
+        </div>
+        <CuadresModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          farmaciaId={selectedFarmacia || (farmacias[0]?.id || "")}
+          farmaciaNombre={farmacias.find(f => f.id === selectedFarmacia)?.nombre || farmacias[0]?.nombre || ""}
+        />
+        {error && (
+          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md shadow" role="alert">
+            <p className="font-bold">Error</p>
+            <p>{error}</p>
           </div>
-          <CuadresModal
-            open={modalOpen}
-            onClose={() => setModalOpen(false)}
-            farmaciaId={selectedFarmacia || (farmacias[0]?.id || "")}
-            farmaciaNombre={farmacias.find(f => f.id === selectedFarmacia)?.nombre || farmacias[0]?.nombre || ""}
-          />
-          {error && (
-            <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md shadow" role="alert">
-              <p className="font-bold">Error</p>
-              <p>{error}</p>
+        )}
+        {success && (
+          <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-md shadow" role="alert">
+            <p className="font-bold">Éxito</p>
+            <p>{success}</p>
+          </div>
+        )}
+        <div className="bg-white p-6 rounded-lg shadow-lg mb-8">
+          <h2 className="text-xl font-semibold text-slate-700 mb-4">Filtros</h2>
+          {farmacias.length > 1 && (
+            <div className="mb-6">
+              <span className="font-medium text-slate-700 mr-3">Farmacias:</span>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {farmacias.map(f => (
+                  <button
+                    key={f.id}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-150 ease-in-out ${selectedFarmacia === f.id ? 'bg-indigo-600 text-white shadow-md ring-2 ring-indigo-300' : 'bg-slate-100 text-slate-700 hover:bg-indigo-100 hover:text-indigo-700 border border-slate-300'}`}
+                    onClick={() => setSelectedFarmacia(f.id === selectedFarmacia ? "" : f.id)}
+                  >
+                    {f.nombre}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
-          {success && (
-            <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-md shadow" role="alert">
-              <p className="font-bold">Éxito</p>
-              <p>{success}</p>
-            </div>
-          )}
-          <div className="bg-white p-6 rounded-lg shadow-lg mb-8">
-            <h2 className="text-xl font-semibold text-slate-700 mb-4">Filtros</h2>
-            {farmacias.length > 1 && (
-              <div className="mb-6">
-                <span className="font-medium text-slate-700 mr-3">Farmacias:</span>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {farmacias.map(f => (
-                    <button
-                      key={f.id}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-150 ease-in-out ${selectedFarmacia === f.id ? 'bg-indigo-600 text-white shadow-md ring-2 ring-indigo-300' : 'bg-slate-100 text-slate-700 hover:bg-indigo-100 hover:text-indigo-700 border border-slate-300'}`}
-                      onClick={() => setSelectedFarmacia(f.id === selectedFarmacia ? "" : f.id)}
-                    >
-                      {f.nombre}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1">Turno</label>
-                <input
-                  type="text"
-                  value={turnoFiltro}
-                  onChange={e => setTurnoFiltro(e.target.value)}
-                  className="w-full border-slate-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 py-2 px-3 text-sm"
-                  placeholder="Buscar turno..."
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1">Cajero</label>
-                <input
-                  type="text"
-                  value={cajeroFiltro}
-                  onChange={e => setCajeroFiltro(e.target.value)}
-                  className="w-full border-slate-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 py-2 px-3 text-sm"
-                  placeholder="Buscar cajero..."
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1">Estado</label>
-                <select
-                  value={estadoFiltro}
-                  onChange={e => setEstadoFiltro(e.target.value)}
-                  className="w-full border-slate-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 py-2 px-3 text-sm"
-                >
-                  <option value="">Todos</option>
-                  {ESTADO_OPCIONES.map(opt => (
-                    <option key={opt} value={opt}>
-                      {opt.charAt(0).toUpperCase() + opt.slice(1)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1">Fecha desde</label>
-                <input
-                  type="date"
-                  value={fechaInicio}
-                  onChange={e => setFechaInicio(e.target.value)}
-                  className="w-full border-slate-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 py-2 px-3 text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1">Fecha hasta</label>
-                <input
-                  type="date"
-                  value={fechaFin}
-                  onChange={e => setFechaFin(e.target.value)}
-                  className="w-full border-slate-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 py-2 px-3 text-sm"
-                />
-              </div>
-            </div>
-          </div>
-          {loading ? (
-            <div className="text-center py-10 text-slate-500 text-lg">
-              <svg className="animate-spin h-8 w-8 text-indigo-600 mx-auto mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Cargando cuadres...
-            </div>
-          ) : cuadresFiltrados.length === 0 ? (
-            <div className="text-center text-slate-500 py-10 bg-white p-6 rounded-lg shadow-lg">
-              <svg className="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                <path vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-              </svg>
-              <h3 className="mt-2 text-lg font-medium text-slate-800">No hay cuadres</h3>
-              <p className="mt-1 text-sm text-slate-500">No se encontraron cuadres que coincidan con los filtros aplicados.</p>
-            </div>
-          ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-6">
             <div>
-              <div className="bg-white rounded-lg shadow-xl overflow-hidden">
-                <div className="overflow-auto max-h-96">
-                  <table className="min-w-full divide-y divide-slate-200">
-                    <thead className="bg-slate-100">
-                      <tr>
-                        {["", "Fecha", "Farmacia", "Caja", "Cajero", "Turno", "Estado", "Tasa", "Efectivo Bs", "Devoluciones Bs", "Recarga Bs", "Pago Móvil Bs", "Punto Débito", "Punto Crédito", "Puntos Venta", "Total Bs", "Total Bs en USD", "Efectivo USD", "Zelle USD", "Total USD", "Sobrante USD", "Faltante USD", "Diferencia USD", "Acción"].map(header => (
-                          <th key={header} scope="col" className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">
-                            {header}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-slate-200">
-                      {cuadresFiltrados.map(c => {
-                        const debito = Array.isArray(c.puntosVenta) ? c.puntosVenta.reduce((a, pv) => a + (parseFloat(pv.puntoDebito as any) || 0), 0) : 0;
-                        const credito = Array.isArray(c.puntosVenta) ? c.puntosVenta.reduce((a, pv) => a + (parseFloat(pv.puntoCredito as any) || 0), 0) : 0;
-                        return (
-                          <tr key={c._id} className="hover:bg-slate-50 transition-colors duration-150 ease-in-out">
-                            <td className="px-2 py-4 whitespace-nowrap text-sm">
-                              <button
-                                className="text-blue-600 hover:text-blue-800"
-                                title="Ver detalles del cuadre"
-                                onClick={() => { setCuadreSeleccionado(c); setDetalleModalOpen(true); }}
-                              >
-                                <FaRegFileAlt />
-                              </button>
-                            </td>
-                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.dia?.slice(0,10)}</td>
-                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.nombreFarmacia || '-'}</td>
-                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.cajaNumero}</td>
-                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.cajero || '-'}</td>
-                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.turno}</td>
-                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.estado}</td>
-                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{c.tasa?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '-'}</td>
-                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{c.efectivoBs?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '-'}</td>
-                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{c.devolucionesBs?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '-'}</td>
-                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{c.recargaBs?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '-'}</td>
-                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{c.pagomovilBs?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '-'}</td>
-                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{debito.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{credito.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{Array.isArray(c.puntosVenta) ? c.puntosVenta.length : '-'}</td>
-                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{c.totalBs?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '-'}</td>
-                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{c.totalBsEnUsd?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '-'}</td>
-                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{c.efectivoUsd?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '-'}</td>
-                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{c.zelleUsd?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '-'}</td>
-                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{c.totalGeneralUsd?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                            <td className="px-5 py-4 whitespace-nowrap text-sm text-green-700 text-right">{c.sobranteUsd?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                            <td className="px-5 py-4 whitespace-nowrap text-sm text-red-700 text-right">{c.faltanteUsd?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                            <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{c.diferenciaUsd?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '-'}</td>
-                            <td className="px-5 py-4 whitespace-nowrap text-sm">
-                              <select
-                                value={c.estado}
-                                onChange={e => handleEstadoChange(c._id, e.target.value)}
-                                className="border-slate-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 py-1.5 px-2 text-xs"
-                              >
-                                {ESTADO_OPCIONES.map(opt => (
-                                  <option key={opt} value={opt}>{opt.charAt(0).toUpperCase() + opt.slice(1)}</option>
-                                ))}
-                              </select>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+              <label className="block text-sm font-medium text-slate-600 mb-1">Turno</label>
+              <input
+                type="text"
+                value={turnoFiltro}
+                onChange={e => setTurnoFiltro(e.target.value)}
+                className="w-full border-slate-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 py-2 px-3 text-sm"
+                placeholder="Buscar turno..."
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-600 mb-1">Cajero</label>
+              <input
+                type="text"
+                value={cajeroFiltro}
+                onChange={e => setCajeroFiltro(e.target.value)}
+                className="w-full border-slate-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 py-2 px-3 text-sm"
+                placeholder="Buscar cajero..."
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-600 mb-1">Estado</label>
+              <select
+                value={estadoFiltro}
+                onChange={e => setEstadoFiltro(e.target.value)}
+                className="w-full border-slate-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 py-2 px-3 text-sm"
+              >
+                <option value="">Todos</option>
+                {ESTADO_OPCIONES.map(opt => (
+                  <option key={opt} value={opt}>
+                    {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-600 mb-1">Fecha desde</label>
+              <input
+                type="date"
+                value={fechaInicio}
+                onChange={e => setFechaInicio(e.target.value)}
+                className="w-full border-slate-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 py-2 px-3 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-600 mb-1">Fecha hasta</label>
+              <input
+                type="date"
+                value={fechaFin}
+                onChange={e => setFechaFin(e.target.value)}
+                className="w-full border-slate-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 py-2 px-3 text-sm"
+              />
+            </div>
+          </div>
+        </div>
+        {loading ? (
+          <div className="text-center py-10 text-slate-500 text-lg">
+            <svg className="animate-spin h-8 w-8 text-indigo-600 mx-auto mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Cargando cuadres...
+          </div>
+        ) : cuadresFiltrados.length === 0 ? (
+          <div className="text-center text-slate-500 py-10 bg-white p-6 rounded-lg shadow-lg">
+            <svg className="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+            </svg>
+            <h3 className="mt-2 text-lg font-medium text-slate-800">No hay cuadres</h3>
+            <p className="mt-1 text-sm text-slate-500">No se encontraron cuadres que coincidan con los filtros aplicados.</p>
+          </div>
+        ) : (
+          <div>
+            <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+              <div className="overflow-auto max-h-96">
+                <table className="min-w-full divide-y divide-slate-200">
+                  <thead className="bg-slate-100">
+                    <tr>
+                      {["", "Fecha", "Farmacia", "Caja", "Cajero", "Turno", "Estado", "Tasa", "Efectivo Bs", "Devoluciones Bs", "Recarga Bs", "Pago Móvil Bs", "Punto Débito", "Punto Crédito", "Puntos Venta", "Total Bs", "Total Bs en USD", "Efectivo USD", "Zelle USD", "Total USD", "Sobrante USD", "Faltante USD", "Diferencia USD", "Acción"].map(header => (
+                        <th key={header} scope="col" className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">
+                          {header}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-slate-200">
+                    {cuadresFiltrados.map(c => {
+                      const debito = Array.isArray(c.puntosVenta) ? c.puntosVenta.reduce((a, pv) => a + (parseFloat(pv.puntoDebito as any) || 0), 0) : 0;
+                      const credito = Array.isArray(c.puntosVenta) ? c.puntosVenta.reduce((a, pv) => a + (parseFloat(pv.puntoCredito as any) || 0), 0) : 0;
+                      return (
+                        <tr key={c._id} className="hover:bg-slate-50 transition-colors duration-150 ease-in-out">
+                          <td className="px-2 py-4 whitespace-nowrap text-sm">
+                            <button
+                              className="text-blue-600 hover:text-blue-800"
+                              title="Ver detalles del cuadre"
+                              onClick={() => { setCuadreSeleccionado(c); setDetalleModalOpen(true); }}
+                            >
+                              <FaRegFileAlt />
+                            </button>
+                          </td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.dia?.slice(0, 10)}</td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.nombreFarmacia || '-'}</td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.cajaNumero}</td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.cajero || '-'}</td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.turno}</td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.estado}</td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{c.tasa?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '-'}</td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{c.efectivoBs?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '-'}</td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{c.devolucionesBs?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '-'}</td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{c.recargaBs?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '-'}</td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{c.pagomovilBs?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '-'}</td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{debito.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{credito.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{Array.isArray(c.puntosVenta) ? c.puntosVenta.length : '-'}</td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{c.totalBs?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '-'}</td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{c.totalBsEnUsd?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '-'}</td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{c.efectivoUsd?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '-'}</td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{c.zelleUsd?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '-'}</td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{c.totalGeneralUsd?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm text-green-700 text-right">{c.sobranteUsd?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm text-red-700 text-right">{c.faltanteUsd?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{c.diferenciaUsd?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '-'}</td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm">
+                            <select
+                              value={c.estado}
+                              onChange={e => handleEstadoChange(c._id, e.target.value)}
+                              className="border-slate-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 py-1.5 px-2 text-xs"
+                            >
+                              {ESTADO_OPCIONES.map(opt => (
+                                <option key={opt} value={opt}>{opt.charAt(0).toUpperCase() + opt.slice(1)}</option>
+                              ))}
+                            </select>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
-              {/* Bloque de totales fuera de la tabla */}
-              <div className="mt-8">
-                {/* Bloques de totales detallados con animación de entrada */}
-                {totalesCalculados && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-totales-detallados">
-                    {/* Moneda Nacional (Bs) */}
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-200 rounded-2xl p-8 shadow-xl border-2 border-blue-300 flex flex-col items-center transition-transform hover:scale-105 duration-300 moneda-nacional-block">
-                      <h3 className="text-2xl font-extrabold mb-4 text-blue-800 flex items-center gap-2">
-                        <svg className="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3zm0 0V4m0 16v-4m8-4h-4m-8 0H4" /></svg>
-                        Moneda Nacional (Bs)
-                      </h3>
-                      <table className="min-w-full text-base rounded-lg overflow-hidden">
-                        <thead>
-                          <tr>
-                            <th className="text-left font-semibold pb-2">Tipo</th>
-                            <th className="text-right font-semibold pb-2">Bs</th>
-                            <th className="text-right font-semibold pb-2">USD (conv.)</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-blue-100">
-                          <tr><td>Efectivo</td><td className="text-right">{totalesCalculados.efectivoBs.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td><td className="text-right">{totalesCalculados.efectivoBsEnUsd.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td></tr>
-                          <tr><td>Pago Móvil</td><td className="text-right">{totalesCalculados.pagoMovilBs.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td><td className="text-right">{totalesCalculados.pagoMovilBsEnUsd.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td></tr>
-                          <tr><td>Débito</td><td className="text-right">{totalesCalculados.debitoBs.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td><td className="text-right">{totalesCalculados.debitoUsd.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td></tr>
-                          <tr><td>Crédito</td><td className="text-right">{totalesCalculados.creditoBs.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td><td className="text-right">{totalesCalculados.creditoUsd.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td></tr>
-                        </tbody>
-                        <tfoot>
-                          <tr className="font-bold border-t border-blue-200">
-                            <td>Total Bs</td>
-                            <td className="text-right text-blue-900">{(totalesCalculados.efectivoBs + totalesCalculados.pagoMovilBs + totalesCalculados.debitoBs + totalesCalculados.creditoBs).toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td>
-                            <td className="text-right text-blue-900">{(totalesCalculados.efectivoBsEnUsd + totalesCalculados.pagoMovilBsEnUsd + totalesCalculados.debitoUsd + totalesCalculados.creditoUsd).toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td>
-                          </tr>
-                        </tfoot>
-                      </table>
-                    </div>
-                    {/* Moneda Extranjera (USD) */}
-                    <div className="bg-gradient-to-br from-green-50 to-green-200 rounded-2xl p-8 shadow-xl border-2 border-green-300 flex flex-col items-center transition-transform hover:scale-105 duration-300 moneda-extranjera-block">
-                      <h3 className="text-2xl font-extrabold mb-4 text-green-800 flex items-center gap-2">
-                        <svg className="w-7 h-7 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3zm0 0V4m0 16v-4m8-4h-4m-8 0H4" /></svg>
-                        Moneda Extranjera (USD)
-                      </h3>
-                      <table className="min-w-full text-base rounded-lg overflow-hidden">
-                        <thead>
-                          <tr>
-                            <th className="text-left font-semibold pb-2">Tipo</th>
-                            <th className="text-right font-semibold pb-2">USD</th>
-                            <th className="text-right font-semibold pb-2">Bs (conv.)</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-green-100">
-                          <tr><td>Efectivo</td><td className="text-right">{totalesCalculados.efectivoUsd.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td><td className="text-right">{totalesCalculados.efectivoUsdEnBs.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td></tr>
-                          <tr><td>Zelle</td><td className="text-right">{totalesCalculados.zelleUsd.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td><td className="text-right">{totalesCalculados.zelleUsdEnBs.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td></tr>
-                        </tbody>
-                        <tfoot>
-                          <tr className="font-bold border-t border-green-200">
-                            <td>Total USD</td>
-                            <td className="text-right text-green-900">{(totalesCalculados.efectivoUsd + totalesCalculados.zelleUsd).toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td>
-                            <td className="text-right text-green-900">{(totalesCalculados.efectivoUsdEnBs + totalesCalculados.zelleUsdEnBs).toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td>
-                          </tr>
-                        </tfoot>
-                      </table>
-                    </div>
+            </div>
+            {/* Bloque de totales fuera de la tabla */}
+            <div className="mt-8">
+              {/* Bloques de totales detallados con animación de entrada */}
+              {totalesCalculados && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-totales-detallados">
+                  {/* Moneda Nacional (Bs) */}
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-200 rounded-2xl p-8 shadow-xl border-2 border-blue-300 flex flex-col items-center transition-transform hover:scale-105 duration-300 moneda-nacional-block">
+                    <h3 className="text-2xl font-extrabold mb-4 text-blue-800 flex items-center gap-2">
+                      <svg className="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3zm0 0V4m0 16v-4m8-4h-4m-8 0H4" /></svg>
+                      Moneda Nacional (Bs)
+                    </h3>
+                    <table className="min-w-full text-base rounded-lg overflow-hidden">
+                      <thead>
+                        <tr>
+                          <th className="text-left font-semibold pb-2">Tipo</th>
+                          <th className="text-right font-semibold pb-2">Bs</th>
+                          <th className="text-right font-semibold pb-2">USD (conv.)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-blue-100">
+                        <tr><td>Efectivo</td><td className="text-right">{totalesCalculados.efectivoBs.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td><td className="text-right">{totalesCalculados.efectivoBsEnUsd.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td></tr>
+                        <tr><td>Pago Móvil</td><td className="text-right">{totalesCalculados.pagoMovilBs.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td><td className="text-right">{totalesCalculados.pagoMovilBsEnUsd.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td></tr>
+                        <tr><td>Débito</td><td className="text-right">{totalesCalculados.debitoBs.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td><td className="text-right">{totalesCalculados.debitoUsd.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td></tr>
+                        <tr><td>Crédito</td><td className="text-right">{totalesCalculados.creditoBs.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td><td className="text-right">{totalesCalculados.creditoUsd.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td></tr>
+                      </tbody>
+                      <tfoot>
+                        <tr className="font-bold border-t border-blue-200">
+                          <td>Total Bs</td>
+                          <td className="text-right text-blue-900">{(totalesCalculados.efectivoBs + totalesCalculados.pagoMovilBs + totalesCalculados.debitoBs + totalesCalculados.creditoBs).toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td>
+                          <td className="text-right text-blue-900">{(totalesCalculados.efectivoBsEnUsd + totalesCalculados.pagoMovilBsEnUsd + totalesCalculados.debitoUsd + totalesCalculados.creditoUsd).toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
                   </div>
-                )}
-                {/* Subtotal de Vales */}
-                {cuadresFiltrados.length > 0 && (
-                  <div className="mt-6 bg-gradient-to-r from-purple-50 to-purple-200 rounded-xl p-6 shadow flex flex-col items-center justify-center border-2 border-purple-300 animate-totales-detallados">
-                    <div className="text-lg font-bold text-purple-800 text-center mb-2">
-                      Subtotal Vales
-                    </div>
-                    <div className="flex flex-col md:flex-row gap-6 items-center justify-center">
-                      <div className="flex flex-col items-center">
-                        <span className="text-purple-700 font-semibold">Vales USD</span>
-                        <span className="text-2xl font-extrabold text-purple-900 mt-1">
-                          {cuadresFiltrados.reduce((acc, c) => acc + (Number(c.valesUsd) || 0), 0).toLocaleString("es-VE", { minimumFractionDigits: 4 })}
-                        </span>
-                      </div>
-                      <div className="flex flex-col items-center">
-                        <span className="text-purple-700 font-semibold">Vales Bs</span>
-                        <span className="text-2xl font-extrabold text-purple-900 mt-1">
-                          {cuadresFiltrados.reduce((acc, c) => acc + (Number(c.valesBs) || 0), 0).toLocaleString("es-VE", { minimumFractionDigits: 2 })}
-                        </span>
-                      </div>
-                    </div>
+                  {/* Moneda Extranjera (USD) */}
+                  <div className="bg-gradient-to-br from-green-50 to-green-200 rounded-2xl p-8 shadow-xl border-2 border-green-300 flex flex-col items-center transition-transform hover:scale-105 duration-300 moneda-extranjera-block">
+                    <h3 className="text-2xl font-extrabold mb-4 text-green-800 flex items-center gap-2">
+                      <svg className="w-7 h-7 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3zm0 0V4m0 16v-4m8-4h-4m-8 0H4" /></svg>
+                      Moneda Extranjera (USD)
+                    </h3>
+                    <table className="min-w-full text-base rounded-lg overflow-hidden">
+                      <thead>
+                        <tr>
+                          <th className="text-left font-semibold pb-2">Tipo</th>
+                          <th className="text-right font-semibold pb-2">USD</th>
+                          <th className="text-right font-semibold pb-2">Bs (conv.)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-green-100">
+                        <tr><td>Efectivo</td><td className="text-right">{totalesCalculados.efectivoUsd.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td><td className="text-right">{totalesCalculados.efectivoUsdEnBs.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td></tr>
+                        <tr><td>Zelle</td><td className="text-right">{totalesCalculados.zelleUsd.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td><td className="text-right">{totalesCalculados.zelleUsdEnBs.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td></tr>
+                      </tbody>
+                      <tfoot>
+                        <tr className="font-bold border-t border-green-200">
+                          <td>Total USD</td>
+                          <td className="text-right text-green-900">{(totalesCalculados.efectivoUsd + totalesCalculados.zelleUsd).toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td>
+                          <td className="text-right text-green-900">{(totalesCalculados.efectivoUsdEnBs + totalesCalculados.zelleUsdEnBs).toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
                   </div>
-                )}
-                {/* Bloque de resumen: Total Bs y Total USD discriminados con y sin vales */}
-                {cuadresFiltrados.length > 0 && (
-                  <div className="mt-10 flex flex-col items-center justify-center animate-totales-detallados">
-                    <div className="w-full max-w-2xl grid grid-cols-1 md:grid-cols-2 gap-8">
-                      {/* Total Bs con y sin vales */}
-                      <div className="rounded-2xl bg-gradient-to-br from-blue-200 to-blue-50 shadow-xl p-8 flex flex-col items-center border-2 border-blue-400 transition-transform hover:scale-105 duration-300">
-                        <span className="text-2xl font-extrabold text-blue-900 mb-2 flex items-center gap-2">
-                          <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3zm0 0V4m0 16v-4m8-4h-4m-8 0H4" /></svg>
-                          Total Bs
-                        </span>
-                        <span className="text-lg font-bold text-blue-800 mt-2">Con vales</span>
-                        <span className="text-3xl font-black text-blue-800 mt-1">
-                          {
-                            (() => {
+                </div>
+              )}
+              {/* Bloque de resumen: Total Bs y Total USD discriminados con y sin vales */}
+              {cuadresFiltrados.length > 0 && (
+                <div className="mt-10 flex flex-col items-center justify-center animate-totales-detallados">
+                  <div className="w-full max-w-4xl rounded-lg border shadow-lg overflow-hidden mb-6">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50 dark:bg-gray-800">
+                          <TableHead className="w-[200px] text-lg font-semibold text-gray-700 dark:text-gray-200">Totales</TableHead>
+                          <TableHead className="text-right text-lg font-semibold text-gray-700 dark:text-gray-200">Total Bs</TableHead>
+                          <TableHead className="text-right text-lg font-semibold text-gray-700 dark:text-gray-200">Total USD</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {/* Fila para "Con vales (sin ajustes)" */}
+                        <TableRow className="hover:bg-blue-50/50 dark:hover:bg-blue-950/20 transition-colors">
+                          <TableCell className="font-medium text-blue-800 dark:text-blue-200 py-4 pl-6">Con vales (sin ajustes)</TableCell>
+                          <TableCell className="text-right text-blue-800 dark:text-blue-200 font-mono text-base">
+                            {(() => {
                               let totalBs = cuadresFiltrados.reduce((acc, c) => {
                                 const tasa = c.tasa !== undefined && c.tasa !== null ? Number(Number(c.tasa).toFixed(4)) : 1;
                                 const subtotal = (Number(c.efectivoBs) || 0)
                                   + (Number(c.pagomovilBs) || 0)
                                   + (Array.isArray(c.puntosVenta)
+                                    ? c.puntosVenta.reduce((a, pv) => a + (parseFloat(pv.puntoDebito) || 0) + (parseFloat(pv.puntoCredito) || 0), 0)
+                                    : 0)
+                                  + (((Number(c.efectivoUsd) || 0) + (Number(c.zelleUsd) || 0)) * tasa)
+                                  + (Number(c.valesBs) || 0)
+                                  + ((Number(c.valesUsd) || 0) * tasa);
+                                return acc + subtotal;
+                              }, 0);
+                              return totalBs.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+                            })()}
+                          </TableCell>
+                          <TableCell className="text-right text-green-800 dark:text-green-200 font-mono text-base">
+                            {(() => {
+                              let totalUsd = cuadresFiltrados.reduce((acc, c) => {
+                                const tasa = c.tasa !== undefined && c.tasa !== null ? Number(Number(c.tasa).toFixed(4)) : 1;
+                                const subtotal = (Number(c.efectivoUsd) || 0)
+                                  + (Number(c.zelleUsd) || 0)
+                                  + (((Number(c.efectivoBs) || 0)
+                                    + (Number(c.pagomovilBs) || 0)
+                                    + (Array.isArray(c.puntosVenta)
                                       ? c.puntosVenta.reduce((a, pv) => a + (parseFloat(pv.puntoDebito) || 0) + (parseFloat(pv.puntoCredito) || 0), 0)
                                       : 0)
+                                    + (Number(c.valesBs) || 0)) / tasa)
+                                  + (Number(c.valesUsd) || 0);
+                                return acc + subtotal;
+                              }, 0);
+                              return totalUsd.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+                            })()}
+                          </TableCell>
+                        </TableRow>
+
+                        {/* Fila para "Sin vales (sin ajustes)" */}
+                        <TableRow className="hover:bg-blue-50/50 dark:hover:bg-blue-950/20 transition-colors">
+                          <TableCell className="font-medium text-blue-800 dark:text-blue-200 py-4 pl-6">Sin vales (sin ajustes)</TableCell>
+                          <TableCell className="text-right text-blue-800 dark:text-blue-200 font-mono text-base">
+                            {(() => {
+                              let totalBs = cuadresFiltrados.reduce((acc, c) => {
+                                const tasa = c.tasa !== undefined && c.tasa !== null ? Number(Number(c.tasa).toFixed(4)) : 1;
+                                const subtotal = (Number(c.efectivoBs) || 0)
+                                  + (Number(c.pagomovilBs) || 0)
+                                  + (Array.isArray(c.puntosVenta)
+                                    ? c.puntosVenta.reduce((a, pv) => a + (parseFloat(pv.puntoDebito) || 0) + (parseFloat(pv.puntoCredito) || 0), 0)
+                                    : 0)
+                                  + (((Number(c.efectivoUsd) || 0) + (Number(c.zelleUsd) || 0)) * tasa);
+                                return acc + subtotal;
+                              }, 0);
+                              return totalBs.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+                            })()}
+                          </TableCell>
+                          <TableCell className="text-right text-green-800 dark:text-green-200 font-mono text-base">
+                            {(() => {
+                              let totalUsd = cuadresFiltrados.reduce((acc, c) => {
+                                const tasa = c.tasa !== undefined && c.tasa !== null ? Number(Number(c.tasa).toFixed(4)) : 1;
+                                const subtotal = (Number(c.efectivoUsd) || 0)
+                                  + (Number(c.zelleUsd) || 0)
+                                  + (((Number(c.efectivoBs) || 0)
+                                    + (Number(c.pagomovilBs) || 0)
+                                    + (Array.isArray(c.puntosVenta)
+                                      ? c.puntosVenta.reduce((a, pv) => a + (parseFloat(pv.puntoDebito) || 0) + (parseFloat(pv.puntoCredito) || 0), 0)
+                                      : 0)) / tasa);
+                                return acc + subtotal;
+                              }, 0);
+                              return totalUsd.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+                            })()}
+                          </TableCell>
+                        </TableRow>
+                        {/* Fila para "Con vales (ajustado)" */}
+                        <TableRow className="bg-blue-100/70 dark:bg-blue-900/40 hover:bg-blue-200/70 dark:hover:bg-blue-900/60 transition-colors">
+                          <TableCell className="font-bold text-lg text-blue-900 dark:text-blue-100 py-4 pl-6">Con vales (ajustado)</TableCell>
+                          <TableCell className="text-right font-extrabold text-2xl text-blue-900 dark:text-blue-100 font-mono">
+                            {(() => {
+                              let totalBs = cuadresFiltrados.reduce((acc, c) => {
+                                const tasa = c.tasa !== undefined && c.tasa !== null ? Number(Number(c.tasa).toFixed(4)) : 1;
+                                const subtotal = (Number(c.efectivoBs) || 0)
+                                  + (Number(c.pagomovilBs) || 0)
+                                  + (Array.isArray(c.puntosVenta)
+                                    ? c.puntosVenta.reduce((a, pv) => a + (parseFloat(pv.puntoDebito) || 0) + (parseFloat(pv.puntoCredito) || 0), 0)
+                                    : 0)
                                   + (((Number(c.efectivoUsd) || 0) + (Number(c.zelleUsd) || 0)) * tasa)
                                   + (Number(c.valesBs) || 0)
                                   + ((Number(c.valesUsd) || 0) * tasa);
@@ -506,20 +571,47 @@ const VisualizarCuadresPage: React.FC = () => {
                               }, 0);
                               const totalFinal = totalBs + totalFaltanteBs - totalSobranteBs;
                               return totalFinal.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 });
-                            })()
-                          }
-                        </span>
-                        <span className="text-lg font-bold text-blue-800 mt-4">Sin vales</span>
-                        <span className="text-3xl font-black text-blue-800 mt-1">
-                          {
-                            (() => {
+                            })()}
+                          </TableCell>
+                          <TableCell className="text-right font-extrabold text-2xl text-green-900 dark:text-green-100 font-mono">
+                            {(() => {
+                              let totalUsd = cuadresFiltrados.reduce((acc, c) => {
+                                const tasa = c.tasa !== undefined && c.tasa !== null ? Number(Number(c.tasa).toFixed(4)) : 1;
+                                const subtotal = (Number(c.efectivoUsd) || 0)
+                                  + (Number(c.zelleUsd) || 0)
+                                  + (((Number(c.efectivoBs) || 0)
+                                    + (Number(c.pagomovilBs) || 0)
+                                    + (Array.isArray(c.puntosVenta)
+                                      ? c.puntosVenta.reduce((a, pv) => a + (parseFloat(pv.puntoDebito) || 0) + (parseFloat(pv.puntoCredito) || 0), 0)
+                                      : 0)
+                                    + (Number(c.valesBs) || 0)) / tasa)
+                                  + (Number(c.valesUsd) || 0);
+                                return acc + subtotal;
+                              }, 0);
+                              const totalFaltanteUsd = cuadresFiltrados.reduce((acc, c) => {
+                                return acc + ((Number(c.faltanteUsd) || 0));
+                              }, 0);
+                              const totalSobranteUsd = cuadresFiltrados.reduce((acc, c) => {
+                                return acc + ((Number(c.sobranteUsd) || 0));
+                              }, 0);
+                              const totalFinal = totalUsd + totalFaltanteUsd - totalSobranteUsd;
+                              return totalFinal.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+                            })()}
+                          </TableCell>
+                        </TableRow>
+
+                        {/* Fila para "Sin vales (ajustado)" */}
+                        <TableRow className="bg-blue-100/70 dark:bg-blue-900/40 hover:bg-blue-200/70 dark:hover:bg-blue-900/60 transition-colors">
+                          <TableCell className="font-bold text-lg text-blue-900 dark:text-blue-100 py-4 pl-6">Sin vales (ajustado)</TableCell>
+                          <TableCell className="text-right font-extrabold text-2xl text-blue-900 dark:text-blue-100 font-mono">
+                            {(() => {
                               let totalBs = cuadresFiltrados.reduce((acc, c) => {
                                 const tasa = c.tasa !== undefined && c.tasa !== null ? Number(Number(c.tasa).toFixed(4)) : 1;
                                 const subtotal = (Number(c.efectivoBs) || 0)
                                   + (Number(c.pagomovilBs) || 0)
                                   + (Array.isArray(c.puntosVenta)
-                                      ? c.puntosVenta.reduce((a, pv) => a + (parseFloat(pv.puntoDebito) || 0) + (parseFloat(pv.puntoCredito) || 0), 0)
-                                      : 0)
+                                    ? c.puntosVenta.reduce((a, pv) => a + (parseFloat(pv.puntoDebito) || 0) + (parseFloat(pv.puntoCredito) || 0), 0)
+                                    : 0)
                                   + (((Number(c.efectivoUsd) || 0) + (Number(c.zelleUsd) || 0)) * tasa);
                                 return acc + subtotal;
                               }, 0);
@@ -533,32 +625,19 @@ const VisualizarCuadresPage: React.FC = () => {
                               }, 0);
                               const totalFinal = totalBs + totalFaltanteBs - totalSobranteBs;
                               return totalFinal.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 });
-                            })()
-                          }
-                        </span>
-                        <span className="text-xs text-blue-700 mt-1">Total Bs con y sin vales</span>
-                      </div>
-                      {/* Total USD con y sin vales */}
-                      <div className="rounded-2xl bg-gradient-to-br from-green-200 to-green-50 shadow-xl p-8 flex flex-col items-center border-2 border-green-400 transition-transform hover:scale-105 duration-300">
-                        <span className="text-2xl font-extrabold text-green-900 mb-2 flex items-center gap-2">
-                          <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3zm0 0V4m0 16v-4m8-4h-4m-8 0H4" /></svg>
-                          Total USD
-                        </span>
-                        <span className="text-lg font-bold text-green-800 mt-2">Con vales</span>
-                        <span className="text-3xl font-black text-green-800 mt-1">
-                          {
-                            (() => {
+                            })()}
+                          </TableCell>
+                          <TableCell className="text-right font-extrabold text-2xl text-green-900 dark:text-green-100 font-mono">
+                            {(() => {
                               let totalUsd = cuadresFiltrados.reduce((acc, c) => {
                                 const tasa = c.tasa !== undefined && c.tasa !== null ? Number(Number(c.tasa).toFixed(4)) : 1;
                                 const subtotal = (Number(c.efectivoUsd) || 0)
                                   + (Number(c.zelleUsd) || 0)
                                   + (((Number(c.efectivoBs) || 0)
-                                      + (Number(c.pagomovilBs) || 0)
-                                      + (Array.isArray(c.puntosVenta)
-                                          ? c.puntosVenta.reduce((a, pv) => a + (parseFloat(pv.puntoDebito) || 0) + (parseFloat(pv.puntoCredito) || 0), 0)
-                                          : 0)
-                                      + (Number(c.valesBs) || 0)) / tasa)
-                                  + (Number(c.valesUsd) || 0);
+                                    + (Number(c.pagomovilBs) || 0)
+                                    + (Array.isArray(c.puntosVenta)
+                                      ? c.puntosVenta.reduce((a, pv) => a + (parseFloat(pv.puntoDebito) || 0) + (parseFloat(pv.puntoCredito) || 0), 0)
+                                      : 0)) / tasa);
                                 return acc + subtotal;
                               }, 0);
                               const totalFaltanteUsd = cuadresFiltrados.reduce((acc, c) => {
@@ -569,101 +648,70 @@ const VisualizarCuadresPage: React.FC = () => {
                               }, 0);
                               const totalFinal = totalUsd + totalFaltanteUsd - totalSobranteUsd;
                               return totalFinal.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 });
-                            })()
-                          }
-                        </span>
-                        <span className="text-lg font-bold text-green-800 mt-4">Sin vales</span>
-                        <span className="text-3xl font-black text-green-800 mt-1">
-                          {
-                            (() => {
-                              let totalUsd = cuadresFiltrados.reduce((acc, c) => {
-                                const tasa = c.tasa !== undefined && c.tasa !== null ? Number(Number(c.tasa).toFixed(4)) : 1;
-                                const subtotal = (Number(c.efectivoUsd) || 0)
-                                  + (Number(c.zelleUsd) || 0)
-                                  + (((Number(c.efectivoBs) || 0)
-                                      + (Number(c.pagomovilBs) || 0)
-                                      + (Array.isArray(c.puntosVenta)
-                                          ? c.puntosVenta.reduce((a, pv) => a + (parseFloat(pv.puntoDebito) || 0) + (parseFloat(pv.puntoCredito) || 0), 0)
-                                          : 0)) / tasa);
-                                return acc + subtotal;
-                              }, 0);
-                              const totalFaltanteUsd = cuadresFiltrados.reduce((acc, c) => {
-                                return acc + ((Number(c.faltanteUsd) || 0));
-                              }, 0);
-                              const totalSobranteUsd = cuadresFiltrados.reduce((acc, c) => {
-                                return acc + ((Number(c.sobranteUsd) || 0));
-                              }, 0);
-                              const totalFinal = totalUsd + totalFaltanteUsd - totalSobranteUsd;
-                              return totalFinal.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 });
-                            })()
-                          }
-                        </span>
-                        <span className="text-xs text-green-700 mt-1">Total USD con y sin vales</span>
-                      </div>
-                    </div>
-                    {/* Total Caja Sistema Bs */}
-                    <div className="mt-8 w-full max-w-2xl flex flex-col items-center">
-                      <div className="rounded-2xl bg-gradient-to-br from-yellow-100 to-yellow-50 shadow-xl p-8 flex flex-col items-center border-2 border-yellow-400 transition-transform hover:scale-105 duration-300">
-                        <span className="text-2xl font-extrabold text-yellow-900 mb-2 flex items-center gap-2">
-                          <svg className="w-8 h-8 text-yellow-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3zm0 0V4m0 16v-4m8-4h-4m-8 0H4" /></svg>
-                          Total Caja Sistema Bs
-                        </span>
-                        <span className="text-3xl font-black text-yellow-800 mt-1">
-                          {
-                            (() => {
-                              // Suma de totalCajaSistemaBs de todos los cuadres filtrados
-                              const totalCajaSistemaBs = cuadresFiltrados.reduce((acc, c) => acc + (Number(c.totalCajaSistemaBs) || 0), 0);
-                              return totalCajaSistemaBs.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 });
-                            })()
-                          }
-                        </span>
-                        <span className="text-xs text-yellow-700 mt-1">Suma de Caja Sistema reportada por cada cuadre</span>
-                      </div>
-                    </div>
+                            })()}
+                          </TableCell>
+                        </TableRow>
+                        {/* Fila para "Total Caja Sistema (Bs)" */}
+                        <TableRow className="bg-yellow-50 dark:bg-yellow-900/30">
+                          <TableCell className="font-bold text-lg text-yellow-800 dark:text-yellow-200 py-4 pl-6 flex items-center gap-2">
+                            <svg className="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3zm0 0V4m0 16v-4m8-4h-4m-8 0H4" /></svg>
+                            Total Caja Sistema (Bs)
+                          </TableCell>
+                          <TableCell className="text-right font-bold text-yellow-800 dark:text-yellow-200 font-mono text-lg" colSpan={2}>
+                            {(() => {
+                              let totalCajaSistema = cuadresFiltrados.reduce((acc, c) => acc + (Number(c.totalCajaSistemaBs) || 0), 0);
+                              return totalCajaSistema.toLocaleString("es-VE", { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+                            })()}
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
                   </div>
-                )}
-              </div>
-              {confirmDialog.open && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-white bg-opacity-50 backdrop-blur-sm p-4">
-                  <div className="bg-white p-6 sm:p-8 rounded-lg shadow-2xl max-w-md w-full">
-                    <h2 className="text-xl font-semibold text-slate-800 mb-2">Confirmar Cambio de Estado</h2>
-                    <p className="text-slate-600 mb-4">
-                      ¿Está seguro que desea cambiar el estado del cuadre a
-                      <span className={`font-bold ml-1 ${confirmDialog.nuevoEstado === 'denied' ? 'text-red-600' : confirmDialog.nuevoEstado === 'verified' ? 'text-green-600' : 'text-yellow-600'}`}>{confirmDialog.nuevoEstado}</span>?
-                    </p>
-                    {confirmDialog.nuevoEstado === 'denied' && (
-                      <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-3 mb-4 rounded-md text-sm">
-                        <strong>Advertencia:</strong> Esta acción es irreversible. El cuadre será marcado como rechazado.
-                      </div>
-                    )}
-                    <div className="flex justify-end gap-3">
-                      <button
-                        onClick={handleCancelChange}
-                        className="px-5 py-2.5 rounded-md bg-slate-200 text-slate-700 hover:bg-slate-300 font-medium transition-colors duration-150 ease-in-out"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        onClick={handleConfirmChange}
-                        className={`px-5 py-2.5 rounded-md font-medium transition-colors duration-150 ease-in-out shadow-sm hover:shadow-md ${confirmDialog.nuevoEstado === 'denied' ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
-                      >
-                        Aceptar
-                      </button>
-                    </div>
-                  </div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">Resumen de totales en Bs y USD, discriminados con y sin vales, ajustados y sin ajustar. Incluye el total de caja sistema reportado.</p>
                 </div>
               )}
-              {cuadreSeleccionado && detalleModalOpen && (
-                <CuadreDetalleModal
-                  open={detalleModalOpen}
-                  onClose={() => { setDetalleModalOpen(false); setCuadreSeleccionado(null); }}
-                  cuadre={cuadreSeleccionado}
-                />
-              )}
             </div>
-          )}
-        </div>
+            {confirmDialog.open && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-white bg-opacity-50 backdrop-blur-sm p-4">
+                <div className="bg-white p-6 sm:p-8 rounded-lg shadow-2xl max-w-md w-full">
+                  <h2 className="text-xl font-semibold text-slate-800 mb-2">Confirmar Cambio de Estado</h2>
+                  <p className="text-slate-600 mb-4">
+                    ¿Está seguro que desea cambiar el estado del cuadre a
+                    <span className={`font-bold ml-1 ${confirmDialog.nuevoEstado === 'denied' ? 'text-red-600' : confirmDialog.nuevoEstado === 'verified' ? 'text-green-600' : 'text-yellow-600'}`}>{confirmDialog.nuevoEstado}</span>?
+                  </p>
+                  {confirmDialog.nuevoEstado === 'denied' && (
+                    <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-3 mb-4 rounded-md text-sm">
+                      <strong>Advertencia:</strong> Esta acción es irreversible. El cuadre será marcado como rechazado.
+                    </div>
+                  )}
+                  <div className="flex justify-end gap-3">
+                    <button
+                      onClick={handleCancelChange}
+                      className="px-5 py-2.5 rounded-md bg-slate-200 text-slate-700 hover:bg-slate-300 font-medium transition-colors duration-150 ease-in-out"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={handleConfirmChange}
+                      className={`px-5 py-2.5 rounded-md font-medium transition-colors duration-150 ease-in-out shadow-sm hover:shadow-md ${confirmDialog.nuevoEstado === 'denied' ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
+                    >
+                      Aceptar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            {cuadreSeleccionado && detalleModalOpen && (
+              <CuadreDetalleModal
+                open={detalleModalOpen}
+                onClose={() => { setDetalleModalOpen(false); setCuadreSeleccionado(null); }}
+                cuadre={cuadreSeleccionado}
+              />
+            )}
+          </div>
+        )}
       </div>
+    </div>
   );
 };
 
