@@ -6,12 +6,18 @@ import { motion } from 'framer-motion';
 // Permisos y enlaces agrupados para una mejor organización visual
 const allLinks = [
     {
-        category: 'Ventas y Cuadres',
+        category: 'Ventas',
         icon: BarChart,
         items: [
             { to: '/gastoscxc-cuadres', label: 'Gastos, Cuentas y Cuadres', permiso: 'agregar_cuadre' },
             { to: '/resumenfarmacias', label: 'Resumen de Ventas', permiso: 'ver_resumen_mensual' },
             { to: '/ventatotal', label: 'Venta Total', permiso: 'ver_ventas_totales' },
+        ]
+    },
+    {
+        category: 'Cuadres',
+        icon: BarChart,
+        items: [
             { to: '/agregarcuadre', label: 'Agregar Cuadre', permiso: 'agregar_cuadre' },
             { to: '/cuadresporfarmacia', label: 'Mis Cuadres', permiso: 'agregar_cuadre' },
             { to: '/verificacion-cuadres', label: 'Verificación Cuadres', permiso: 'verificar_cuadres' },
@@ -30,21 +36,32 @@ const allLinks = [
         ]
     },
     {
-        category: 'Administración',
+        category: 'Cuentas Por Pagar',
         icon: Users,
         items: [
-            { to: '/cajeros', label: 'Vendedores', permiso: 'cajeros' },
-            { to: '/retiros', label: 'Retiro', permiso: 'acceso_admin' },
-            { to: '/comisiones', label: 'Comisiones Por Turno', permiso: 'comisiones' },
-            { to: '/comisionesgenerales', label: 'Comisiones Generales', permiso: 'comisiones' },
             { to: '/cuentasporpagar', label: 'Agregar Cuenta Por Pagar', permiso: 'agregar_cuadre' },
             { to: '/vercuentasporpagar', label: 'Ver Cuentas por Pagar', permiso: 'verificar_gastos' },
             { to: '/verificacioncuentasporpagar', label: 'Verificación Cuentas por Pagar', permiso: 'verificar_gastos' },
+            { to: '/pagoscpp', label: 'Ver Pagos CxP', permiso: 'verificar_gastos' },
+        ]
+    },
+    
+    {
+        category: 'RRHH',
+        icon: Users,
+        items: [
+            { to: '/cajeros', label: 'Vendedores', permiso: 'cajeros' },
+            { to: '/comisiones', label: 'Comisiones Por Turno', permiso: 'comisiones' },
+            { to: '/comisionesgenerales', label: 'Comisiones Generales', permiso: 'comisiones' },
+        ]
+    },
+    {
+        category: 'Administración',
+        icon: Users,
+        items: [
+            { to: '/valesporfarmacia', label: 'Vales por Farmacia', permiso: 'ver_cuadres_dia' },
             { to: '/agregarinventariocosto', label: 'Agregar Costo Inv', permiso: 'acceso_admin' },
             { to: '/verinventarios', label: 'Ver Inventarios', permiso: 'acceso_admin' },
-            { to: '/pagoscpp', label: 'Ver Pagos CxP', permiso: 'verificar_gastos' },
-            { to: '/cuentasporpagarfarmacia', label: 'Cuentas por Pagar por Farmacia', permiso: 'verificar_gastos' },
-            { to: '/valesporfarmacia', label: 'Vales por Farmacia', permiso: 'ver_cuadres_dia' },
         ]
     },
     
