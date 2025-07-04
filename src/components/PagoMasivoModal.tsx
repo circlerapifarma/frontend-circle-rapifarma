@@ -22,14 +22,16 @@ export interface PagoMasivoFormData {
 interface PagoMasivoModalProps {
   open: boolean;
   onClose: () => void;
-  cuentas: any[]; // Deben venir con todos los montos ya calculados
   onSubmit: (data: PagoMasivoFormData) => void;
   loading: boolean;
   error: string | null;
   monedaConversion: 'USD' | 'Bs';
 }
 
-const PagoMasivoModal: React.FC<PagoMasivoModalProps> = ({ open, onClose, cuentas, onSubmit, loading, error, monedaConversion }) => {
+const PagoMasivoModal: React.FC<PagoMasivoModalProps> = ({ open, onClose, onSubmit, loading, error, monedaConversion }) => {
+  // Estado local para cuentas, sincronizado con localStorage
+  const [cuentasState, setCuentasState] = useState<any[]>([]);
+
   const [form, setForm] = useState<PagoMasivoFormData>({
     fecha: new Date().toISOString().slice(0, 10),
     moneda: monedaConversion,
@@ -40,16 +42,16 @@ const PagoMasivoModal: React.FC<PagoMasivoModalProps> = ({ open, onClose, cuenta
     bancoReceptor: "",
     tasa: undefined, // No se setea tasa global
     imagenPago: undefined,
-    farmaciaId: cuentas && cuentas.length > 0 ? cuentas[0]?.farmacia || "" : "",
+    farmaciaId: "",
     estado: 'aprobado',
     cuentaPorPagarId: undefined,
   });
   const [imagenPago, setImagenPago] = useState<string>("");
   const modalRef = useRef<HTMLDivElement>(null);
   // Los totales se calculan SOLO a partir de los valores ya calculados en las cuentas
-  const totalAPagar = cuentas && cuentas.length > 0 ? cuentas.reduce((acc, c) => acc + (typeof c.totalAcreditar === 'number' ? Number(c.totalAcreditar) : 0), 0) : 0;
-  const totalDescuento = cuentas && cuentas.length > 0 ? cuentas.reduce((acc, c) => acc + (typeof c.totalDescuentos === 'number' ? Number(c.totalDescuentos) : 0), 0) : 0;
-  const totalRetencion = cuentas && cuentas.length > 0 ? cuentas.reduce((acc, c) => acc + (typeof c.retencion === 'number' ? Number(c.retencion) : 0), 0) : 0;
+  const totalAPagar = cuentasState && cuentasState.length > 0 ? cuentasState.reduce((acc, c) => acc + (typeof c.totalAcreditar === 'number' ? Number(c.totalAcreditar) : 0), 0) : 0;
+  const totalDescuento = cuentasState && cuentasState.length > 0 ? cuentasState.reduce((acc, c) => acc + (typeof c.totalDescuentos === 'number' ? Number(c.totalDescuentos) : 0), 0) : 0;
+  const totalRetencion = cuentasState && cuentasState.length > 0 ? cuentasState.reduce((acc, c) => acc + (typeof c.retencion === 'number' ? Number(c.retencion) : 0), 0) : 0;
 
   // Sincroniza el monto y moneda del form con los totales y moneda global, pero NO la tasa
   useEffect(() => {
@@ -84,9 +86,9 @@ const PagoMasivoModal: React.FC<PagoMasivoModalProps> = ({ open, onClose, cuenta
       const usuarioCorreo = usuarioRaw ? JSON.parse(usuarioRaw).correo : "";
       await onSubmit({ ...form, usuario: usuarioCorreo, imagenPago });
       // Cambiar el estado de cada cuenta a "pagada" tras el submit
-      if (cuentas && cuentas.length > 0) {
+      if (cuentasState && cuentasState.length > 0) {
         await Promise.all(
-          cuentas.map(async (c) => {
+          cuentasState.map(async (c) => {
             if (c._id) {
               await fetch(`/api/cuentas-por-pagar/${c._id}`, {
                 method: 'PATCH',
@@ -103,6 +105,20 @@ const PagoMasivoModal: React.FC<PagoMasivoModalProps> = ({ open, onClose, cuenta
       console.error('Error al registrar pago masivo o actualizar estado:', err);
     }
   };
+
+  // Sincroniza cuentasState con la prop o localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('cuentasParaPagar');
+      if (stored) {
+        setCuentasState(Object.values(JSON.parse(stored)));
+      } else {
+        setCuentasState([]);
+      }
+    } catch {
+      setCuentasState([]);
+    }
+  }, [open]);
 
   if (!open) return null;
 
@@ -177,7 +193,7 @@ const PagoMasivoModal: React.FC<PagoMasivoModalProps> = ({ open, onClose, cuenta
             </div>
           <h3 className="text-sm font-semibold text-slate-700 mb-1 mt-4">Cuentas seleccionadas:</h3>
           <ul className="text-xs text-slate-600 max-h-24 overflow-y-auto list-disc pl-5">
-            {cuentas && cuentas.map(c => {
+            {cuentasState && cuentasState.map(c => {
                 const totalAcreditar = typeof c.totalAcreditar === 'number' ? c.totalAcreditar : 0;
                 const d1 = typeof c.d1 === 'number' ? c.d1 : 0;
                 const d2 = typeof c.d2 === 'number' ? c.d2 : 0;

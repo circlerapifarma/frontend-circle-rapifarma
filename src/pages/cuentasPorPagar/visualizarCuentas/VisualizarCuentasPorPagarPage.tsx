@@ -6,8 +6,7 @@ import FiltrosCuentasPorPagar from "./FiltrosCuentasPorPagar";
 import TablaCuentasPorPagar from "./TablaCuentasPorPagar";
 import { useCuentasPorPagar } from "./useCuentasPorPagar";
 import EdicionCuentaModal from "./EdicionCuentaModal";
-import { calcularMontosCuenta } from "./type";
-import type { EdicionCuenta } from "./type";
+
 // Importa el tipo Pago para tipar correctamente pagosAprobadosPorCuenta
 import type { Pago } from "./FilaCuentaPorPagar";
 
@@ -78,7 +77,22 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
   const [monedaConversion] = useState<'USD' | 'Bs'>('USD');
 
   // Reemplaza selectedCuentas y edicionCuentas por un solo state
-  const [cuentasParaPagar, setCuentasParaPagar] = useState<Record<string, any>>({});
+  const [cuentasParaPagar, setCuentasParaPagar] = useState<Record<string, any>>(() => {
+    // Leer del localStorage al inicializar
+    try {
+      const stored = localStorage.getItem('cuentasParaPagar');
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  // Sincronizar con localStorage cada vez que cambie
+  useEffect(() => {
+    try {
+      localStorage.setItem('cuentasParaPagar', JSON.stringify(cuentasParaPagar));
+    } catch {}
+  }, [cuentasParaPagar]);
 
   // 2. Función para abrir el modal de edición individual
   const [cuentaEditando, setCuentaEditando] = useState<string | null>(null);
@@ -133,59 +147,16 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
         nuevo = { ...prev };
         delete nuevo[id];
       } else {
-        // Seleccionar: agregar con datos originales y editables
+        // Seleccionar: agregar solo los datos originales de la cuenta (sin campos de edición)
         const cuenta = cuentasFiltradas.find(c => c._id === id);
         if (!cuenta) return prev;
-        // Calcula montoOriginal y lo pasa como campo editable
-        const montoOriginal = cuenta.divisa === 'USD' ? cuenta.monto * (cuenta.tasa || 0) : cuenta.monto;
-        const retencion = cuenta.retencion || 0;
-        const montoEditado = montoOriginal - retencion;
-        const edicion: EdicionCuenta = {
-          montoOriginal,
-          montoEditado,
-          descuento1: 0,
-          tipoDescuento1: 'monto',
-          descuento2: 0,
-          tipoDescuento2: 'monto',
-          observacion: '',
-          tasa: cuenta.tasa,
-          tasaPago: cuenta.tasa, // Añadido para cumplir con el tipo EdicionCuenta
-          moneda: 'Bs',
-          abono: 0,
-          retencion: retencion,
-        };
         nuevo = {
           ...prev,
-          [id]: {
-            ...cuenta,
-            // Forzamos el tipo de divisa a 'USD' | 'Bs' para el cálculo
-            divisa: cuenta.divisa === 'USD' ? 'USD' : 'Bs',
-            ...edicion,
-            ...calcularMontosCuenta({
-              ...cuenta,
-              divisa: cuenta.divisa === 'USD' ? 'USD' : 'Bs',
-              ...edicion
-            })
-          }
+          [id]: { ...cuenta }
         };
       }
-      // Sincroniza selectedCuentas con las llaves actuales
       setSelectedCuentas(Object.keys(nuevo));
       return nuevo;
-    });
-  };
-
-  // Al editar una cuenta
-  const handleEdicionCuenta = (id: string, newState: Partial<EdicionCuenta>) => {
-    setCuentasParaPagar(prev => {
-      if (!prev[id]) return prev;
-      const edicion = { ...prev[id], ...newState };
-      // Recalcula los montos
-      const calculos = calcularMontosCuenta(edicion);
-      return {
-        ...prev,
-        [id]: { ...edicion, ...calculos }
-      };
     });
   };
 
@@ -548,7 +519,6 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
         <PagoMasivoModal
           open={pagoMasivoModalOpen}
           onClose={() => setPagoMasivoModalOpen(false)}
-          cuentas={Object.values(cuentasParaPagar)}
           onSubmit={handlePagoMasivo}
           loading={pagoMasivoLoading}
           error={pagoMasivoError}
@@ -583,8 +553,16 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
             isOpen={!!cuentaEditando}
             cuenta={cuentasParaPagar[cuentaEditando]}
             onClose={() => setCuentaEditando(null)}
-            onEdicionStateChange={newState => handleEdicionCuenta(cuentaEditando, newState)}
-            pagosPrevios={pagosAprobadosPorCuenta[cuentaEditando]?.pagos || []}
+            pagosPrevios={
+              (pagosAprobadosPorCuenta[cuentaEditando]?.pagos || []).map((p: any) => ({
+                _id: p._id,
+                monto: p.monto,
+                moneda: p.moneda,
+                tasa: p.tasa,
+                fecha: p.fecha,
+                referencia: p.referencia ?? ""
+              }))
+            }
           />
         )}
       </div>
