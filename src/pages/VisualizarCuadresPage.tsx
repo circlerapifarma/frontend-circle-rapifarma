@@ -671,6 +671,7 @@ const VisualizarCuadresPage: React.FC = () => {
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">Resumen de totales en Bs y USD, discriminados con y sin vales, ajustados y sin ajustar. Incluye el total de caja sistema reportado.</p>
                 </div>
               )}
+              
             </div>
             {confirmDialog.open && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-white bg-opacity-50 backdrop-blur-sm p-4">
