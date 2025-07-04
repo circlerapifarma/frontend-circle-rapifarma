@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 // Permisos y enlaces agrupados para una mejor organización visual
 const allLinks = [
     {
-        category: 'Ventas',
+        category: 'Resumen',
         icon: BarChart,
         items: [
             { to: '/gastoscxc-cuadres', label: 'Gastos, Cuentas y Cuadres', permiso: 'agregar_cuadre' },
