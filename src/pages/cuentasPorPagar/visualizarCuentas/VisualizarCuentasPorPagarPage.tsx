@@ -316,7 +316,7 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
 
           const payload = {
             fecha: form.fecha,
-            moneda: form.moneda,
+            moneda: edicion && edicion.moneda ? edicion.moneda : cuenta.divisa, // Usar la moneda de la cuenta editada
             monto: montoAPagar,
             descuento,
             observacion,
@@ -324,7 +324,7 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
             usuario: usuarioCorreo, // SIEMPRE el usuario logueado
             bancoEmisor: form.bancoEmisor,
             bancoReceptor: form.bancoReceptor,
-            tasa: cuenta.tasa,
+            tasa: edicion && edicion.tasaPago ? edicion.tasaPago : cuenta.tasa, // Usar tasa de pago editada si existe
             imagenPago: form.imagenPago,
             farmaciaId: cuenta.farmacia,
             estado: 'aprobado',
@@ -576,14 +576,17 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
           }
           return null;
         })()}
-        <EdicionCuentaModal
-          isOpen={!!cuentaEditando}
-          onClose={() => setCuentaEditando(null)}
-          cuenta={cuentaEditando ? cuentasParaPagar[cuentaEditando] : undefined}
-          onEdicionStateChange={(newState: Partial<EdicionCuenta>) => {
-            if (cuentaEditando) handleEdicionCuenta(cuentaEditando, newState);
-          }}
-        />
+
+        {/* Render del modal de edición de cuenta */}
+        {cuentaEditando && cuentasParaPagar[cuentaEditando] && (
+          <EdicionCuentaModal
+            isOpen={!!cuentaEditando}
+            cuenta={cuentasParaPagar[cuentaEditando]}
+            onClose={() => setCuentaEditando(null)}
+            onEdicionStateChange={newState => handleEdicionCuenta(cuentaEditando, newState)}
+            pagosPrevios={pagosAprobadosPorCuenta[cuentaEditando]?.pagos || []}
+          />
+        )}
       </div>
     </div>
   );
