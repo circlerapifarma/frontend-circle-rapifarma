@@ -78,6 +78,7 @@ const PagoMasivoModal: React.FC<PagoMasivoModalProps> = ({ open, onClose, onSubm
     setForm(f => ({ ...f, [name]: name === "monto" || name === "tasa" ? Number(value) : value }));
   };
 
+  // En PagoMasivoModal, al registrar el pago masivo, marcar la cuenta como 'abonada' si esAbono está activo, si no 'pagada'
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -85,15 +86,16 @@ const PagoMasivoModal: React.FC<PagoMasivoModalProps> = ({ open, onClose, onSubm
       const usuarioRaw = localStorage.getItem("usuario");
       const usuarioCorreo = usuarioRaw ? JSON.parse(usuarioRaw).correo : "";
       await onSubmit({ ...form, usuario: usuarioCorreo, imagenPago });
-      // Cambiar el estado de cada cuenta a "pagada" tras el submit
+      // Cambiar el estado de cada cuenta a "abonada" si esAbono, si no "pagada"
       if (cuentasState && cuentasState.length > 0) {
         await Promise.all(
           cuentasState.map(async (c) => {
             if (c._id) {
+              const nuevoEstatus = c.esAbono ? 'abonada' : 'pagada';
               await fetch(`/api/cuentas-por-pagar/${c._id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ estatus: 'pagada' })
+                body: JSON.stringify({ estatus: nuevoEstatus })
               });
             }
           })
