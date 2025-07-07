@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { animate, stagger } from 'animejs';
-import PagoMasivoModal from "@/components/PagoMasivoModal";
 import AbonoModal from "@/components/AbonoModal";
 import FiltrosCuentasPorPagar from "./FiltrosCuentasPorPagar";
 import TablaCuentasPorPagar from "./TablaCuentasPorPagar";
@@ -9,6 +8,7 @@ import EdicionCuentaModal from "./EdicionCuentaModal";
 
 // Importa el tipo Pago para tipar correctamente pagosAprobadosPorCuenta
 import type { Pago } from "./FilaCuentaPorPagar";
+import PagoMasivoModal from "./PagoMasivoModal";
 
 // 1. Unifica el tipo CuentaPorPagar para que divisa sea string en todos los archivos
 export interface CuentaPorPagar {
@@ -150,9 +150,59 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
         // Seleccionar: agregar solo los datos originales de la cuenta (sin campos de edición)
         const cuenta = cuentasFiltradas.find(c => c._id === id);
         if (!cuenta) return prev;
+        const {
+          _id,
+          fechaEmision,
+          fechaRecepcion,
+          fechaVencimiento,
+          fechaRegistro,
+          diasCredito,
+          numeroFactura,
+          numeroControl,
+          proveedor,
+          descripcion,
+          monto,
+          retencion,
+          divisa,
+          tasa,
+          estatus,
+          usuarioCorreo,
+          farmacia,
+          imagenesCuentaPorPagar
+        } = cuenta;
+        // Lógica para montoDePago y monedaDePago
+        let montoDePago = 0;
+        let monedaDePago = 'Bs';
+        if (divisa === 'USD') {
+          montoDePago = Number((monto * tasa).toFixed(2));
+        } else {
+          montoDePago = Number(monto);
+        }
         nuevo = {
           ...prev,
-          [id]: { ...cuenta }
+          [id]: {
+            _id,
+            fechaEmision,
+            fechaRecepcion,
+            fechaVencimiento,
+            fechaRegistro,
+            diasCredito,
+            numeroFactura,
+            numeroControl,
+            proveedor,
+            descripcion,
+            montoOriginal: monto,
+            retencion,
+            monedaOriginal: divisa,
+            tasaOriginal: tasa,
+            tasaDePago: tasa, // Inicializar tasaDePago con tasaOriginal
+            estatus,
+            usuarioCorreo,
+            farmacia,
+            imagenesCuentaPorPagar,
+            montoDePago,
+            monedaDePago
+          }
         };
       }
       setSelectedCuentas(Object.keys(nuevo));
@@ -548,10 +598,10 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
         })()}
 
         {/* Render del modal de edición de cuenta */}
-        {cuentaEditando && cuentasParaPagar[cuentaEditando] && (
+        {cuentaEditando && (
           <EdicionCuentaModal
             isOpen={!!cuentaEditando}
-            cuenta={cuentasParaPagar[cuentaEditando]}
+            cuentaId={cuentaEditando}
             onClose={() => setCuentaEditando(null)}
             pagosPrevios={
               (pagosAprobadosPorCuenta[cuentaEditando]?.pagos || []).map((p: any) => ({

@@ -1,9 +1,7 @@
 import React from 'react';
 import { FaTimes } from 'react-icons/fa';
 import { animate, stagger } from 'animejs';
-import type { CuentaCompletaEdicion } from './type';
 
-// Nuevo: tipo para pagos previos
 interface PagoPrevio {
   _id: string;
   monto: number;
@@ -16,79 +14,91 @@ interface PagoPrevio {
 interface EdicionCuentaModalProps {
   isOpen: boolean;
   onClose: () => void;
-  cuenta: CuentaCompletaEdicion | undefined;
-  // Nuevo: pagos previos
+  cuentaId: string | undefined;
   pagosPrevios?: PagoPrevio[];
 }
 
-// Helper para inicializar el monto en la divisa seleccionada
-function getMontoEditadoInicial(cuenta: CuentaCompletaEdicion) {
-  if (!cuenta || !cuenta.montoEditado || !cuenta.moneda || !cuenta.tasaPago) return cuenta.montoEditado;
-  if (cuenta.divisa !== cuenta.moneda) {
-    if (cuenta.moneda === 'USD') {
-      return Number((cuenta.montoEditado / cuenta.tasaPago).toFixed(4));
-    } else if (cuenta.moneda === 'Bs') {
-      return Number((cuenta.montoEditado * cuenta.tasaPago).toFixed(2));
+// Helper para obtener la cuenta editada desde localStorage si existe
+function getCuentaEditadaFromLocalStorageById(cuentaId: string | undefined): any | null {
+  if (!cuentaId) return null;
+  try {
+    const stored = localStorage.getItem('cuentasParaPagar');
+    if (stored) {
+      const cuentas = JSON.parse(stored);
+      const editada = cuentas[cuentaId];
+      if (editada) {
+        // Retornar el objeto tal cual está en localStorage, sin mapear nombres
+        return { ...editada };
+      }
     }
-  }
-  return cuenta.montoEditado;
+  } catch {}
+  return null;
 }
 
-// Helper para inicializar el estado editable desde la cuenta base
-function getInitialCuentaEditada(cuenta: CuentaCompletaEdicion) {
-  // Si ya tiene campos de edición, respétalos
-  if (cuenta.moneda && cuenta.montoEditado !== undefined && cuenta.tasaPago) {
-    return {
-      ...cuenta,
-      montoEditado: getMontoEditadoInicial(cuenta)
-    };
-  }
-  // Si viene solo la cuenta base (sin edición), inicializar campos de edición
-  const moneda = cuenta.divisa === 'USD' ? 'USD' : 'Bs';
-  const tasaPago = cuenta.tasa;
-  let montoEditado = cuenta.monto;
-  if (moneda === 'Bs' && cuenta.divisa === 'USD') {
-    montoEditado = Number((cuenta.monto * tasaPago).toFixed(2));
-  } else if (moneda === 'USD' && cuenta.divisa === 'Bs') {
-    montoEditado = Number((cuenta.monto / tasaPago).toFixed(4));
-  }
-  return {
-    ...cuenta,
-    moneda,
-    tasaPago,
-    montoEditado,
-    descuento1: 0,
-    tipoDescuento1: 'monto',
-    descuento2: 0,
-    tipoDescuento2: 'monto',
-    observacion: '',
-    esAbono: false,
-    retencion: cuenta.retencion || 0,
-  };
+function getInitialCuentaEditadaById(cuentaId: string | undefined): any | null {
+  return getCuentaEditadaFromLocalStorageById(cuentaId);
 }
 
 const EdicionCuentaModal: React.FC<EdicionCuentaModalProps> = ({
   isOpen,
   onClose,
-  cuenta,
-  pagosPrevios = [], // Nuevo: default vacío
+  cuentaId,
+  pagosPrevios: pagosPreviosProp = [],
 }) => {
-  if (!isOpen || !cuenta) return null;
+  const [pagosPrevios, setPagosPrevios] = React.useState<PagoPrevio[]>(pagosPreviosProp);
 
-  // Usar helper robusto para inicializar el estado editable
-  const [cuentaEditada, setCuentaEditada] = React.useState(getInitialCuentaEditada(cuenta));
-
-  // Refrescar estado local si cambia la cuenta base
+  // Consultar pagos previos al abrir el modal usando la misma URL base que PagosDropdown
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
   React.useEffect(() => {
-    setCuentaEditada(getInitialCuentaEditada(cuenta));
-  }, [cuenta]);
+    if (!isOpen || !cuentaId) return;
+    let cancelado = false;
+    async function fetchPagosPrevios() {
+      setPagosPrevios([]); // Limpia antes de cargar
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) throw new Error("No se encontró el token de autenticación");
+        const res = await fetch(`${API_BASE_URL}/pagoscpp?cuentaPorPagarId=${cuentaId}`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error("Error al obtener pagos");
+        const data = await res.json();
+        if (!cancelado) setPagosPrevios(Array.isArray(data) ? data : []);
+      } catch {
+        if (!cancelado) setPagosPrevios([]);
+      }
+    }
+    fetchPagosPrevios();
+    return () => { cancelado = true; };
+  }, [isOpen, cuentaId]);
+
+  if (!isOpen || !cuentaId) return null;
+
+  const cuentaEditadaLocal = getInitialCuentaEditadaById(cuentaId);
+
+  if (!cuentaEditadaLocal) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-50" onClick={onClose}>
+        <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Error</h2>
+          <p className="text-lg text-slate-700 mb-6">No se encontró la información de la cuenta seleccionada.<br/>Por favor, llame a soporte técnico.</p>
+          <button onClick={onClose} className="px-6 py-2 rounded bg-slate-600 text-white font-bold hover:bg-slate-700 transition-all">Cerrar</button>
+        </div>
+      </div>
+    );
+  }
+
+  const [cuentaEditada, setCuentaEditada] = React.useState<any | null>(cuentaEditadaLocal);
+
+  React.useEffect(() => {
+    setCuentaEditada(getInitialCuentaEditadaById(cuentaId));
+  }, [cuentaId]);
 
   // Ref: para forzar focus tras cambio de moneda
   const montoInputRef = React.useRef<HTMLInputElement>(null);
-  const monedaAnterior = React.useRef<string>(cuentaEditada.moneda);
+  const monedaAnterior = React.useRef<string>(cuentaEditada?.monedaDePago ?? '');
 
-  // Función para convertir montoEditado según moneda
-  function convertirMontoEditado(monto: number, monedaOrigen: string, monedaDestino: string, tasa: number) {
+  // Función para convertir montoDePago según moneda
+  function convertirMontoDePago(monto: number, monedaOrigen: string, monedaDestino: string, tasa: number) {
     if (!monto || !tasa || tasa <= 0) return monto;
     if (monedaOrigen === monedaDestino) return monto;
     if (monedaDestino === 'USD') {
@@ -101,59 +111,55 @@ const EdicionCuentaModal: React.FC<EdicionCuentaModalProps> = ({
 
   // Efecto: enfocar input de monto cuando cambia la moneda
   React.useEffect(() => {
-    if (monedaAnterior.current !== cuentaEditada.moneda) {
+    if (!cuentaEditada) return;
+    if (monedaAnterior.current !== cuentaEditada.monedaDePago) {
       setTimeout(() => {
         if (montoInputRef.current) montoInputRef.current.focus();
       }, 0);
-      monedaAnterior.current = cuentaEditada.moneda;
+      monedaAnterior.current = cuentaEditada.monedaDePago;
     }
-  }, [cuentaEditada.moneda]);
+  }, [cuentaEditada?.monedaDePago]);
 
   // Calcular total pagado previo en la moneda seleccionada
-  const totalPagadoPrevioEnMoneda = pagosPrevios.reduce((acc, pago) => {
-    if (cuentaEditada.moneda === 'USD') {
-      // Convertir todos los pagos a USD
-      if (pago.moneda === 'USD') {
-        return acc + pago.monto;
-      } else if (pago.moneda === 'Bs' && pago.tasa && pago.tasa > 0) {
-        // Si el pago fue en Bs, convertir a USD usando la tasa del pago
-        return acc + pago.monto / pago.tasa;
-      } else if (pago.moneda === 'Bs' && cuentaEditada.tasaPago && cuentaEditada.tasaPago > 0) {
-        // Si no hay tasa en el pago, usar la tasa actual
-        return acc + pago.monto / cuentaEditada.tasaPago;
+  const totalPagadoPrevioEnMoneda = React.useMemo(() => {
+    if (!cuentaEditada) return 0;
+    return pagosPrevios.reduce((acc, pago) => {
+      if (cuentaEditada.monedaDePago === 'USD') {
+        if (pago.moneda === 'USD') {
+          return acc + pago.monto;
+        } else if (pago.moneda === 'Bs' && pago.tasa && pago.tasa > 0) {
+          // Siempre usar la tasa del pago para convertir a USD
+          return acc + pago.monto / pago.tasa;
+        } else {
+          return acc;
+        }
       } else {
-        return acc;
+        if (pago.moneda === 'Bs') {
+          return acc + pago.monto;
+        } else if (pago.moneda === 'USD' && pago.tasa && pago.tasa > 0) {
+          // Siempre usar la tasa del pago para convertir a Bs
+          return acc + pago.monto * pago.tasa;
+        } else {
+          return acc;
+        }
       }
-    } else {
-      // Convertir todos los pagos a Bs
-      if (pago.moneda === 'Bs') {
-        return acc + pago.monto;
-      } else if (pago.moneda === 'USD' && pago.tasa && pago.tasa > 0) {
-        // Si el pago fue en USD, convertir a Bs usando la tasa del pago
-        return acc + pago.monto * pago.tasa;
-      } else if (pago.moneda === 'USD' && cuentaEditada.tasaPago && cuentaEditada.tasaPago > 0) {
-        // Si no hay tasa en el pago, usar la tasa actual
-        return acc + pago.monto * cuentaEditada.tasaPago;
-      } else {
-        return acc;
-      }
-    }
-  }, 0);
+    }, 0);
+  }, [pagosPrevios, cuentaEditada]);
 
   // Manejar cambios de input
-  const handleChange = (field: keyof typeof cuentaEditada) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    if (!cuentaEditada) return;
     let value: any = e.target.value;
     if (e.target.type === 'number') value = e.target.value === '' ? undefined : Number(value);
     if (e.target.type === 'checkbox') value = (e.target as HTMLInputElement).checked;
     let next = { ...cuentaEditada, [field]: value };
 
-    // Si cambia la moneda, recalcular montoEditado usando la función aparte
-    if (field === 'moneda') {
-      if (cuentaEditada.montoEditado && cuentaEditada.tasaPago && cuentaEditada.tasaPago > 0) {
-        next.montoEditado = convertirMontoEditado(cuentaEditada.montoEditado, cuentaEditada.moneda, value, cuentaEditada.tasaPago);
-      } else if (cuentaEditada.monto && cuentaEditada.tasaPago && cuentaEditada.tasaPago > 0) {
-        // Si no hay montoEditado, usar el monto original
-        next.montoEditado = convertirMontoEditado(cuentaEditada.monto, cuentaEditada.divisa, value, cuentaEditada.tasaPago);
+    // Si cambia la moneda, recalcular montoDePago usando la función aparte
+    if (field === 'monedaDePago') {
+      if (cuentaEditada.montoDePago && cuentaEditada.tasaDePago && cuentaEditada.tasaDePago > 0) {
+        next.montoDePago = convertirMontoDePago(cuentaEditada.montoDePago, cuentaEditada.monedaDePago, value, cuentaEditada.tasaDePago);
+      } else if (cuentaEditada.montoOriginal && cuentaEditada.tasaDePago && cuentaEditada.tasaDePago > 0) {
+        next.montoDePago = convertirMontoDePago(cuentaEditada.montoOriginal, cuentaEditada.monedaOriginal, value, cuentaEditada.tasaDePago);
       }
     }
     setCuentaEditada(next);
@@ -161,6 +167,7 @@ const EdicionCuentaModal: React.FC<EdicionCuentaModalProps> = ({
 
   // Guardar cambios en localStorage
   const handleGuardar = () => {
+    if (!cuentaEditada) return;
     try {
       const stored = localStorage.getItem('cuentasParaPagar');
       const cuentas = stored ? JSON.parse(stored) : {};
@@ -168,6 +175,16 @@ const EdicionCuentaModal: React.FC<EdicionCuentaModalProps> = ({
       localStorage.setItem('cuentasParaPagar', JSON.stringify(cuentas));
     } catch {}
     onClose();
+  };
+
+  // Botón para actualizar el monto a pagar con los pagos previos
+  const handleActualizarMontoConPagosPrevios = () => {
+    if (!cuentaEditada) return;
+    // El monto a pagar sugerido es el saldo restante (nuevoSaldo - totalPagadoPrevioEnMoneda)
+    setCuentaEditada({
+      ...cuentaEditada,
+      montoDePago: Math.max(nuevoSaldo - totalPagadoPrevioEnMoneda, 0)
+    });
   };
 
   // Animación de fade-in para la lista de pagos previos
@@ -183,15 +200,59 @@ const EdicionCuentaModal: React.FC<EdicionCuentaModalProps> = ({
     }
   }, [isOpen, pagosPrevios.length]);
 
+  if (!cuentaEditada) return null;
+
+  // Cálculos para el resumen
+  const montoOriginal = Number(cuentaEditada.montoOriginal) || 0;
+  const descuento1 = Number(cuentaEditada.descuento1) || 0;
+  const descuento2 = Number(cuentaEditada.descuento2) || 0;
+  const tipoDescuento1 = cuentaEditada.tipoDescuento1 || 'monto';
+  const tipoDescuento2 = cuentaEditada.tipoDescuento2 || 'monto';
+  const retencion = Number(cuentaEditada.retencion) || 0;
+  const montoDePago = Number(cuentaEditada.montoDePago) || 0;
+  const moneda = cuentaEditada.monedaDePago;
+
+  // Conversiones de montoOriginal a la moneda de pago
+  let montoOriginalEnMonedaPago = montoOriginal;
+  if (cuentaEditada.monedaOriginal !== cuentaEditada.monedaDePago) {
+    const tasa = Number(cuentaEditada.tasaDePago) || 0;
+    if (cuentaEditada.monedaOriginal === 'USD' && cuentaEditada.monedaDePago === 'Bs' && tasa > 0) {
+      montoOriginalEnMonedaPago = montoOriginal * tasa;
+    } else if (cuentaEditada.monedaOriginal === 'Bs' && cuentaEditada.monedaDePago === 'USD' && tasa > 0) {
+      montoOriginalEnMonedaPago = montoOriginal / tasa;
+    }
+  }
+
+  // Calcular descuentos
+  let desc1 = 0;
+  let desc2 = 0;
+  if (tipoDescuento1 === 'porcentaje') {
+    desc1 = montoDePago * (descuento1 / 100);
+  } else {
+    desc1 = descuento1;
+  }
+  if (tipoDescuento2 === 'porcentaje') {
+    desc2 = (montoDePago - desc1) * (descuento2 / 100);
+  } else {
+    desc2 = descuento2;
+  }
+  const totalDescuentos = desc1 + desc2;
+  const totalAcreditar = Math.max(montoDePago - totalDescuentos - retencion, 0);
+  // El nuevo saldo debe estar en la moneda de pago
+  const nuevoSaldo = Math.max(montoOriginalEnMonedaPago - (montoDePago - retencion), 0);
+
+  // Calcular saldo restante en la moneda de pago
+  // (El valor ya se usa directamente en el render, no es necesario declarar la variable)
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-50" onClick={onClose}>
-      <div className="bg-slate-50 rounded-lg shadow-xl p-6 w-full max-w-3xl relative" onClick={e => e.stopPropagation()} style={{ maxHeight: '90vh', overflowY: 'auto' }}>
+      <div className="bg-slate-50 rounded-lg shadow-xl p-8 w-full max-w-5xl relative" onClick={e => e.stopPropagation()} style={{ maxHeight: '90vh', overflowY: 'auto' }}>
         <button onClick={onClose} className="absolute top-4 right-4 text-slate-500 hover:text-slate-800">
           <FaTimes size={20} />
         </button>
         <div className="mb-4">
           <h2 className="text-2xl font-bold text-slate-800">Pagos o Abonos</h2>
-          <p className="text-sm text-slate-600">Proveedor: <span className="font-semibold">{cuenta.proveedor}</span></p>
+          <p className="text-sm text-slate-600">Proveedor: <span className="font-semibold">{cuentaEditada.proveedor}</span></p>
         </div>
         {/* Pagos previos en la parte superior */}
         {pagosPrevios.length > 0 && (
@@ -199,7 +260,7 @@ const EdicionCuentaModal: React.FC<EdicionCuentaModalProps> = ({
             <h4 className="font-bold text-slate-700 mb-2 text-sm">Pagos realizados anteriormente</h4>
             <div className="text-xs text-slate-600 mb-1">
               Total pagado previo: <span className="font-semibold">
-                {cuenta.moneda === 'USD'
+                {cuentaEditada.monedaDePago === 'USD'
                   ? totalPagadoPrevioEnMoneda.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }) + ' USD'
                   : totalPagadoPrevioEnMoneda.toLocaleString('es-VE', { style: 'currency', currency: 'VES', minimumFractionDigits: 2 }) + ' Bs'}
               </span>
@@ -214,72 +275,72 @@ const EdicionCuentaModal: React.FC<EdicionCuentaModalProps> = ({
             </ul>
           </div>
         )}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Columna de Inputs */}
-          <div className="bg-white p-4 rounded-lg border border-slate-200">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-8">
+          {/* Columna de Inputs: Detalles del Pago a la izquierda */}
+          <div className="bg-white p-4 rounded-lg border border-slate-200 w-full">
             <h3 className="font-bold text-lg mb-4 text-slate-700">Detalles del Pago</h3>
-            <div className="space-y-4">
-              <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="col-span-1">
                 <label className="block text-sm font-medium text-slate-700 mb-1">Monto Original</label>
-                <input type="number" className="w-full border rounded px-3 py-2 bg-slate-100" value={cuenta.monto} disabled />
+                <input type="number" className="w-full border rounded px-3 py-2 bg-slate-100" value={cuentaEditada.montoOriginal} disabled />
                 <div className="text-xs text-slate-500 mt-1">
-                  {/* Mostrar monto original en ambas monedas */}
-                  {cuenta.divisa === 'USD'
-                    ? `USD ${cuenta.monto.toFixed(4)} | Bs ${(cuenta.tasa ? (cuenta.monto * cuenta.tasa).toFixed(2) : '0.00')}`
-                    : `Bs ${cuenta.monto.toFixed(2)} | USD ${(cuenta.tasa ? (cuenta.monto / cuenta.tasa).toFixed(4) : '0.0000')}`}
+                  {cuentaEditada.monedaOriginal === 'USD'
+                    ? `USD ${cuentaEditada.montoOriginal ? (typeof cuentaEditada.montoOriginal === 'string' ? parseFloat(cuentaEditada.montoOriginal).toFixed(4) : cuentaEditada.montoOriginal.toFixed(4)) : '0.0000'} | Bs ${cuentaEditada.tasaOriginal && cuentaEditada.montoOriginal ? (typeof cuentaEditada.montoOriginal === 'string' ? (parseFloat(cuentaEditada.montoOriginal) * (typeof cuentaEditada.tasaOriginal === 'string' ? parseFloat(cuentaEditada.tasaOriginal) : cuentaEditada.tasaOriginal)).toFixed(2) : (cuentaEditada.montoOriginal * (typeof cuentaEditada.tasaOriginal === 'string' ? parseFloat(cuentaEditada.tasaOriginal) : cuentaEditada.tasaOriginal)).toFixed(2)) : '0.00'}`
+                    : `Bs ${cuentaEditada.montoOriginal ? (typeof cuentaEditada.montoOriginal === 'string' ? parseFloat(cuentaEditada.montoOriginal).toFixed(2) : cuentaEditada.montoOriginal.toFixed(2)) : '0.00'} | USD ${cuentaEditada.tasaOriginal && cuentaEditada.montoOriginal ? (typeof cuentaEditada.montoOriginal === 'string' ? (parseFloat(cuentaEditada.montoOriginal) / (typeof cuentaEditada.tasaOriginal === 'string' ? parseFloat(cuentaEditada.tasaOriginal) : cuentaEditada.tasaOriginal)).toFixed(4) : (cuentaEditada.montoOriginal / (typeof cuentaEditada.tasaOriginal === 'string' ? parseFloat(cuentaEditada.tasaOriginal) : cuentaEditada.tasaOriginal)).toFixed(4)) : '0.0000'}`
+                  }
                 </div>
               </div>
-              <div>
+              <div className="col-span-1">
                 <label className="block text-sm font-medium text-slate-700 mb-1">Divisa Original</label>
-                <input type="text" className="w-full border rounded px-3 py-2 bg-slate-100" value={cuenta.divisa} disabled />
+                <input type="text" className="w-full border rounded px-3 py-2 bg-slate-100" value={cuentaEditada.monedaOriginal} disabled />
               </div>
-              <div>
+              <div className="col-span-1">
                 <label className="block text-sm font-medium text-slate-700 mb-1">Tasa Original</label>
-                <input type="number" className="w-full border rounded px-3 py-2 bg-slate-100" value={cuenta.tasa} disabled />
+                <input type="number" className="w-full border rounded px-3 py-2 bg-slate-100" value={cuentaEditada.tasaOriginal} disabled />
               </div>
-              <div>
+              <div className="col-span-1">
                 <label className="block text-sm font-medium text-slate-700 mb-1">Tasa del Pago</label>
-                <input type="number" className="w-full border rounded px-3 py-2" min={0} step="0.0001" value={cuentaEditada.tasaPago} onChange={handleChange('tasaPago')} />
+                <input type="number" className="w-full border rounded px-3 py-2" min={0} step="0.0001" value={cuentaEditada.tasaDePago} onChange={handleChange('tasaDePago')} />
               </div>
-              <div>
+              <div className="col-span-1">
                 <label className="block text-sm font-medium text-slate-700 mb-1">Moneda del Pago</label>
-                <select className="w-full border rounded px-3 py-2" value={cuentaEditada.moneda} onChange={handleChange('moneda')}>
+                <select className="w-full border rounded px-3 py-2" value={cuentaEditada.monedaDePago} onChange={handleChange('monedaDePago')}>
                   <option value="Bs">Bs</option>
                   <option value="USD">USD</option>
                 </select>
               </div>
-              <div>
+              <div className="col-span-1">
                 <label className="block text-sm font-medium text-slate-700 mb-1">Descuento 1</label>
                 <div className="flex gap-2 items-center">
-                  <input type="number" className="w-full border rounded px-3 py-2" min={0} value={cuentaEditada.descuento1} onChange={handleChange('descuento1')} />
-                  <select className="border rounded px-2 py-1 text-sm" value={cuentaEditada.tipoDescuento1} onChange={handleChange('tipoDescuento1')}>
+                  <input type="number" className="w-full border rounded px-3 py-2" min={0} value={cuentaEditada.descuento1 ?? 0} onChange={handleChange('descuento1')} />
+                  <select className="border rounded px-2 py-1 text-sm" value={cuentaEditada.tipoDescuento1 ?? 'monto'} onChange={handleChange('tipoDescuento1')}>
                     <option value="porcentaje">%</option>
-                    <option value="monto">{cuentaEditada.moneda}</option>
+                    <option value="monto">{cuentaEditada.monedaDePago}</option>
                   </select>
                 </div>
               </div>
-              <div>
+              <div className="col-span-1">
                 <label className="block text-sm font-medium text-slate-700 mb-1">Descuento 2</label>
                 <div className="flex gap-2 items-center">
-                  <input type="number" className="w-full border rounded px-3 py-2" min={0} value={cuentaEditada.descuento2} onChange={handleChange('descuento2')} />
-                  <select className="border rounded px-2 py-1 text-sm" value={cuentaEditada.tipoDescuento2} onChange={handleChange('tipoDescuento2')}>
+                  <input type="number" className="w-full border rounded px-3 py-2" min={0} value={cuentaEditada.descuento2 ?? 0} onChange={handleChange('descuento2')} />
+                  <select className="border rounded px-2 py-1 text-sm" value={cuentaEditada.tipoDescuento2 ?? 'monto'} onChange={handleChange('tipoDescuento2')}>
                     <option value="porcentaje">%</option>
-                    <option value="monto">{cuentaEditada.moneda}</option>
+                    <option value="monto">{cuentaEditada.monedaDePago}</option>
                   </select>
                 </div>
               </div>
-              <div>
+              <div className="col-span-1">
                 <label className="block text-sm font-medium text-slate-700 mb-1">Retención</label>
                 <input type="number" className="w-full border rounded px-3 py-2" min={0} step="0.01" value={cuentaEditada.retencion ?? 0} onChange={handleChange('retencion')} />
               </div>
-              <div className="flex items-center gap-2">
+              <div className="col-span-2 flex items-center gap-2">
                 <input type="checkbox" id="esAbono" checked={!!cuentaEditada.esAbono} onChange={e => handleChange('esAbono')({
                   target: { type: 'checkbox', checked: e.target.checked, value: e.target.checked }
                 } as any)} />
                 <label htmlFor="esAbono" className="text-sm font-medium text-slate-700 mb-1">¿Monto a abonar?</label>
               </div>
               {cuentaEditada.esAbono && (
-                <div>
+                <div className="col-span-2">
                   <label className="block text-sm font-medium text-slate-700 mb-1">Monto a Abonar</label>
                   <input
                     ref={montoInputRef}
@@ -287,14 +348,14 @@ const EdicionCuentaModal: React.FC<EdicionCuentaModalProps> = ({
                     className="w-full border rounded px-3 py-2"
                     min={0}
                     step="0.0001"
-                    value={cuentaEditada.montoEditado === undefined || cuentaEditada.montoEditado === null ? '' : cuentaEditada.montoEditado}
-                    onChange={handleChange('montoEditado')}
+                    value={cuentaEditada.montoDePago === undefined || cuentaEditada.montoDePago === null ? '' : cuentaEditada.montoDePago}
+                    onChange={handleChange('montoDePago')}
                   />
                   <div className="text-xs text-slate-500 mt-1">El abono no liquida la cuenta, solo descuenta del saldo.</div>
                 </div>
               )}
               {!cuentaEditada.esAbono && (
-                <div>
+                <div className="col-span-2">
                   <label className="block text-sm font-medium text-slate-700 mb-1">Monto a Pagar</label>
                   <input
                     ref={montoInputRef}
@@ -302,45 +363,61 @@ const EdicionCuentaModal: React.FC<EdicionCuentaModalProps> = ({
                     className="w-full border rounded px-3 py-2"
                     min={0}
                     step="0.0001"
-                    value={cuentaEditada.montoEditado === undefined || cuentaEditada.montoEditado === null ? '' : cuentaEditada.montoEditado}
-                    onChange={handleChange('montoEditado')}
+                    value={cuentaEditada.montoDePago === undefined || cuentaEditada.montoDePago === null ? '' : cuentaEditada.montoDePago}
+                    onChange={handleChange('montoDePago')}
                   />
                   <div className="text-xs text-slate-500 mt-1">Este monto ya descuenta la retención.</div>
                 </div>
               )}
-              <div>
+              <div className="col-span-2">
                 <label className="block text-sm font-medium text-slate-700 mb-1">Observación</label>
-                <textarea className="w-full border rounded px-3 py-2" rows={3} value={cuentaEditada.observacion} onChange={handleChange('observacion')} />
+                <textarea className="w-full border rounded px-3 py-2" rows={3} value={cuentaEditada.observacion ?? ''} onChange={handleChange('observacion')} />
               </div>
             </div>
           </div>
-          {/* Columna de Resumen */}
+          {/* Columna de Resumen: a la derecha */}
           <div className="bg-white p-4 rounded-lg border border-slate-200">
             <h3 className="font-bold text-lg mb-4 text-slate-700">Resumen de Cuenta</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between"><span className="text-slate-600">No. Factura:</span> <span className="font-mono">{cuenta.numeroFactura}</span></div>
-              <div className="flex justify-between"><span className="text-slate-600">Proveedor:</span> <span className="font-mono">{cuenta.proveedor}</span></div>
-              <div className="flex justify-between"><span className="text-slate-600">Divisa Original:</span> <span className="font-mono">{cuenta.divisa}</span></div>
-              <div className="flex justify-between"><span className="text-slate-600">Monto Original:</span> <span className="font-mono">{(cuenta.montoOriginal ?? 0).toLocaleString(cuenta.divisa === 'USD' ? 'en-US' : 'es-VE', { style: 'currency', currency: cuenta.divisa === 'USD' ? 'USD' : 'VES', minimumFractionDigits: 2 })}</span></div>
-              <div className="flex justify-between"><span className="text-slate-600">Tasa Original:</span> <span className="font-mono">{(cuenta.tasa ?? 0).toLocaleString('es-VE', { minimumFractionDigits: 4 })}</span></div>
-              <div className="flex justify-between"><span className="text-slate-600">Moneda de Pago:</span> <span className="font-mono">{cuenta.moneda}</span></div>
-              <div className="flex justify-between"><span className="text-slate-600">Tasa del Pago:</span> <span className="font-mono">{(cuenta.tasaPago ?? 0).toLocaleString('es-VE', { minimumFractionDigits: 4 })}</span></div>
-              <div className="flex justify-between"><span className="text-slate-600">Descuento 1:</span> <span className="font-mono">{(cuenta.descuento1 ?? 0)} {cuenta.tipoDescuento1 === 'porcentaje' ? '%' : cuenta.moneda}</span></div>
-              <div className="flex justify-between"><span className="text-slate-600">Descuento 2:</span> <span className="font-mono">{(cuenta.descuento2 ?? 0)} {cuenta.tipoDescuento2 === 'porcentaje' ? '%' : cuenta.moneda}</span></div>
-              <div className="flex justify-between"><span className="text-slate-600">Total Descuentos:</span> <span className="font-mono">{(cuenta.totalDescuentos ?? 0).toLocaleString(cuenta.moneda === 'USD' ? 'en-US' : 'es-VE', { style: 'currency', currency: cuenta.moneda === 'USD' ? 'USD' : 'VES', minimumFractionDigits: 2 })}</span></div>
-              <div className="flex justify-between"><span className="text-slate-600">Retención:</span> <span className="font-mono">{(cuenta.retencion ?? 0).toLocaleString(cuenta.moneda === 'USD' ? 'en-US' : 'es-VE', { style: 'currency', currency: cuenta.moneda === 'USD' ? 'USD' : 'VES', minimumFractionDigits: 2 })}</span></div>
-              <div className="flex justify-between"><span className="text-slate-600">Total a Acreditar:</span> <span className="font-mono">{(cuenta.totalAcreditar ?? 0).toLocaleString(cuenta.moneda === 'USD' ? 'en-US' : 'es-VE', { style: 'currency', currency: cuenta.moneda === 'USD' ? 'USD' : 'VES', minimumFractionDigits: 2 })}</span></div>
-              <div className="flex justify-between"><span className="text-slate-600">Nuevo Saldo:</span> <span className="font-mono">{(cuenta.nuevoSaldo ?? 0).toLocaleString(cuenta.moneda === 'USD' ? 'en-US' : 'es-VE', { style: 'currency', currency: cuenta.moneda === 'USD' ? 'USD' : 'VES', minimumFractionDigits: 2 })}</span></div>
-              <div className="flex justify-between"><span className="text-slate-600">Total Pagado Previo:</span> <span className="font-mono">{cuenta.moneda === 'USD' ? totalPagadoPrevioEnMoneda.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }) : totalPagadoPrevioEnMoneda.toLocaleString('es-VE', { style: 'currency', currency: 'VES', minimumFractionDigits: 2 })}</span></div>
-              <div className="flex justify-between"><span className="text-slate-600">Saldo Restante:</span> <span className="font-mono">{
-                cuenta.moneda === 'USD'
-                  ? (cuenta.nuevoSaldo - totalPagadoPrevioEnMoneda).toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 })
-                  : (cuenta.nuevoSaldo - totalPagadoPrevioEnMoneda).toLocaleString('es-VE', { style: 'currency', currency: 'VES', minimumFractionDigits: 2 })
-              }</span></div>
+            <div className="space-y-4 text-sm">
+              {/* Grupo 1 */}
+              <div className="border border-black rounded-md p-3 mb-2">
+                <div className="flex justify-between mb-1"><span className="text-slate-600">No. Factura:</span> <span className="font-mono">{cuentaEditada.numeroFactura}</span></div>
+                <div className="flex justify-between mb-1"><span className="text-slate-600">Proveedor:</span> <span className="font-mono">{cuentaEditada.proveedor}</span></div>
+                <div className="flex justify-between mb-1"><span className="text-slate-600">Moneda Original:</span> <span className="font-mono">{cuentaEditada.monedaOriginal}</span></div>
+                <div className="flex justify-between mb-1"><span className="text-slate-600">Monto Original:</span> <span className="font-mono">{montoOriginal.toLocaleString(cuentaEditada.monedaOriginal === 'USD' ? 'en-US' : 'es-VE', { style: 'currency', currency: cuentaEditada.monedaOriginal === 'USD' ? 'USD' : 'VES', minimumFractionDigits: 2 })}</span></div>
+                <div className="flex justify-between"><span className="text-slate-600">Tasa Original:</span> <span className="font-mono">{(cuentaEditada.tasaOriginal ?? 0).toLocaleString('es-VE', { minimumFractionDigits: 4 })}</span></div>
+              </div>
+              {/* Grupo 2 */}
+              <div className="border border-black rounded-md p-3 mb-2">
+                <div className="flex justify-between mb-1"><span className="text-slate-600">Moneda de Pago:</span> <span className="font-mono">{cuentaEditada.monedaDePago}</span></div>
+                <div className="flex justify-between mb-1"><span className="text-slate-600">Tasa del Pago:</span> <span className="font-mono">{(cuentaEditada.tasaDePago ?? 0).toLocaleString('es-VE', { minimumFractionDigits: 4 })}</span></div>
+                <div className="flex justify-between mb-1"><span className="text-slate-600">Descuento 1:</span> <span className="font-mono">{descuento1} {tipoDescuento1 === 'porcentaje' ? '%' : moneda}</span></div>
+                <div className="flex justify-between mb-1"><span className="text-slate-600">Descuento 2:</span> <span className="font-mono">{descuento2} {tipoDescuento2 === 'porcentaje' ? '%' : moneda}</span></div>
+                <div className="flex justify-between mb-1"><span className="text-slate-600">Total Descuentos:</span> <span className="font-mono">{totalDescuentos.toLocaleString(moneda === 'USD' ? 'en-US' : 'es-VE', { style: 'currency', currency: moneda === 'USD' ? 'USD' : 'VES', minimumFractionDigits: 2 })}</span></div>
+                <div className="flex justify-between"><span className="text-slate-600">Retención:</span> <span className="font-mono">{retencion.toLocaleString(moneda === 'USD' ? 'en-US' : 'es-VE', { style: 'currency', currency: moneda === 'USD' ? 'USD' : 'VES', minimumFractionDigits: 2 })}</span></div>
+              </div>
+              {/* Grupo 3 */}
+              <div className="border border-black rounded-md p-3">
+                <div className="flex justify-between mb-1"><span className="text-slate-600">Total a Acreditar:</span> <span className="font-mono">{totalAcreditar.toLocaleString(moneda === 'USD' ? 'en-US' : 'es-VE', { style: 'currency', currency: moneda === 'USD' ? 'USD' : 'VES', minimumFractionDigits: 2 })}</span></div>
+                <div className="flex justify-between mb-1"><span className="text-slate-600">Saldo Final:</span> <span className="font-mono">{nuevoSaldo.toLocaleString(moneda === 'USD' ? 'en-US' : 'es-VE', { style: 'currency', currency: moneda === 'USD' ? 'USD' : 'VES', minimumFractionDigits: 2 })}</span></div>
+                <div className="flex justify-between mb-1"><span className="text-slate-600">Total Pagado Previo:</span> <span className="font-mono">{moneda === 'USD' ? totalPagadoPrevioEnMoneda.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }) : totalPagadoPrevioEnMoneda.toLocaleString('es-VE', { style: 'currency', currency: 'VES', minimumFractionDigits: 2 })}</span></div>
+                <div className="flex justify-between"><span className="text-slate-600">Saldo Restante:</span> <span className="font-mono">{
+                  moneda === 'USD'
+                    ? Math.max(nuevoSaldo - totalPagadoPrevioEnMoneda, 0).toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 })
+                    : Math.max(nuevoSaldo - totalPagadoPrevioEnMoneda, 0).toLocaleString('es-VE', { style: 'currency', currency: 'VES', minimumFractionDigits: 2 })
+                }</span></div>
+              </div>
             </div>
           </div>
         </div>
-        <div className="flex justify-end mt-6">
+        <div className="flex justify-end mt-6 gap-4">
+          <button
+            type="button"
+            onClick={handleActualizarMontoConPagosPrevios}
+            className="px-6 py-2 rounded bg-blue-600 text-white font-bold hover:bg-blue-700 transition-all"
+          >
+            Actualizar monto a pagar con pagos previos
+          </button>
           <button onClick={handleGuardar} className="px-6 py-2 rounded bg-green-600 text-white font-bold hover:bg-green-700 transition-all">Guardar</button>
         </div>
       </div>

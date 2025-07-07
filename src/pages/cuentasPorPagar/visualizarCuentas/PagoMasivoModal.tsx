@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import { FaMoneyCheckAlt, FaTimes } from "react-icons/fa";
 import { animate } from "animejs";
-import UpFile from "./upfile/UpFilePagosCPP";
+import UpFile from "@/components/upfile/UpFile";
 
 // Los tipos y props ahora igual que AbonoModal
 export interface PagoMasivoFormData {
@@ -49,7 +49,7 @@ const PagoMasivoModal: React.FC<PagoMasivoModalProps> = ({ open, onClose, onSubm
   const [imagenPago, setImagenPago] = useState<string>("");
   const modalRef = useRef<HTMLDivElement>(null);
   // Los totales se calculan SOLO a partir de los valores ya calculados en las cuentas
-  const totalAPagar = cuentasState && cuentasState.length > 0 ? cuentasState.reduce((acc, c) => acc + (typeof c.totalAcreditar === 'number' ? Number(c.totalAcreditar) : 0), 0) : 0;
+  const totalAPagar = cuentasState && cuentasState.length > 0 ? cuentasState.reduce((acc, c) => acc + (typeof c.montoDePago === 'number' ? Number(c.montoDePago) : 0), 0) : 0;
   const totalDescuento = cuentasState && cuentasState.length > 0 ? cuentasState.reduce((acc, c) => acc + (typeof c.totalDescuentos === 'number' ? Number(c.totalDescuentos) : 0), 0) : 0;
   const totalRetencion = cuentasState && cuentasState.length > 0 ? cuentasState.reduce((acc, c) => acc + (typeof c.retencion === 'number' ? Number(c.retencion) : 0), 0) : 0;
 
