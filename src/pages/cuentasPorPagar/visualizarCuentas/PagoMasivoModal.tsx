@@ -92,7 +92,7 @@ const PagoMasivoModal: React.FC<PagoMasivoModalProps> = ({ open, onClose, onSubm
           cuentasState.map(async (c) => {
             if (c._id) {
               const nuevoEstatus = c.esAbono ? 'abonada' : 'pagada';
-              await fetch(`/api/cuentas-por-pagar/${c._id}`, {
+              await fetch(`/cuentas-por-pagar/${c._id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ estatus: nuevoEstatus })
