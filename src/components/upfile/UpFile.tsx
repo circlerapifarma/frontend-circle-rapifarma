@@ -221,6 +221,7 @@ const UpFile: React.FC<UpFileProps> = ({
 
       {/* Botón personalizado para seleccionar archivo */}
       <button
+        type="button"
         onClick={openFileSelector}
         disabled={uploading}
         className="px-4 py-2 bg-gray-100 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-150 ease-in-out flex items-center justify-center gap-2"

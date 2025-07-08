@@ -22,13 +22,12 @@ export interface PagoMasivoFormData {
 interface PagoMasivoModalProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (data: PagoMasivoFormData) => void;
   loading: boolean;
   error: string | null;
   monedaConversion: 'USD' | 'Bs';
 }
 
-const PagoMasivoModal: React.FC<PagoMasivoModalProps> = ({ open, onClose, onSubmit, loading, error, monedaConversion }) => {
+const PagoMasivoModal: React.FC<PagoMasivoModalProps> = ({ open, onClose, loading, error, monedaConversion }) => {
   // Estado local para cuentas, sincronizado con localStorage
   const [cuentasState, setCuentasState] = useState<any[]>([]);
 
@@ -81,30 +80,62 @@ const PagoMasivoModal: React.FC<PagoMasivoModalProps> = ({ open, onClose, onSubm
   // En PagoMasivoModal, al registrar el pago masivo, marcar la cuenta como 'abonada' si esAbono está activo, si no 'pagada'
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Mostrar alerta de confirmación antes de guardar
+    const confirm = window.confirm("¿Está seguro de registrar el pago masivo para las cuentas seleccionadas? Esta acción no se puede deshacer.");
+    if (!confirm) return;
     try {
       // Obtener correo del usuario autenticado
       const usuarioRaw = localStorage.getItem("usuario");
       const usuarioCorreo = usuarioRaw ? JSON.parse(usuarioRaw).correo : "";
-      await onSubmit({ ...form, usuario: usuarioCorreo, imagenPago });
-      // Cambiar el estado de cada cuenta a "abonada" si esAbono, si no "pagada"
-      if (cuentasState && cuentasState.length > 0) {
-        await Promise.all(
-          cuentasState.map(async (c) => {
-            if (c._id) {
-              const nuevoEstatus = c.esAbono ? 'abonada' : 'pagada';
-              await fetch(`/cuentas-por-pagar/${c._id}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ estatus: nuevoEstatus })
-              });
-            }
-          })
-        );
-      }
+      // Fusionar datos del formulario con los de cada cuenta seleccionada
+      const pagosMasivos = cuentasState.map((cuenta) => {
+        const pago = {
+          fecha: form.fecha,
+          referencia: form.referencia,
+          usuario: usuarioCorreo,
+          bancoEmisor: form.bancoEmisor,
+          bancoReceptor: form.bancoReceptor,
+          tasa: form.tasa,
+          imagenPago: imagenPago,
+          farmaciaId: cuenta.farmacia,
+          estado: form.estado,
+          cuentaPorPagarId: cuenta.cuentaPorPagarId || cuenta._id,
+          fechaEmision: cuenta.fechaEmision,
+          fechaRecepcion: cuenta.fechaRecepcion,
+          fechaVencimiento: cuenta.fechaVencimiento,
+          fechaRegistro: cuenta.fechaRegistro,
+          diasCredito: cuenta.diasCredito,
+          numeroFactura: cuenta.numeroFactura,
+          numeroControl: cuenta.numeroControl,
+          proveedor: cuenta.proveedor,
+          descripcion: cuenta.descripcion,
+          montoOriginal: cuenta.montoOriginal,
+          retencion: cuenta.retencion,
+          monedaOriginal: cuenta.monedaOriginal,
+          tasaOriginal: cuenta.tasaOriginal,
+          tasaDePago: cuenta.tasaDePago,
+          estatus: cuenta.estatus,
+          usuarioCorreoCuenta: cuenta.usuarioCorreo,
+          imagenesCuentaPorPagar: cuenta.imagenesCuentaPorPagar,
+          montoDePago: cuenta.montoDePago,
+          monedaDePago: cuenta.monedaDePago,
+          abono: typeof cuenta.abono === 'boolean' ? cuenta.abono : false,
+        };
+        return pago;
+      });
+      // Enviar al backend usando la URL base del .env si existe
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+      const res = await fetch(`${API_BASE_URL}/pagoscpp/masivo`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(pagosMasivos)
+      });
+      if (!res.ok) throw new Error("Error al registrar pagos masivos");
+      // Opcional: limpiar localStorage o estado si es necesario
       onClose();
     } catch (err) {
-      // Manejo de error opcional
-      console.error('Error al registrar pago masivo o actualizar estado:', err);
+      console.error('Error al registrar pagos masivos:', err);
+      // Aquí podrías setear un estado de error si lo deseas
     }
   };
 
@@ -136,7 +167,14 @@ const PagoMasivoModal: React.FC<PagoMasivoModalProps> = ({ open, onClose, onSubm
         <h2 className="text-2xl font-bold text-green-700 mb-4 flex items-center gap-2">
           <FaMoneyCheckAlt /> Registrar Pago Masivo
         </h2>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4" onKeyDown={e => {
+          if (e.key === 'Enter') {
+            // Evita submit con Enter excepto si el target es un textarea
+            if (e.target && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
+              e.preventDefault();
+            }
+          }
+        }}>
           <div className="flex gap-2">
             <div className="flex-1">
               <label className="block text-sm font-medium text-slate-700 mb-1">Fecha</label>

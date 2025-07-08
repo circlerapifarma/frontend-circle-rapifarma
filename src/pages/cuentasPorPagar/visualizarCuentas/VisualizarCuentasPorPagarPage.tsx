@@ -71,19 +71,19 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
   const [pagosAprobadosPorCuenta, setPagosAprobadosPorCuenta] = useState<Record<string, { loading: boolean; pagos: Pago[] }>>({});
   const [selectedCuentas, setSelectedCuentas] = useState<string[]>([]);
   const [pagoMasivoModalOpen, setPagoMasivoModalOpen] = useState(false);
-  const [pagoMasivoLoading, setPagoMasivoLoading] = useState(false);
-  const [pagoMasivoError, setPagoMasivoError] = useState<string | null>(null);
+  const [pagoMasivoLoading] = useState(false);
+  const [pagoMasivoError] = useState<string | null>(null);
   // Moneda seleccionada para conversión masiva (sincronizada con el modal)
   const [monedaConversion] = useState<'USD' | 'Bs'>('USD');
 
   // Reemplaza selectedCuentas y edicionCuentas por un solo state
-  const [cuentasParaPagar, setCuentasParaPagar] = useState<Record<string, any>>(() => {
+  const [cuentasParaPagar, setCuentasParaPagar] = useState<any[]>(() => {
     // Leer del localStorage al inicializar
     try {
       const stored = localStorage.getItem('cuentasParaPagar');
-      return stored ? JSON.parse(stored) : {};
+      return stored ? JSON.parse(stored) : [];
     } catch {
-      return {};
+      return [];
     }
   });
 
@@ -97,7 +97,7 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
   // 2. Función para abrir el modal de edición individual
   const [cuentaEditando, setCuentaEditando] = useState<string | null>(null);
   const abrirEdicionCuenta = (cuentaId: string) => {
-    if (cuentasParaPagar[cuentaId]) setCuentaEditando(cuentaId);
+    if (cuentasParaPagar.find(c => c.cuentaPorPagarId === cuentaId)) setCuentaEditando(cuentaId);
   };
 
   const fetchCuentas = async () => {
@@ -141,17 +141,47 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
   // Al seleccionar/deseleccionar una cuenta
   const handleSelectCuenta = (id: string) => {
     setCuentasParaPagar(prev => {
-      let nuevo;
-      if (prev[id]) {
-        // Deseleccionar: eliminar del objeto
-        nuevo = { ...prev };
-        delete nuevo[id];
+      // Si ya está seleccionada, quitarla
+      if (prev.some(c => c.cuentaPorPagarId === id)) {
+        const nuevo = prev.filter(c => c.cuentaPorPagarId !== id);
+        setSelectedCuentas(nuevo.map(c => c.cuentaPorPagarId));
+        return nuevo;
+      }
+      // Seleccionar: agregar solo los datos originales de la cuenta (sin campos de edición)
+      const cuenta = cuentasFiltradas.find(c => c._id === id);
+      if (!cuenta || !cuenta._id) return prev; // Validar que exista y tenga _id
+      const {
+        _id,
+        fechaEmision,
+        fechaRecepcion,
+        fechaVencimiento,
+        fechaRegistro,
+        diasCredito,
+        numeroFactura,
+        numeroControl,
+        proveedor,
+        descripcion,
+        monto,
+        retencion,
+        divisa,
+        tasa,
+        estatus,
+        usuarioCorreo,
+        farmacia,
+        imagenesCuentaPorPagar
+      } = cuenta;
+      // Lógica para montoDePago y monedaDePago
+      let montoDePago = 0;
+      let monedaDePago = 'Bs';
+      if (divisa === 'USD') {
+        montoDePago = Number((monto * tasa).toFixed(2));
       } else {
-        // Seleccionar: agregar solo los datos originales de la cuenta (sin campos de edición)
-        const cuenta = cuentasFiltradas.find(c => c._id === id);
-        if (!cuenta) return prev;
-        const {
-          _id,
+        montoDePago = Number(monto);
+      }
+      const nuevo = [
+        ...prev,
+        {
+          cuentaPorPagarId: _id,
           fechaEmision,
           fechaRecepcion,
           fechaVencimiento,
@@ -161,51 +191,20 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
           numeroControl,
           proveedor,
           descripcion,
-          monto,
+          montoOriginal: monto,
           retencion,
-          divisa,
-          tasa,
+          monedaOriginal: divisa,
+          tasaOriginal: tasa,
+          tasaDePago: tasa, // Inicializar tasaDePago con tasaOriginal
           estatus,
           usuarioCorreo,
           farmacia,
-          imagenesCuentaPorPagar
-        } = cuenta;
-        // Lógica para montoDePago y monedaDePago
-        let montoDePago = 0;
-        let monedaDePago = 'Bs';
-        if (divisa === 'USD') {
-          montoDePago = Number((monto * tasa).toFixed(2));
-        } else {
-          montoDePago = Number(monto);
+          imagenesCuentaPorPagar,
+          montoDePago,
+          monedaDePago
         }
-        nuevo = {
-          ...prev,
-          [id]: {
-            _id,
-            fechaEmision,
-            fechaRecepcion,
-            fechaVencimiento,
-            fechaRegistro,
-            diasCredito,
-            numeroFactura,
-            numeroControl,
-            proveedor,
-            descripcion,
-            montoOriginal: monto,
-            retencion,
-            monedaOriginal: divisa,
-            tasaOriginal: tasa,
-            tasaDePago: tasa, // Inicializar tasaDePago con tasaOriginal
-            estatus,
-            usuarioCorreo,
-            farmacia,
-            imagenesCuentaPorPagar,
-            montoDePago,
-            monedaDePago
-          }
-        };
-      }
-      setSelectedCuentas(Object.keys(nuevo));
+      ];
+      setSelectedCuentas(nuevo.map(c => c.cuentaPorPagarId));
       return nuevo;
     });
   };
@@ -313,103 +312,6 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
     };
   });
 
-  // Lógica para registrar pago masivo (un pago individual por cada cuenta seleccionada)
-  const handlePagoMasivo = async (form: any) => {
-    setPagoMasivoLoading(true);
-    setPagoMasivoError(null);
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("No se encontró el token de autenticación");
-      // Obtener correo del usuario autenticado
-      const usuarioRaw = localStorage.getItem("usuario");
-      const usuarioCorreo = usuarioRaw ? JSON.parse(usuarioRaw).correo : "";
-      // Enviar un pago por cada cuenta seleccionada
-      await Promise.all(
-        selectedCuentas.map(async (cuentaId) => {
-          const cuenta = cuentasFiltradas.find(c => c._id === cuentaId);
-          if (!cuenta) return null;
-
-          const edicion = cuentasParaPagar[cuentaId];
-          const montoOriginalBs = cuenta.divisa === 'USD' ? cuenta.monto * (cuenta.tasa || 0) : cuenta.monto;
-          const montoAPagar = edicion ? edicion.montoEditado : montoOriginalBs;
-          const descuento = edicion ? edicion.descuento : 0;
-          const observacion = edicion ? edicion.observacion : '';
-
-          const payload = {
-            fecha: form.fecha,
-            moneda: edicion && edicion.moneda ? edicion.moneda : cuenta.divisa, // Usar la moneda de la cuenta editada
-            monto: montoAPagar,
-            descuento,
-            observacion,
-            referencia: form.referencia,
-            usuario: usuarioCorreo, // SIEMPRE el usuario logueado
-            bancoEmisor: form.bancoEmisor,
-            bancoReceptor: form.bancoReceptor,
-            tasa: edicion && edicion.tasaPago ? edicion.tasaPago : cuenta.tasa, // Usar tasa de pago editada si existe
-            imagenPago: form.imagenPago,
-            farmaciaId: cuenta.farmacia,
-            estado: 'aprobado',
-            cuentaPorPagarId: cuenta._id,
-          };
-          // Si es abono, NO cambiar el estado de la cuenta
-          const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/pagoscpp`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${token}`
-            },
-            body: JSON.stringify(payload)
-          });
-          if (!res.ok) {
-            const data = await res.json();
-            throw new Error(data.detail || "Error al registrar pago");
-          }
-          // Cambiar el estado si es abono o pago total
-          if (edicion?.esAbono) {
-            // Si es abono, marcar como 'abonada'
-            await fetch(`${API_BASE_URL}/cuentas-por-pagar/${cuenta._id}/estatus`, {
-              method: "PATCH",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-              },
-              body: JSON.stringify({ estatus: 'abonada' })
-            });
-          } else {
-            // Si no es abono, marcar como 'pagada'
-            await fetch(`${API_BASE_URL}/cuentas-por-pagar/${cuenta._id}/estatus`, {
-              method: "PATCH",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-              },
-              body: JSON.stringify({ estatus: 'pagada' })
-            });
-          }
-          return res.json();
-        })
-      );
-      setSuccess("Pago registrado para todas las cuentas seleccionadas");
-      setPagoMasivoModalOpen(false);
-      setSelectedCuentas([]);
-      setCuentasParaPagar({}); // Limpiar ediciones después del pago
-      fetchCuentas();
-    } catch (err: any) {
-      setPagoMasivoError(err.message || "Error al registrar pago");
-    } finally {
-      setPagoMasivoLoading(false);
-    }
-  };
-
-  // Función para validar la estructura de pagosInfo
-  function isValidPagosInfo(pagosInfo: any): boolean {
-    if (!pagosInfo || typeof pagosInfo !== 'object') return false;
-    if (typeof pagosInfo.loading !== 'boolean') return false;
-    if ('error' in pagosInfo && typeof pagosInfo.error !== 'string' && typeof pagosInfo.error !== 'undefined') return false;
-    if ('pagos' in pagosInfo && !Array.isArray(pagosInfo.pagos)) return false;
-    return true;
-  }
-
   const [showMonedaAlert, setShowMonedaAlert] = React.useState(true);
   React.useEffect(() => { setShowMonedaAlert(true); }, [pagoMasivoModalOpen]);
 
@@ -429,6 +331,12 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
     }
     return acc;
   }, 0);
+
+  const handleAbonoSubmit = () => {
+    setAbonoModalOpen(null);
+    setAbonoCuenta(null);
+    // Aquí puedes agregar la lógica real de registro de abono si es necesario
+  };
 
   return (
     // Contenedor principal con un fondo sutil para la página
@@ -501,7 +409,6 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
                 pagosAprobadosPorCuenta={pagosAprobadosPorCuentaFiltrados}
                 cuentasParaPagar={cuentasParaPagar}
                 handleToggleCuentaParaPagar={cuenta => handleSelectCuenta(cuenta._id)}
-                isValidPagosInfo={isValidPagosInfo}
                 handlePagosDropdownOpen={handlePagosDropdownOpen}
                 handleEstadoChange={handleEstadoChange}
                 ESTATUS_OPCIONES={ESTATUS_OPCIONES}
@@ -554,11 +461,7 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
           <AbonoModal
             open={!!abonoModalOpen}
             onClose={() => { setAbonoModalOpen(null); setAbonoCuenta(null); }}
-            onSubmit={() => {
-              setAbonoModalOpen(null);
-              setAbonoCuenta(null);
-              // Opcional: recargar pagos si es necesario
-            }}
+            onSubmit={handleAbonoSubmit}
             usuario={(JSON.parse(localStorage.getItem("usuario") || '{}').correo) || ''}
             cuentaPorPagarId={abonoCuenta._id}
             farmaciaId={abonoCuenta.farmacia}
@@ -569,7 +472,6 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
         <PagoMasivoModal
           open={pagoMasivoModalOpen}
           onClose={() => setPagoMasivoModalOpen(false)}
-          onSubmit={handlePagoMasivo}
           loading={pagoMasivoLoading}
           error={pagoMasivoError}
           monedaConversion={monedaConversion}

@@ -9,7 +9,6 @@ interface TablaCuentasPorPagarProps {
   cuentasParaPagar: Record<string, any>; // Nuevo: objeto centralizado de cuentas seleccionadas y editadas
   handleToggleCuentaParaPagar: (cuenta: CuentaPorPagar) => void; // Nuevo: función para selección/edición
 
-  isValidPagosInfo: (pagosInfo: any) => boolean;
   handlePagosDropdownOpen: (open: boolean, cuenta: CuentaPorPagar) => void;
   handleEstadoChange: (id: string, value: string) => void;
   ESTATUS_OPCIONES: string[];
@@ -23,7 +22,6 @@ const TablaCuentasPorPagar: React.FC<TablaCuentasPorPagarProps> = ({
   pagosAprobadosPorCuenta,
   cuentasParaPagar,
   handleToggleCuentaParaPagar,
-  isValidPagosInfo,
   handlePagosDropdownOpen,
   handleEstadoChange,
   ESTATUS_OPCIONES,
@@ -69,7 +67,6 @@ const TablaCuentasPorPagar: React.FC<TablaCuentasPorPagarProps> = ({
               pagosAprobadosPorCuenta={pagosAprobadosPorCuenta}
               cuentasParaPagar={cuentasParaPagar}
               handleToggleCuentaParaPagar={handleToggleCuentaParaPagar}
-              isValidPagosInfo={isValidPagosInfo}
               handlePagosDropdownOpen={handlePagosDropdownOpen}
               handleEstadoChange={handleEstadoChange}
               ESTATUS_OPCIONES={ESTATUS_OPCIONES}

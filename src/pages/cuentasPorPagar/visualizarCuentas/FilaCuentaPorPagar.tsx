@@ -37,9 +37,9 @@ export interface CuentaPorPagar {
 interface FilaCuentaPorPagarProps {
   cuenta: CuentaPorPagar;
   pagosAprobadosPorCuenta: Record<string, { loading: boolean; pagos: Pago[] }>;
+
   cuentasParaPagar: Record<string, any>; // Nuevo: objeto centralizado de cuentas seleccionadas y editadas
   handleToggleCuentaParaPagar: (cuenta: CuentaPorPagar) => void; // Nuevo: agrega o quita la cuenta del objeto central
-  isValidPagosInfo: (pagosInfo: any) => boolean;
   handlePagosDropdownOpen: (open: boolean, cuenta: CuentaPorPagar) => void;
   handleEstadoChange: (id: string, value: string) => void;
   ESTATUS_OPCIONES: string[];
@@ -62,18 +62,17 @@ const FilaCuentaPorPagar: React.FC<FilaCuentaPorPagarProps> = ({
   pagosAprobadosPorCuenta,
   cuentasParaPagar = {},
   handleToggleCuentaParaPagar,
-  isValidPagosInfo,
   handlePagosDropdownOpen,
   handleEstadoChange,
   ESTATUS_OPCIONES,
   formatFecha,
   abrirEdicionCuenta
 }) => {
-  // Protección extra: si cuentasParaPagar es null/undefined, usa objeto vacío
-  const cuentasParaPagarSafe = cuentasParaPagar || {};
-  const isSelected = !!cuentasParaPagarSafe[c._id];
+  // Protección extra: si cuentasParaPagar es null/undefined, usa array vacío
+  const cuentasParaPagarSafe = Array.isArray(cuentasParaPagar) ? cuentasParaPagar : [];
+  const isSelected = cuentasParaPagarSafe.some(sel => sel.cuentaPorPagarId === c._id);
   // Si la cuenta está seleccionada, usa los datos editados, si no, los originales
-  const cuentaData = cuentasParaPagarSafe[c._id] ? { ...c, ...cuentasParaPagarSafe[c._id] } : c;
+  const cuentaData = cuentasParaPagarSafe.find(sel => sel.cuentaPorPagarId === c._id) ? { ...c, ...cuentasParaPagarSafe.find(sel => sel.cuentaPorPagarId === c._id) } : c;
 
   // Handler para seleccionar la fila completa (excepto si es pagada o el click viene de un control interno)
   const handleRowClick = (e: React.MouseEvent) => {
@@ -144,7 +143,7 @@ const FilaCuentaPorPagar: React.FC<FilaCuentaPorPagarProps> = ({
         <td className="px-2 py-4 whitespace-nowrap text-sm">
           {(() => {
             let pagosInfo = pagosAprobadosPorCuenta[c._id] || { loading: false, pagos: [] };
-            if (!isValidPagosInfo(pagosInfo)) {
+            if (!pagosInfo || typeof pagosInfo !== 'object' || !Array.isArray(pagosInfo.pagos)) {
               return (
                 <div className="text-xs text-red-500 font-semibold">Error: pagosInfo inválido</div>
               );
@@ -169,7 +168,6 @@ const FilaCuentaPorPagar: React.FC<FilaCuentaPorPagarProps> = ({
               <PagosDropdown
                 cuentaId={c._id}
                 onOpenChange={open => handlePagosDropdownOpen(open, c)}
-                pagosInfo={pagosInfo}
                 montoTotal={c.monto}
                 monedaCuenta={c.divisa}
                 tasaCuenta={c.tasa}

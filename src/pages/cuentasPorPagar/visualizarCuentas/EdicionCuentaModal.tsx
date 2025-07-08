@@ -25,10 +25,18 @@ function getCuentaEditadaFromLocalStorageById(cuentaId: string | undefined): any
     const stored = localStorage.getItem('cuentasParaPagar');
     if (stored) {
       const cuentas = JSON.parse(stored);
-      const editada = cuentas[cuentaId];
-      if (editada) {
-        // Retornar el objeto tal cual está en localStorage, sin mapear nombres
-        return { ...editada };
+      // Nuevo formato: array de objetos (buscar por cuentaPorPagarId)
+      if (Array.isArray(cuentas)) {
+        const editada = cuentas.find((c: any) => c.cuentaPorPagarId === cuentaId);
+        if (editada) {
+          return { ...editada };
+        }
+      } else if (typeof cuentas === 'object' && cuentas !== null) {
+        // Compatibilidad con formato anterior (objeto)
+        const editada = cuentas[cuentaId];
+        if (editada) {
+          return { ...editada };
+        }
       }
     }
   } catch {}
@@ -162,6 +170,12 @@ const EdicionCuentaModal: React.FC<EdicionCuentaModalProps> = ({
         next.montoDePago = convertirMontoDePago(cuentaEditada.montoOriginal, cuentaEditada.monedaOriginal, value, cuentaEditada.tasaDePago);
       }
     }
+
+    // Si se tilda/des-tilda abono, también actualizar el campo 'abono' en el objeto
+    if (field === 'esAbono') {
+      next.abono = value === true;
+    }
+
     setCuentaEditada(next);
   };
 
@@ -170,22 +184,89 @@ const EdicionCuentaModal: React.FC<EdicionCuentaModalProps> = ({
     if (!cuentaEditada) return;
     try {
       const stored = localStorage.getItem('cuentasParaPagar');
-      const cuentas = stored ? JSON.parse(stored) : {};
-      cuentas[cuentaEditada._id] = { ...cuentaEditada };
+      let cuentas = stored ? JSON.parse(stored) : [];
+      // Crear copia con cuentaPorPagarId y sin _id
+      const cuentaParaGuardar = { ...cuentaEditada, cuentaPorPagarId: cuentaEditada.cuentaPorPagarId || cuentaEditada._id };
+      delete cuentaParaGuardar._id;
+      // Si es array (nuevo formato)
+      if (Array.isArray(cuentas)) {
+        let found = false;
+        cuentas = cuentas.map((c) => {
+          if (c.cuentaPorPagarId === cuentaParaGuardar.cuentaPorPagarId) {
+            found = true;
+            return cuentaParaGuardar;
+          }
+          return c;
+        });
+        // Si no existe, NO agregarla (solo editar)
+        if (!found) {
+          // No hacer nada, no agregar nuevo objeto
+        }
+      } else if (typeof cuentas === 'object' && cuentas !== null) {
+        // Compatibilidad con formato anterior (objeto)
+        const id = cuentaEditada.cuentaPorPagarId || cuentaEditada._id;
+        if (id && id !== 'undefined' && id !== null && id !== '') {
+          cuentas[id] = cuentaParaGuardar;
+        }
+      }
       localStorage.setItem('cuentasParaPagar', JSON.stringify(cuentas));
     } catch {}
     onClose();
   };
 
-  // Botón para actualizar el monto a pagar con los pagos previos
-  const handleActualizarMontoConPagosPrevios = () => {
+  // Checkbox para deducir pagos previos
+  const [deducirPagosPrevios, setDeducirPagosPrevios] = React.useState(false);
+
+  // Efecto: actualizar montoDePago automáticamente si el check está activo
+  React.useEffect(() => {
     if (!cuentaEditada) return;
-    // El monto a pagar sugerido es el saldo restante (nuevoSaldo - totalPagadoPrevioEnMoneda)
-    setCuentaEditada({
-      ...cuentaEditada,
-      montoDePago: Math.max(nuevoSaldo - totalPagadoPrevioEnMoneda, 0)
-    });
-  };
+    if (deducirPagosPrevios) {
+      // Conversiones de montoOriginal a la moneda de pago (repetimos aquí para asegurar el orden)
+      let montoOriginalEnMonedaPago = Number(cuentaEditada.montoOriginal) || 0;
+      if (cuentaEditada.monedaOriginal !== cuentaEditada.monedaDePago) {
+        const tasa = Number(cuentaEditada.tasaDePago) || 0;
+        if (cuentaEditada.monedaOriginal === 'USD' && cuentaEditada.monedaDePago === 'Bs' && tasa > 0) {
+          montoOriginalEnMonedaPago = montoOriginalEnMonedaPago * tasa;
+        } else if (cuentaEditada.monedaOriginal === 'Bs' && cuentaEditada.monedaDePago === 'USD' && tasa > 0) {
+          montoOriginalEnMonedaPago = montoOriginalEnMonedaPago / tasa;
+        }
+      }
+      // Calcular descuentos y retención
+      const descuento1 = Number(cuentaEditada.descuento1) || 0;
+      const descuento2 = Number(cuentaEditada.descuento2) || 0;
+      const tipoDescuento1 = cuentaEditada.tipoDescuento1 || 'monto';
+      const tipoDescuento2 = cuentaEditada.tipoDescuento2 || 'monto';
+      const retencion = Number(cuentaEditada.retencion) || 0;
+      let desc1 = tipoDescuento1 === 'porcentaje' ? (montoOriginalEnMonedaPago * (descuento1 / 100)) : descuento1;
+      let desc2 = tipoDescuento2 === 'porcentaje' ? ((montoOriginalEnMonedaPago - desc1) * (descuento2 / 100)) : descuento2;
+      const totalDescuentos = desc1 + desc2;
+      // El saldo base antes de pagos previos
+      const saldoBase = Math.max(montoOriginalEnMonedaPago - totalDescuentos - retencion, 0);
+      // Sumar pagos previos convertidos
+      const totalPagadoPrevioConvertido = pagosPrevios.reduce((acc, pago) => {
+        let monto = typeof pago.monto === 'number' && !isNaN(pago.monto)
+          ? pago.monto
+          : (typeof (pago as any).montoDePago === 'number' && !isNaN((pago as any).montoDePago)
+            ? (pago as any).montoDePago
+            : 0);
+        let monedaPagoPrevio = pago.moneda || (pago as any).monedaDePago || '';
+        let tasaPagoPrevio = typeof pago.tasa === 'number' && !isNaN(pago.tasa)
+          ? pago.tasa
+          : (typeof (pago as any).tasaDePago === 'number' && !isNaN((pago as any).tasaDePago)
+            ? (pago as any).tasaDePago
+            : 0);
+        if (monedaPagoPrevio === cuentaEditada.monedaDePago) {
+          return acc + monto;
+        } else if (monedaPagoPrevio === 'USD' && cuentaEditada.monedaDePago === 'Bs' && tasaPagoPrevio > 0) {
+          return acc + monto * tasaPagoPrevio;
+        } else if (monedaPagoPrevio === 'Bs' && cuentaEditada.monedaDePago === 'USD' && tasaPagoPrevio > 0) {
+          return acc + monto / tasaPagoPrevio;
+        }
+        return acc;
+      }, 0);
+      setCuentaEditada((prev: any) => ({ ...prev, montoDePago: Math.max(saldoBase - totalPagadoPrevioConvertido, 0) }));
+    }
+  }, [deducirPagosPrevios, pagosPrevios, cuentaEditada?.monedaDePago, cuentaEditada?.montoOriginal, cuentaEditada?.tasaDePago, cuentaEditada?.descuento1, cuentaEditada?.descuento2, cuentaEditada?.tipoDescuento1, cuentaEditada?.tipoDescuento2, cuentaEditada?.retencion]);
 
   // Animación de fade-in para la lista de pagos previos
   React.useEffect(() => {
@@ -266,12 +347,36 @@ const EdicionCuentaModal: React.FC<EdicionCuentaModalProps> = ({
               </span>
             </div>
             <ul className="divide-y divide-slate-200 pagos-previos-lista">
-              {pagosPrevios.map(p => (
-                <li key={p._id} className="py-1 flex flex-col">
-                  <span className="text-slate-700">{p.monto.toLocaleString(p.moneda === 'USD' ? 'en-US' : 'es-VE', { style: 'currency', currency: p.moneda === 'USD' ? 'USD' : 'VES', minimumFractionDigits: 2 })} {p.moneda}</span>
-                  <span className="text-slate-400 text-xs">Ref: {p.referencia} | Fecha: {p.fecha} | Tasa: {p.tasa ? p.tasa.toLocaleString('es-VE', { minimumFractionDigits: 4 }) : 'N/A'}</span>
-                </li>
-              ))}
+              {pagosPrevios.map(p => {
+                // Compatibilidad: soporta pagos de MongoDB y del frontend
+                const montoMostrado = typeof p.monto === 'number' && !isNaN(p.monto)
+                  ? p.monto
+                  : (typeof (p as any).montoDePago === 'number' && !isNaN((p as any).montoDePago)
+                    ? (p as any).montoDePago
+                    : 0);
+                const monedaMostrada = p.moneda || (p as any).monedaDePago || '';
+                const referenciaMostrada = p.referencia || (p as any).numeroControl || '-';
+                const fechaMostrada = p.fecha || (p as any).fechaRegistro || '-';
+                const tasaMostrada = typeof p.tasa === 'number' && !isNaN(p.tasa)
+                  ? p.tasa
+                  : (typeof (p as any).tasaDePago === 'number' && !isNaN((p as any).tasaDePago)
+                    ? (p as any).tasaDePago
+                    : null);
+                return (
+                  <li key={p._id} className="py-1 flex flex-col">
+                    <span className="text-slate-700">{
+                      montoMostrado.toLocaleString(monedaMostrada === 'USD' ? 'en-US' : 'es-VE', {
+                        style: 'currency',
+                        currency: monedaMostrada === 'USD' ? 'USD' : 'VES',
+                        minimumFractionDigits: 2
+                      })
+                    } {monedaMostrada}</span>
+                    <span className="text-slate-400 text-xs">
+                      Ref: {referenciaMostrada} | Fecha: {fechaMostrada} | Tasa: {tasaMostrada !== null ? tasaMostrada.toLocaleString('es-VE', { minimumFractionDigits: 4 }) : 'N/A'}
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         )}
@@ -332,6 +437,17 @@ const EdicionCuentaModal: React.FC<EdicionCuentaModalProps> = ({
               <div className="col-span-1">
                 <label className="block text-sm font-medium text-slate-700 mb-1">Retención</label>
                 <input type="number" className="w-full border rounded px-3 py-2" min={0} step="0.01" value={cuentaEditada.retencion ?? 0} onChange={handleChange('retencion')} />
+              </div>
+              <div className="col-span-2 flex items-center gap-2 mb-2">
+                <input
+                  type="checkbox"
+                  id="aplicarPagosPrevios"
+                  checked={deducirPagosPrevios}
+                  onChange={e => setDeducirPagosPrevios(e.target.checked)}
+                />
+                <label htmlFor="aplicarPagosPrevios" className="text-sm font-medium text-slate-700 select-none cursor-pointer">
+                  Aplicar pagos previos
+                </label>
               </div>
               <div className="col-span-2 flex items-center gap-2">
                 <input type="checkbox" id="esAbono" checked={!!cuentaEditada.esAbono} onChange={e => handleChange('esAbono')({
@@ -411,13 +527,6 @@ const EdicionCuentaModal: React.FC<EdicionCuentaModalProps> = ({
           </div>
         </div>
         <div className="flex justify-end mt-6 gap-4">
-          <button
-            type="button"
-            onClick={handleActualizarMontoConPagosPrevios}
-            className="px-6 py-2 rounded bg-blue-600 text-white font-bold hover:bg-blue-700 transition-all"
-          >
-            Actualizar monto a pagar con pagos previos
-          </button>
           <button onClick={handleGuardar} className="px-6 py-2 rounded bg-green-600 text-white font-bold hover:bg-green-700 transition-all">Guardar</button>
         </div>
       </div>
