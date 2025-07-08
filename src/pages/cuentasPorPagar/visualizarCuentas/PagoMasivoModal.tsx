@@ -233,12 +233,12 @@ const PagoMasivoModal: React.FC<PagoMasivoModalProps> = ({ open, onClose, loadin
             </div>
           <h3 className="text-sm font-semibold text-slate-700 mb-1 mt-4">Cuentas seleccionadas:</h3>
           <ul className="text-xs text-slate-600 max-h-24 overflow-y-auto list-disc pl-5">
-            {cuentasState && cuentasState.map(c => {
+            {cuentasState && cuentasState.map((c, index) => {
                 const totalAcreditar = typeof c.totalAcreditar === 'number' ? c.totalAcreditar : 0;
                 const d1 = typeof c.d1 === 'number' ? c.d1 : 0;
                 const d2 = typeof c.d2 === 'number' ? c.d2 : 0;
                 return (
-                    <li key={c._id}>
+                    <li key={c.cuentaPorPagarId || c._id || index}>
                         {c.numeroFactura} - {c.proveedor} | Pagar: {totalAcreditar.toFixed(4)} {c.moneda ? c.moneda : ''} | Dcto1: {d1.toFixed(4)} | Dcto2: {d2.toFixed(4)}{c.tasa ? ` | Tasa: ${Number(c.tasa).toFixed(4)}` : ''}
                     </li>
                 );

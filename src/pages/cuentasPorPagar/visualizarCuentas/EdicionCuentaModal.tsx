@@ -192,16 +192,29 @@ const EdicionCuentaModal: React.FC<EdicionCuentaModalProps> = ({
       if (Array.isArray(cuentas)) {
         let found = false;
         cuentas = cuentas.map((c) => {
-          if (c.cuentaPorPagarId === cuentaParaGuardar.cuentaPorPagarId) {
+          // Comparar por ambos campos para evitar duplicados
+          const match = (c.cuentaPorPagarId && cuentaParaGuardar.cuentaPorPagarId && c.cuentaPorPagarId === cuentaParaGuardar.cuentaPorPagarId)
+            || (c._id && cuentaParaGuardar.cuentaPorPagarId && c._id === cuentaParaGuardar.cuentaPorPagarId)
+            || (c.cuentaPorPagarId && cuentaParaGuardar._id && c.cuentaPorPagarId === cuentaParaGuardar._id)
+            || (c._id && cuentaParaGuardar._id && c._id === cuentaParaGuardar._id);
+          if (match) {
             found = true;
-            return cuentaParaGuardar;
+            return { ...c, ...cuentaParaGuardar, cuentaPorPagarId: cuentaParaGuardar.cuentaPorPagarId || cuentaParaGuardar._id };
           }
           return c;
         });
-        // Si no existe, NO agregarla (solo editar)
+        // Si no existe, agregarla al array
         if (!found) {
-          // No hacer nada, no agregar nuevo objeto
+          cuentas.push({ ...cuentaParaGuardar, cuentaPorPagarId: cuentaParaGuardar.cuentaPorPagarId || cuentaParaGuardar._id });
         }
+        // Eliminar duplicados por cuentaPorPagarId o _id
+        const seen = new Set<string>();
+        cuentas = cuentas.filter((c: any) => {
+          const key = c.cuentaPorPagarId || c._id;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
       } else if (typeof cuentas === 'object' && cuentas !== null) {
         // Compatibilidad con formato anterior (objeto)
         const id = cuentaEditada.cuentaPorPagarId || cuentaEditada._id;

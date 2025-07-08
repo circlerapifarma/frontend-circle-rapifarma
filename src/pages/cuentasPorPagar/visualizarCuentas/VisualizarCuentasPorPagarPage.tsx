@@ -81,7 +81,8 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
     // Leer del localStorage al inicializar
     try {
       const stored = localStorage.getItem('cuentasParaPagar');
-      return stored ? JSON.parse(stored) : [];
+      const parsed = stored ? JSON.parse(stored) : [];
+      return Array.isArray(parsed) ? parsed : Object.values(parsed);
     } catch {
       return [];
     }
@@ -142,14 +143,16 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
   const handleSelectCuenta = (id: string) => {
     setCuentasParaPagar(prev => {
       // Si ya está seleccionada, quitarla
-      if (prev.some(c => c.cuentaPorPagarId === id)) {
-        const nuevo = prev.filter(c => c.cuentaPorPagarId !== id);
+      if (prev.some(c => c.cuentaPorPagarId === id || c._id === id)) {
+        const nuevo = prev.filter(c => c.cuentaPorPagarId !== id && c._id !== id);
         setSelectedCuentas(nuevo.map(c => c.cuentaPorPagarId));
         return nuevo;
       }
       // Seleccionar: agregar solo los datos originales de la cuenta (sin campos de edición)
       const cuenta = cuentasFiltradas.find(c => c._id === id);
       if (!cuenta || !cuenta._id) return prev; // Validar que exista y tenga _id
+      // Evitar duplicados: si ya existe por _id o cuentaPorPagarId, no agregar
+      if (prev.some(c => c.cuentaPorPagarId === cuenta._id || c._id === cuenta._id)) return prev;
       const {
         _id,
         fechaEmision,
