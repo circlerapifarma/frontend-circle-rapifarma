@@ -350,7 +350,7 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
                 <table className="min-w-full divide-y divide-slate-200 table-fixed" style={{ maxWidth: '100vw' }}>
                   <thead className="bg-red-50">
                     <tr>
-                      {['Fecha', 'Título', 'Descripción', 'Monto', 'Moneda', 'Tasa', 'Estado', 'Acción'].map(header => (
+                      {['Fecha','Fecha R.', 'Título', 'Descripción', 'Monto', 'Moneda', 'Tasa', 'Estado', 'Acción'].map(header => (
                         <th key={header} scope="col" className="px-5 py-3.5 text-left text-xs font-semibold text-red-700 uppercase tracking-wider whitespace-nowrap">
                           {header}
                         </th>
@@ -360,6 +360,7 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
                   <tbody className="bg-white divide-y divide-slate-200">
                     {gastosFiltrados.map(g => (
                       <tr key={g._id} className="hover:bg-red-50/50 transition-colors duration-150 ease-in-out">
+                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 gasto-fecha">{formatFecha(g.fecha,)}</td>
                         <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 gasto-fecha">{formatFecha(g.fecha, g.fechaRegistro)}</td>
                         <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-800 font-medium">{g.titulo}</td>
                         <td className="px-5 py-4 text-sm text-slate-600 max-w-md truncate" title={g.descripcion}>{g.descripcion}</td>
