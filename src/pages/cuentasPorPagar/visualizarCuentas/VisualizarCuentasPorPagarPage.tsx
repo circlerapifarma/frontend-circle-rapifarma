@@ -358,7 +358,7 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
   return (
     // Contenedor principal con un fondo sutil para la página
     <div className="min-h-screen bg-slate-50 py-8">
-      <div className="w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-screen-full mx-auto px-4 sm:px-6 lg:px-8">
         <h1 className="text-3xl font-bold text-slate-800 mb-8 text-center">Cuentas por Pagar</h1>
 
         {/* Mensajes de error/éxito con mejor estilo */}
@@ -409,7 +409,7 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow-xl overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto w-full">
               {/* Botón para pago masivo */}
               <div className="flex items-center gap-4 p-4">
                 <button

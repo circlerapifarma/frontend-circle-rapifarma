@@ -45,6 +45,7 @@ interface FilaCuentaPorPagarProps {
   ESTATUS_OPCIONES: string[];
   formatFecha: (fecha: string) => string;
   abrirEdicionCuenta: (cuentaId: string) => void;
+  calcularDiasRestantes: (fechaEmision: string, diasCredito: number) => number; // Recibe calcularDiasRestantes como prop
 }
 
 const EstatusBadge: React.FC<{ estatus: string }> = ({ estatus }) => {
@@ -66,7 +67,8 @@ const FilaCuentaPorPagar: React.FC<FilaCuentaPorPagarProps> = ({
   handleEstadoChange,
   ESTATUS_OPCIONES,
   formatFecha,
-  abrirEdicionCuenta
+  abrirEdicionCuenta,
+  calcularDiasRestantes,
 }) => {
   // Protección extra: si cuentasParaPagar es null/undefined, usa array vacío
   const cuentasParaPagarSafe = Array.isArray(cuentasParaPagar) ? cuentasParaPagar : [];
@@ -175,38 +177,38 @@ const FilaCuentaPorPagar: React.FC<FilaCuentaPorPagarProps> = ({
             );
           })()}
         </td>
-        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">
-          <div className="font-bold text-indigo-700">
+        <td className="px-5 py-4 whitespace-nowrap text-xl text-slate-700 text-right">
+          <div className="font-bold text-black">
             {(() => {
               // Mostrar monto original en Bs, 4 decimales
               const montoBs = c.divisa === 'USD' ? c.monto * (c.tasa || 0) : c.monto;
               return montoBs != null && !isNaN(montoBs)
-                ? montoBs.toLocaleString('es-VE', { style: 'decimal', minimumFractionDigits: 4, maximumFractionDigits: 4 })
+                ? `Bs. ${montoBs.toLocaleString('es-VE', { style: 'decimal', minimumFractionDigits: 4, maximumFractionDigits: 4 })}`
                 : '--';
             })()}
           </div>
-          <div className="text-xs text-slate-500 italic">
+          <div className="text-xl text-green-600 italic">
             {(() => {
               // Mostrar monto original en USD, 4 decimales
               const montoUSD = c.divisa === 'USD' ? c.monto : c.tasa ? c.monto / c.tasa : null;
               return montoUSD != null && !isNaN(montoUSD)
-                ? `Ref: $${montoUSD.toLocaleString('en-US', { style: 'decimal', minimumFractionDigits: 4, maximumFractionDigits: 4 })}`
+                ? `$${montoUSD.toLocaleString('en-US', { style: 'decimal', minimumFractionDigits: 4, maximumFractionDigits: 4 })}`
                 : 'Ref: --';
             })()}
           </div>
         </td>
         {/* Celda de retención (quinto) */}
-        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">
-          <div className="font-bold text-indigo-700">
+        <td className="px-5 py-4 whitespace-nowrap text-xl text-slate-700 text-right">
+          <div className="font-bold text-black">
             {(() => {
               // Mostrar retención en Bs, 4 decimales
               const retencionBs = c.divisa === 'USD' ? (c.retencion || 0) * (c.tasa || 0) : c.retencion || 0;
               return c.retencion != null && !isNaN(retencionBs)
-                ? retencionBs.toLocaleString('es-VE', { style: 'decimal', minimumFractionDigits: 4, maximumFractionDigits: 4 })
+                ? `Bs. ${retencionBs.toLocaleString('es-VE', { style: 'decimal', minimumFractionDigits: 4, maximumFractionDigits: 4 })}`
                 : '--';
             })()}
           </div>
-          <div className="text-xs text-slate-500 italic">
+          <div className="text-xl text-green-600 italic">
             {(() => {
               // Mostrar retención en USD, 4 decimales
               let retencionUSD: number | null = null;
@@ -214,34 +216,45 @@ const FilaCuentaPorPagar: React.FC<FilaCuentaPorPagarProps> = ({
                 retencionUSD = c.divisa === 'USD' ? c.retencion : c.tasa ? (c.retencion || 0) / c.tasa : null;
               }
               return retencionUSD != null && !isNaN(retencionUSD)
-                ? `Ref: $${retencionUSD.toLocaleString('en-US', { style: 'decimal', minimumFractionDigits: 4, maximumFractionDigits: 4 })}`
-                : 'Ref: --';
+                ? `$ ${retencionUSD.toLocaleString('en-US', { style: 'decimal', minimumFractionDigits: 4, maximumFractionDigits: 4 })}`
+                : '--';
             })()}
           </div>
         </td>
-        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-center">
+        <td className="px-5 py-4 whitespace-nowrap text-xl text-black text-center">
           {c.tasa}
         </td>
-        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-center">
+        <td className="px-5 py-4 whitespace-nowrap text-xl text-slate-700 text-center">
           {c.divisa}
         </td>
-        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-center">
+        <td className="px-5 py-4 whitespace-nowrap text-sm text-center">
           {(() => {
-            const fechaVencimiento = new Date(new Date(c.fechaEmision).getTime() + c.diasCredito * 24 * 60 * 60 * 1000);
-            const hoy = new Date();
-            const diasParaVencer = Math.ceil((fechaVencimiento.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
-            return diasParaVencer <= 0 ? (
-              <span className="text-red-600 font-bold">Vencida</span>
-            ) : (
-              <span className="text-slate-700 font-semibold">{diasParaVencer} días</span>
+            const diasParaVencer = calcularDiasRestantes(c.fechaEmision, c.diasCredito);
+            let color = '';
+            if (diasParaVencer <= 0) color = 'text-red-600 font-bold';
+            else if (diasParaVencer <= 5) color = 'text-yellow-600 font-bold';
+            else color = 'text-green-600 font-bold';
+            return (
+              <span className={color}>
+                {diasParaVencer <= 0 ? 'Vencida' : `${diasParaVencer} días`}
+              </span>
             );
           })()}
         </td>
-        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{formatFecha(c.fechaRecepcion)}</td>
-        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 font-medium">{c.proveedor}</td>
-        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.numeroFactura}</td>
-        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.numeroControl}</td>
-        <td className="px-5 py-4 text-sm text-slate-700 max-w-sm truncate">
+        <td className="px-5 py-4 whitespace-nowrap text-lg text-black text-center">
+          {formatFecha(c.fechaEmision)}
+        </td>
+        <td className="px-5 py-4 whitespace-nowrap text-lg text-black text-center">
+          {(() => {
+            const fechaVencimiento = new Date(new Date(c.fechaEmision).getTime() + c.diasCredito * 24 * 60 * 60 * 1000);
+            return formatFecha(fechaVencimiento.toISOString());
+          })()}
+        </td>
+        <td className="px-5 py-4 whitespace-nowrap text-lg text-black">{formatFecha(c.fechaRecepcion)}</td>
+        <td className="px-5 py-4 whitespace-nowrap text-sm text-black font-medium">{c.proveedor}</td>
+        <td className="px-5 py-4 whitespace-nowrap text-xl text-black font-medium">{c.numeroFactura}</td>
+        <td className="px-5 py-4 whitespace-nowrap text-sm text-black">{c.numeroControl}</td>
+        <td className="px-5 py-4 text-sm text-black max-w-sm truncate">
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>

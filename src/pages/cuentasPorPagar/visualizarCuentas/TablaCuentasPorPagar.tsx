@@ -36,20 +36,22 @@ const TablaCuentasPorPagar: React.FC<TablaCuentasPorPagarProps> = ({
           <th className="px-2 py-3 text-center">Acciones</th>
           <th className="px-2 py-3 text-center">Imagen</th>
           <th className="px-2 py-3 text-center">Pagos</th>
-          <th className="px-5 py-3 text-right">Monto Bs</th>
-          <th className="px-5 py-3 text-right">Retención Bs</th>
-          <th className="px-5 py-3 text-center">Tasa</th>
-          <th className="px-5 py-3 text-center">Divisa</th>
-          <th className="px-5 py-3 text-center">Vence en</th>
-          <th className="px-5 py-3 text-center">Recepción</th>
-          <th className="px-5 py-3 text-center">Proveedor</th>
-          <th className="px-5 py-3 text-center">N° Factura</th>
-          <th className="px-5 py-3 text-center">N° Control</th>
-          <th className="px-5 py-3 text-left">Descripción</th>
-          <th className="px-5 py-3 text-center">Usuario</th>
-          <th className="px-5 py-3 text-center">Farmacia</th>
-          <th className="px-5 py-3 text-center">Estatus</th>
-          <th className="px-5 py-3 text-center">Cambiar Estatus</th>
+          <th className="px-2 py-3 text-center">Monto Bs</th>
+          <th className="px-2 py-3 text-center">Retención Bs</th>
+          <th className="px-2 py-3 text-center">Tasa</th>
+          <th className="px-2 py-3 text-center">Divisa</th>
+          <th className="px-2 py-3 text-center">Días para Vencer</th>
+          <th className="px-2 py-3 text-center">Fecha Emisión</th>
+          <th className="px-2 py-3 text-center">Recepción</th>
+          <th className="px-2 py-3 text-center">Fecha Vencimiento</th>
+          <th className="px-2 py-3 text-center">Proveedor</th>
+          <th className="px-2 py-3 text-center">N° Factura</th>
+          <th className="px-2 py-3 text-center">N° Control</th>
+          <th className="px-2 py-3 text-center">Descripción</th>
+          <th className="px-2 py-3 text-center">Usuario</th>
+          <th className="px-2 py-3 text-center">Farmacia</th>
+          <th className="px-2 py-3 text-center">Estatus</th>
+          <th className="px-2 py-3 text-center">Cambiar Estatus</th>
         </tr>
       </thead>
       <tbody className="bg-white divide-y divide-slate-200">
@@ -72,6 +74,7 @@ const TablaCuentasPorPagar: React.FC<TablaCuentasPorPagarProps> = ({
               ESTATUS_OPCIONES={ESTATUS_OPCIONES}
               formatFecha={formatFecha}
               abrirEdicionCuenta={abrirEdicionCuenta}
+              calcularDiasRestantes={calcularDiasRestantes}
             />
           ))}
       </tbody>
