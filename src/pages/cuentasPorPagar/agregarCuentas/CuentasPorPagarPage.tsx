@@ -53,7 +53,7 @@ const CuentasPorPagarPage: React.FC = () => {
     retencion: 0,
     divisa: "USD",
     tasa: 0,
-    estatus: "activa",
+    estatus: "wait",
     usuarioCorreo: usuario?.correo || "",
     farmacia: "",
     imagenesCuentaPorPagar: []
@@ -155,7 +155,7 @@ const CuentasPorPagarPage: React.FC = () => {
         retencion: 0,
         divisa: "USD",
         tasa: 0,
-        estatus: "activa",
+        estatus: "wait",
         usuarioCorreo: usuario?.correo || "",
         farmacia: "",
         imagenesCuentaPorPagar: []
@@ -239,13 +239,6 @@ const CuentasPorPagarPage: React.FC = () => {
         <div>
           <label className="block text-sm font-medium text-gray-700">Tasa</label>
           <input type="number" name="tasa" value={form.tasa === 0 ? "" : form.tasa} onChange={handleChange} min={0} step="0.0001" className="w-full border rounded px-2 py-1" required onWheel={e => e.currentTarget.blur()} />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Estatus</label>
-          <select name="estatus" value={form.estatus} onChange={handleChange} className="w-full border rounded px-2 py-1">
-            <option value="activa">Activa</option>
-            <option value="inactiva">Inactiva</option>
-          </select>
         </div>
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">Adjuntar imágenes (máx. 3)</label>
