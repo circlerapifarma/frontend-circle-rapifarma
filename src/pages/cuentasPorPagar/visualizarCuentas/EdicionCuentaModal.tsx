@@ -179,12 +179,60 @@ const EdicionCuentaModal: React.FC<EdicionCuentaModalProps> = ({
       } else if (cuentaEditada.monedaOriginal === 'Bs' && next.monedaDePago === 'USD' && tasa > 0) {
         next.montoDePago = Number((cuentaEditada.montoOriginal / tasa).toFixed(4));
       } else if (cuentaEditada.monedaOriginal === 'Bs' && next.monedaDePago === 'Bs' && tasa > 0) {
-        // Si la moneda original es Bs y la de pago es Bs, convertir primero a USD y luego aplicar la nueva tasa para mostrar el monto en Bs actualizado
         const montoUSD = cuentaEditada.montoOriginal / (Number(cuentaEditada.tasaOriginal) || 1);
         next.montoDePago = Number((montoUSD * tasa).toFixed(4));
       } else {
         next.montoDePago = cuentaEditada.montoOriginal;
       }
+    }
+
+    // Si cambia descuento1, descuento2, tipoDescuento1 o tipoDescuento2, recalcular montoDePago
+    if (
+      field === 'descuento1' ||
+      field === 'descuento2' ||
+      field === 'tipoDescuento1' ||
+      field === 'tipoDescuento2'
+    ) {
+      // Calcular el monto base en la moneda de pago
+      let montoBase = Number(cuentaEditada.montoOriginal) || 0;
+      let monedaBase = cuentaEditada.monedaOriginal;
+      let monedaPago = next.monedaDePago;
+      let tasa = Number(next.tasaDePago) || 0;
+
+      // Convertir monto base a la moneda de pago si es necesario
+      if (monedaBase !== monedaPago && tasa > 0) {
+        if (monedaBase === 'USD' && monedaPago === 'Bs') {
+          montoBase = montoBase * tasa;
+        } else if (monedaBase === 'Bs' && monedaPago === 'USD') {
+          montoBase = montoBase / tasa;
+        }
+      }
+
+      // Descuentos
+      const descuento1 = Number(field === 'descuento1' ? value : next.descuento1) || 0;
+      const descuento2 = Number(field === 'descuento2' ? value : next.descuento2) || 0;
+      const tipoDescuento1 = field === 'tipoDescuento1' ? value : next.tipoDescuento1 || 'monto';
+      const tipoDescuento2 = field === 'tipoDescuento2' ? value : next.tipoDescuento2 || 'monto';
+
+      let desc1 = 0;
+      let desc2 = 0;
+
+      if (tipoDescuento1 === 'porcentaje') {
+        desc1 = montoBase * (descuento1 / 100);
+      } else {
+        desc1 = descuento1;
+      }
+      if (tipoDescuento2 === 'porcentaje') {
+        desc2 = (montoBase - desc1) * (descuento2 / 100);
+      } else {
+        desc2 = descuento2;
+      }
+
+      const totalDescuentos = desc1 + desc2;
+      const retencion = Number(next.retencion) || 0;
+
+      // El monto a pagar es el monto base menos descuentos y retención, nunca menor a 0
+      next.montoDePago = Math.max(montoBase - totalDescuentos - retencion, 0);
     }
 
     // Si se tilda/des-tilda abono, también actualizar el campo 'abono' en el objeto
