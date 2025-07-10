@@ -171,12 +171,66 @@ const EdicionCuentaModal: React.FC<EdicionCuentaModalProps> = ({
       }
     }
 
+    // Si cambia la tasaDePago, recalcular montoDePago automáticamente y actualizar el input
+    if (field === 'tasaDePago') {
+      const tasa = Number(value);
+      if (cuentaEditada.monedaOriginal === 'USD' && next.monedaDePago === 'Bs' && tasa > 0) {
+        next.montoDePago = Number((cuentaEditada.montoOriginal * tasa).toFixed(4));
+      } else if (cuentaEditada.monedaOriginal === 'Bs' && next.monedaDePago === 'USD' && tasa > 0) {
+        next.montoDePago = Number((cuentaEditada.montoOriginal / tasa).toFixed(4));
+      } else if (cuentaEditada.monedaOriginal === 'Bs' && next.monedaDePago === 'Bs' && tasa > 0) {
+        // Si la moneda original es Bs y la de pago es Bs, convertir primero a USD y luego aplicar la nueva tasa para mostrar el monto en Bs actualizado
+        const montoUSD = cuentaEditada.montoOriginal / (Number(cuentaEditada.tasaOriginal) || 1);
+        next.montoDePago = Number((montoUSD * tasa).toFixed(4));
+      } else {
+        next.montoDePago = cuentaEditada.montoOriginal;
+      }
+    }
+
     // Si se tilda/des-tilda abono, también actualizar el campo 'abono' en el objeto
     if (field === 'esAbono') {
       next.abono = value === true;
     }
 
     setCuentaEditada(next);
+
+    // Guardar automáticamente en localStorage al recalcular montoDePago
+    try {
+      const stored = localStorage.getItem('cuentasParaPagar');
+      let cuentas = stored ? JSON.parse(stored) : [];
+      const cuentaParaGuardar = { ...next, cuentaPorPagarId: next.cuentaPorPagarId || next._id };
+      delete cuentaParaGuardar._id;
+      if (Array.isArray(cuentas)) {
+        let found = false;
+        cuentas = cuentas.map((c) => {
+          const match = (c.cuentaPorPagarId && cuentaParaGuardar.cuentaPorPagarId && c.cuentaPorPagarId === cuentaParaGuardar.cuentaPorPagarId)
+            || (c._id && cuentaParaGuardar.cuentaPorPagarId && c._id === cuentaParaGuardar.cuentaPorPagarId)
+            || (c.cuentaPorPagarId && cuentaParaGuardar._id && c.cuentaPorPagarId === cuentaParaGuardar._id)
+            || (c._id && cuentaParaGuardar._id && c._id === cuentaParaGuardar._id);
+          if (match) {
+            found = true;
+            return { ...c, ...cuentaParaGuardar, cuentaPorPagarId: cuentaParaGuardar.cuentaPorPagarId || cuentaParaGuardar._id };
+          }
+          return c;
+        });
+        if (!found) {
+          cuentas.push({ ...cuentaParaGuardar, cuentaPorPagarId: cuentaParaGuardar.cuentaPorPagarId || cuentaParaGuardar._id });
+        }
+        const seen = new Set<string>();
+        cuentas = cuentas.filter((c: any) => {
+          const key = c.cuentaPorPagarId || c._id;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      } else if (typeof cuentas === 'object' && cuentas !== null) {
+        const id = next.cuentaPorPagarId || next._id;
+        if (id && id !== 'undefined' && id !== null && id !== '') {
+          cuentas[id] = cuentaParaGuardar;
+        }
+      }
+      localStorage.setItem('cuentasParaPagar', JSON.stringify(cuentas));
+    } catch {}
   };
 
   // Guardar cambios en localStorage
