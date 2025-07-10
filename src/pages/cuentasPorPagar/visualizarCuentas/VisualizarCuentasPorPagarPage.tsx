@@ -191,6 +191,9 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
       } else {
         montoDePago = Number(monto);
       }
+      // Restar la retención si existe
+      const retencionNum = Number(retencion) || 0;
+      montoDePago = Math.max(montoDePago - retencionNum, 0);
       const nuevo = [
         ...listaActual,
         {
