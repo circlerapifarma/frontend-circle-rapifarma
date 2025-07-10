@@ -177,7 +177,7 @@ const FilaCuentaPorPagar: React.FC<FilaCuentaPorPagarProps> = ({
             );
           })()}
         </td>
-        <td className="px-5 py-4 whitespace-nowrap text-xl text-slate-700 text-right">
+        <td className="px-2 py-4 whitespace-nowrap text-xl text-slate-700 text-right">
           <div className="font-bold text-black">
             {(() => {
               // Mostrar monto original en Bs, 4 decimales
@@ -198,7 +198,7 @@ const FilaCuentaPorPagar: React.FC<FilaCuentaPorPagarProps> = ({
           </div>
         </td>
         {/* Celda de retención (quinto) */}
-        <td className="px-5 py-4 whitespace-nowrap text-xl text-slate-700 text-right">
+        <td className="px-1 py-4 whitespace-nowrap text-xl text-slate-700 text-right">
           <div className="font-bold text-black">
             {(() => {
               // Mostrar retención en Bs, 4 decimales
@@ -251,9 +251,9 @@ const FilaCuentaPorPagar: React.FC<FilaCuentaPorPagarProps> = ({
           })()}
         </td>
         <td className="px-5 py-4 whitespace-nowrap text-lg text-black">{formatFecha(c.fechaRecepcion)}</td>
-        <td className="px-5 py-4 whitespace-nowrap text-sm text-black font-medium">{c.proveedor}</td>
-        <td className="px-5 py-4 whitespace-nowrap text-xl text-black font-medium">{c.numeroFactura}</td>
-        <td className="px-5 py-4 whitespace-nowrap text-sm text-black">{c.numeroControl}</td>
+        <td className="px-5 py-4 whitespace-nowrap text-md text-black">{c.proveedor}</td>
+        <td className="px-5 py-4 whitespace-nowrap text-xl text-black">{c.numeroFactura}</td>
+        <td className="px-5 py-4 whitespace-nowrap text-xl text-black">{c.numeroControl}</td>
         <td className="px-5 py-4 text-sm text-black max-w-sm truncate">
           <TooltipProvider>
             <Tooltip>
