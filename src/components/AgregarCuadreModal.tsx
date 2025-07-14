@@ -263,7 +263,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                             <input type="number" step="any" value={totalCajaSistemaBs} onChange={e => setTotalCajaSistemaBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} onWheel={e => e.currentTarget.blur()} />
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-gray-600 mb-1">Devoluciones Bs (solo visual)</label>
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">Devoluciones Bs</label>
                             <input type="number" step="any" value={devolucionesBs} onChange={e => setDevolucionesBs(Number(e.target.value))} className="w-full border rounded-lg p-2" required min={0} onWheel={e => e.currentTarget.blur()} />
                         </div>
                         <div>
