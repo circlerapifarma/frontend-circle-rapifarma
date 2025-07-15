@@ -363,7 +363,45 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
                         <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 gasto-fecha">{formatFecha(g.fecha,)}</td>
                         <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 gasto-fecha">{formatFecha(g.fecha, g.fechaRegistro)}</td>
                         <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-800 font-medium">{g.titulo}</td>
-                        <td className="px-5 py-4 text-sm text-slate-600 max-w-md truncate" title={g.descripcion}>{g.descripcion}</td>
+                        <td className="px-5 py-4 text-sm text-slate-600 max-w-md truncate cursor-pointer group relative" title={g.descripcion}
+                          onClick={e => {
+                            e.stopPropagation();
+                            const target = e.currentTarget;
+                            // Si ya existe el tooltip, lo quitamos
+                            const existing = target.querySelector('.desc-tooltip');
+                            if (existing) {
+                              existing.remove();
+                              return;
+                            }
+                            // Crear tooltip
+                            const tooltip = document.createElement('div');
+                            tooltip.className = 'desc-tooltip fixed z-50 bg-white border border-slate-300 shadow-lg rounded-lg p-4 text-slate-800 text-sm max-w-xs w-fit break-words';
+                            tooltip.style.top = `${target.getBoundingClientRect().bottom + window.scrollY + 8}px`;
+                            tooltip.style.left = `${target.getBoundingClientRect().left + window.scrollX}px`;
+                            tooltip.innerText = g.descripcion;
+                            // Cerrar al hacer click fuera
+                            const closeTooltip = (ev: MouseEvent) => {
+                              if (!tooltip.contains(ev.target as Node)) {
+                                tooltip.remove();
+                                document.removeEventListener('mousedown', closeTooltip);
+                              }
+                            };
+                            document.addEventListener('mousedown', closeTooltip);
+                            document.body.appendChild(tooltip);
+                            // Responsive: ajustar si se sale de la pantalla
+                            setTimeout(() => {
+                              const rect = tooltip.getBoundingClientRect();
+                              if (rect.right > window.innerWidth) {
+                                tooltip.style.left = `${window.innerWidth - rect.width - 16}px`;
+                              }
+                              if (rect.bottom > window.innerHeight) {
+                                tooltip.style.top = `${window.innerHeight - rect.height - 16 + window.scrollY}px`;
+                              }
+                            }, 10);
+                          }}
+                        >
+                          {g.descripcion}
+                        </td>
                         <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-800 font-semibold text-right gasto-monto">
                           {g.monto.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
