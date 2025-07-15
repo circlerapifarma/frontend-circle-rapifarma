@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Loader2, AlertTriangle, DollarSign, ArrowUp, ArrowDown, Warehouse, FileMinus2, HandCoins, CheckCircle2 } from "lucide-react"; // Añadimos ArrowUp y ArrowDown
+import { Loader2, AlertTriangle } from "lucide-react";
 import { motion } from "framer-motion";
+import DashboardCard from "../components/DashboardCard";
 
 // Reutilizamos las variantes de Framer Motion
 const containerVariants = {
@@ -24,8 +25,8 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // Helper para formatear moneda (considera moverlo a un archivo de utilidades)
 const formatCurrency = (amount: number | null | undefined) => {
-  if (amount === null || amount === undefined) return "$0.00";
-  return `$${amount.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  if (amount === null || amount === undefined) return "0.00";
+  return amount.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
 // Helper para formatear bolívares (considera moverlo a un archivo de utilidades)
@@ -54,6 +55,8 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
   const [totalInventario, setTotalInventario] = useState<number>(0);
   const [totalCuentasPorPagar, setTotalCuentasPorPagar] = useState<number>(0);
   const [totalCuentasPagadas, setTotalCuentasPagadas] = useState<number>(0);
+  const [totalCostoInventario, setTotalCostoInventario] = useState<number>(0);
+  const [totalCostoInventarioRestante, setTotalCostoInventarioRestante] = useState<number>(0);
 
   // Filtros de fecha
   const [fechaInicio, setFechaInicio] = useState<string>("");
@@ -90,10 +93,14 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
         const total = verified.reduce((acc: number, cuadre: any) => acc + (cuadre.totalGeneralUsd || 0), 0);
         const sobrantes = verified.reduce((acc: number, cuadre: any) => acc + (cuadre.sobranteUsd || 0), 0);
         const faltantes = verified.reduce((acc: number, cuadre: any) => acc + (cuadre.faltanteUsd || 0), 0);
+        const costoInventarioTotal = verified.reduce((acc: number, cuadre: any) => acc + (cuadre.costoInventario || 0), 0);
+        const costoInventarioRestante = total - costoInventarioTotal;
 
         setTotalGeneral(total);
         setTotalSobrantes(sobrantes);
         setTotalFaltantes(faltantes);
+        setTotalCostoInventario(costoInventarioTotal);
+        setTotalCostoInventarioRestante(costoInventarioRestante);
 
         // Calcular totales por método de pago
         setTotalEfectivoUsd(verified.reduce((acc: number, cuadre: any) => acc + (cuadre.efectivoUsd || 0), 0));
@@ -163,13 +170,9 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
             headers: { "Authorization": `Bearer ${token}` }
           });
           const dataCuentas = await resCuentas.json();
-          // Activas
+          // Activas (sin filtrar por fecha)
           const cuentasActivas = Array.isArray(dataCuentas)
-            ? dataCuentas.filter((c: any) =>
-                c.estatus === 'activa' &&
-                (!fechaInicio || new Date(c.fechaEmision) >= new Date(fechaInicio)) &&
-                (!fechaFin || new Date(c.fechaEmision) <= new Date(fechaFin))
-              )
+            ? dataCuentas.filter((c: any) => c.estatus === 'activa')
             : [];
           const totalCuentasActivas = cuentasActivas.reduce((acc: number, c: any) => acc + Number(c.montoUsd || 0), 0);
           setTotalCuentasPorPagar(Math.max(0, totalCuentasActivas));
@@ -181,7 +184,18 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
                 (!fechaFin || new Date(c.fechaEmision) <= new Date(fechaFin))
               )
             : [];
-          const totalCuentasPagadasCalc = cuentasPagadas.reduce((acc: number, c: any) => acc + Number(c.montoUsd || 0), 0);
+          const totalCuentasPagadasCalc = cuentasPagadas.reduce((acc: number, c: any) => {
+            if (c.divisa === 'USD' && typeof c.monto === 'number') {
+              return acc + c.monto;
+            }
+            if (c.divisa === 'Bs' && typeof c.montoUsd === 'number') {
+              return acc + c.montoUsd;
+            }
+            if (c.divisa === 'Bs' && typeof c.monto === 'number' && typeof c.tasa === 'number' && c.tasa > 0) {
+              return acc + (c.monto / c.tasa);
+            }
+            return acc;
+          }, 0);
           setTotalCuentasPagadas(Math.max(0, totalCuentasPagadasCalc));
         }
       } catch (e) {
@@ -194,11 +208,11 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
   const currentMonthName = new Date().toLocaleString('es-VE', { month: 'long', year: 'numeric' });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-white flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
       <div className="max-w-6xl w-full space-y-10">
         {/* Header Section */}
         <header className="text-center">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-blue-900 leading-tight">
+          <h1 className="text-4xl md:text-5xl font-extrabold text-black leading-tight">
             📊 Resumen de Ventas de Farmacias
           </h1>
           <p className="mt-2 text-xl text-gray-700">
@@ -252,157 +266,103 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
             initial="hidden"
             animate="visible"
           >
-            {/* Tarjeta: Total General (USD) */}
-            <motion.div
-              variants={cardVariants}
-              whileHover={{ scale: 1.02 }}
-              className="rounded-2xl border-2 border-blue-300 bg-white p-8 space-y-4 shadow-xl flex flex-col items-center text-center transition-all duration-300"
-            >
-              <div className="bg-blue-100 rounded-full p-4">
-                <DollarSign className="w-10 h-10 text-blue-600" />
+            {/* Categoría: Ventas */}
+            <div className="col-span-1 md:col-span-2 lg:col-span-3">
+              <h3 className="text-lg font-semibold text-gray-800 mb-2 border-b border-gray-200 pb-1">Ventas</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <motion.div variants={cardVariants} className="rounded-2xl border border-black bg-[#f5f5f5] p-8 flex flex-col items-center text-center shadow-lg transition-shadow duration-300">
+                  <span className="text-5xl font-extrabold text-[#1a202c] flex items-center drop-shadow-sm"><span className="text-green-600 mr-2 text-5xl">$</span>{formatCurrency(totalGeneral)}</span>
+                  <span className="text-xl text-gray-700 mt-4 font-semibold tracking-wide">Ventas Totales</span>
+                </motion.div>
+                <motion.div variants={cardVariants} className="rounded-2xl border border-black bg-[#e0f7fa] p-8 flex flex-col items-center text-center shadow-lg transition-shadow duration-300">
+                  <span className="text-5xl font-extrabold text-blue-950 flex items-center drop-shadow-sm"><span className="text-green-600 mr-2 text-5xl">$</span>{formatCurrency(totalSobrantes)}</span>
+                  <span className="text-xl text-gray-700 mt-4 font-semibold tracking-wide">Sobrantes</span>
+                </motion.div>
+                <motion.div variants={cardVariants} className="rounded-2xl border border-black bg-[#ffebee] p-8 flex flex-col items-center text-center shadow-lg transition-shadow duration-300">
+                  <span className="text-5xl font-extrabold text-[#b71c1c] flex items-center drop-shadow-sm"><span className="text-green-600 mr-2 text-5xl">$</span>{formatCurrency(totalFaltantes)}</span>
+                  <span className="text-xl text-gray-700 mt-4 font-semibold tracking-wide">Faltantes</span>
+                </motion.div>
               </div>
-              <h2 className="text-2xl font-bold text-gray-800">Ventas Totales (USD)</h2>
-              <p className="text-5xl font-extrabold text-blue-700">
-                {formatCurrency(totalGeneral)}
-              </p>
-              <p className="text-sm text-gray-500">Monto total de ventas verificadas.</p>
-            </motion.div>
+            </div>
 
-            {/* Tarjeta: Sobrantes */}
-            <motion.div
-              variants={cardVariants}
-              whileHover={{ scale: 1.02 }}
-              className="rounded-2xl border-2 border-green-300 bg-white p-8 space-y-4 shadow-xl flex flex-col items-center text-center transition-all duration-300"
-            >
-              <div className="bg-green-100 rounded-full p-4">
-                <ArrowUp className="w-10 h-10 text-green-600" />
+            {/* Categoría: Métodos de Pago */}
+            <div className="col-span-1 md:col-span-2 lg:col-span-3 mt-8">
+              <h3 className="text-lg font-semibold text-gray-800 mb-2 border-b border-gray-200 pb-1">Métodos de Pago</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="rounded-2xl border border-black bg-white p-8 flex flex-col gap-4 shadow-lg transition-shadow duration-300">
+                  <span className="text-xl font-semibold text-gray-700 mb-4 tracking-wide">USD</span>
+                  <div className="flex justify-between text-gray-900 text-lg font-medium">
+                    <span>Efectivo</span>
+                    <span className="font-extrabold flex items-center text-2xl"><span className="text-green-600 mr-2 text-2xl">$</span>{formatCurrency(totalEfectivoUsd)}</span>
+                  </div>
+                  <div className="flex justify-between text-gray-900 text-lg font-medium">
+                    <span>Zelle</span>
+                    <span className="font-extrabold flex items-center text-2xl"><span className="text-green-600 mr-2 text-2xl">$</span>{formatCurrency(totalZelleUsd)}</span>
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-black bg-white p-8 flex flex-col gap-4 shadow-lg transition-shadow duration-300">
+                  <span className="text-xl font-semibold text-gray-700 mb-4 tracking-wide">Bolívares</span>
+                  <div className="flex justify-between text-gray-900 text-lg font-medium">
+                    <span>P. Venta (Débito)</span>
+                    <span className="font-extrabold flex items-center text-2xl"><span className="text-green-600 mr-2 text-2xl">Bs</span>{formatBs(totalPuntosVentaDebitoBs)}</span>
+                  </div>
+                  <div className="flex justify-between text-gray-900 text-lg font-medium">
+                    <span>P. Venta (Crédito)</span>
+                    <span className="font-extrabold flex items-center text-2xl"><span className="text-green-600 mr-2 text-2xl">Bs</span>{formatBs(totalPuntosVentaCreditoBs)}</span>
+                  </div>
+                  <div className="flex justify-between text-gray-900 text-lg font-medium">
+                    <span>Pago Móvil</span>
+                    <span className="font-extrabold flex items-center text-2xl"><span className="text-green-600 mr-2 text-2xl">Bs</span>{formatBs(totalPagomovilBs)}</span>
+                  </div>
+                  <div className="flex justify-between text-gray-900 text-lg font-medium">
+                    <span>Efectivo</span>
+                    <span className="font-extrabold flex items-center text-2xl"><span className="text-green-600 mr-2 text-2xl">Bs</span>{formatBs(totalEfectivoBs)}</span>
+                  </div>
+                </div>
               </div>
-              <h2 className="text-2xl font-bold text-gray-800">Total Sobrantes (USD)</h2>
-              <p className="text-5xl font-extrabold text-green-700">
-                {formatCurrency(totalSobrantes)}
-              </p>
-              <p className="text-sm text-gray-500">Exceso en cuadres verificados.</p>
-            </motion.div>
+            </div>
 
-            {/* Tarjeta: Faltantes */}
-            <motion.div
-              variants={cardVariants}
-              whileHover={{ scale: 1.02 }}
-              className="rounded-2xl border-2 border-red-300 bg-white p-8 space-y-4 shadow-xl flex flex-col items-center text-center transition-all duration-300"
-            >
-              <div className="bg-red-100 rounded-full p-4">
-                <ArrowDown className="w-10 h-10 text-red-600" />
+            {/* Categoría: Resúmenes */}
+            <div className="col-span-1 md:col-span-2 lg:col-span-3 mt-8">
+              <h3 className="text-lg font-semibold text-gray-800 mb-2 border-b border-gray-200 pb-1">Resúmenes</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <DashboardCard
+                  title="Mes a la fecha"
+                  value={<span className="flex items-center"><span className="text-green-600 mr-2 text-3xl">$</span>{formatCurrency(totalGastos)}</span>}
+                  subtitle="Gastos"
+                  badge={<span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs font-medium">Sistema</span>}
+                  trendSvg={<svg viewBox="0 0 100 24" fill="none" className="w-full h-full"><polyline points="0,20 20,10 40,14 60,6 80,12 100,4" stroke="#22c55e" strokeWidth="2" fill="none"/></svg>}
+                />
+                <DashboardCard
+                  title="Mes a la fecha"
+                  value={<span className="flex items-center"><span className="text-green-600 mr-2 text-3xl">$</span>{formatCurrency(totalInventario)}</span>}
+                  subtitle="Inventario (USD)"
+                  badge={<span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-medium">Inventario</span>}
+                  trendSvg={<svg viewBox="0 0 100 24" fill="none" className="w-full h-full"><polyline points="0,18 20,12 40,16 60,8 80,10 100,6" stroke="#2563eb" strokeWidth="2" fill="none"/></svg>}
+                />
+                <DashboardCard
+                  title="Mes a la fecha"
+                  value={<span className="flex items-center"><span className="text-green-600 mr-2 text-3xl">$</span>{formatCurrency(totalCuentasPorPagar + totalCuentasPagadas)}</span>}
+                  subtitle="Cuentas por Pagar y Pagadas"
+                  badge={<span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded text-xs font-medium">Cuentas</span>}
+                  trendSvg={<svg viewBox="0 0 100 24" fill="none" className="w-full h-full"><polyline points="0,22 20,16 40,20 60,10 80,14 100,8" stroke="#f59e42" strokeWidth="2" fill="none"/></svg>}
+                />
+                <DashboardCard
+                  title="Mes a la fecha"
+                  value={<span className="flex items-center"><span className="text-green-600 mr-2 text-3xl">$</span>{formatCurrency(totalCostoInventario)}</span>}
+                  subtitle="Inventario Costo Venta"
+                  badge={<span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs font-medium">Inventario</span>}
+                  trendSvg={<svg viewBox="0 0 100 24" fill="none" className="w-full h-full"><polyline points="0,16 20,8 40,12 60,6 80,10 100,4" stroke="#a21caf" strokeWidth="2" fill="none"/></svg>}
+                />
+                <DashboardCard
+                  title="Mes a la fecha"
+                  value={<span className="flex items-center"><span className="text-green-600 mr-2 text-3xl">$</span>{formatCurrency(totalCostoInventarioRestante)}</span>}
+                  subtitle="Utilidad (Venta - Costo Inventario)"
+                  badge={<span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-medium">Utilidad</span>}
+                  trendSvg={<svg viewBox="0 0 100 24" fill="none" className="w-full h-full"><polyline points="0,20 20,14 40,18 60,10 80,12 100,6" stroke="#22c55e" strokeWidth="2" fill="none"/></svg>}
+                />
               </div>
-              <h2 className="text-2xl font-bold text-gray-800">Total Faltantes (USD)</h2>
-              <p className="text-5xl font-extrabold text-red-700">
-                {formatCurrency(totalFaltantes)}
-              </p>
-              <p className="text-sm text-gray-500">Déficit en cuadres verificados.</p>
-            </motion.div>
-
-            {/* Tarjeta: Desglose de Métodos de Pago USD */}
-            <motion.div
-              variants={cardVariants}
-              whileHover={{ scale: 1.02 }}
-              className="md:col-span-1 lg:col-span-2 rounded-2xl border-2 border-purple-300 bg-white p-8 space-y-4 shadow-xl flex flex-col justify-center items-center text-center transition-all duration-300"
-            >
-              <div className="bg-purple-100 rounded-full p-4">
-                <DollarSign className="w-10 h-10 text-purple-600" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-800">Desglose de USD</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
-                <div className="bg-purple-50 p-4 rounded-lg">
-                  <p className="text-md font-semibold text-gray-700">Efectivo USD</p>
-                  <p className="text-3xl font-extrabold text-purple-800">{formatCurrency(totalEfectivoUsd)}</p>
-                </div>
-                <div className="bg-purple-50 p-4 rounded-lg">
-                  <p className="text-md font-semibold text-gray-700">Zelle USD</p>
-                  <p className="text-3xl font-extrabold text-purple-800">{formatCurrency(totalZelleUsd)}</p>
-                </div>
-              </div>
-              <p className="text-sm text-gray-500">Distribución de ingresos en dólares.</p>
-            </motion.div>
-
-            {/* Tarjeta: Desglose de Métodos de Pago BS */}
-            <motion.div
-              variants={cardVariants}
-              whileHover={{ scale: 1.02 }}
-              className="rounded-2xl border-2 border-orange-300 bg-white p-8 space-y-4 shadow-xl flex flex-col justify-center items-center text-center transition-all duration-300"
-            >
-              <div className="bg-orange-100 rounded-full p-4">
-                <DollarSign className="w-10 h-10 text-orange-600" /> {/* Reutilizando DollarSign por ahora */}
-              </div>
-              <h2 className="text-2xl font-bold text-gray-800">Desglose de Bs</h2>
-              <div className="grid grid-cols-1 gap-4 w-full">
-                <div className="bg-orange-50 p-4 rounded-lg">
-                  <p className="text-md font-semibold text-gray-700">Puntos de Venta (Débito)</p>
-                  <p className="text-2xl font-extrabold text-orange-800">{formatBs(totalPuntosVentaDebitoBs)}</p>
-                </div>
-                <div className="bg-orange-50 p-4 rounded-lg">
-                  <p className="text-md font-semibold text-gray-700">Puntos de Venta (Crédito)</p>
-                  <p className="text-2xl font-extrabold text-orange-800">{formatBs(totalPuntosVentaCreditoBs)}</p>
-                </div>
-                <div className="bg-orange-50 p-4 rounded-lg">
-                  <p className="text-md font-semibold text-gray-700">Pago Móvil</p>
-                  <p className="text-2xl font-extrabold text-orange-800">{formatBs(totalPagomovilBs)}</p>
-                </div>
-                <div className="bg-orange-50 p-4 rounded-lg">
-                  <p className="text-md font-semibold text-gray-700">Efectivo Bs</p>
-                  <p className="text-2xl font-extrabold text-orange-800">{formatBs(totalEfectivoBs)}</p>
-                </div>
-              </div>
-              <p className="text-sm text-gray-500">Distribución de ingresos en bolívares.</p>
-            </motion.div>
-
-            {/* NUEVAS TARJETAS DE RESUMEN */}
-            <motion.div
-              variants={cardVariants}
-              whileHover={{ scale: 1.02 }}
-              className="rounded-2xl border-2 border-red-300 bg-white p-8 space-y-4 shadow-xl flex flex-col items-center text-center transition-all duration-300"
-            >
-              <div className="bg-red-100 rounded-full p-4">
-                <FileMinus2 className="w-10 h-10 text-red-600" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-800">Total Gastos (USD)</h2>
-              <p className="text-5xl font-extrabold text-red-700">{formatCurrency(totalGastos)}</p>
-              <p className="text-sm text-gray-500">Suma de todos los gastos verificados (reconvertidos a USD).</p>
-            </motion.div>
-            <motion.div
-              variants={cardVariants}
-              whileHover={{ scale: 1.02 }}
-              className="rounded-2xl border-2 border-blue-300 bg-white p-8 space-y-4 shadow-xl flex flex-col items-center text-center transition-all duration-300"
-            >
-              <div className="bg-blue-100 rounded-full p-4">
-                <Warehouse className="w-10 h-10 text-blue-600" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-800">Total Inventario (USD)</h2>
-              <p className="text-5xl font-extrabold text-blue-700">{formatCurrency(totalInventario)}</p>
-              <p className="text-sm text-gray-500">Suma del valor de inventario en USD.</p>
-            </motion.div>
-            <motion.div
-              variants={cardVariants}
-              whileHover={{ scale: 1.02 }}
-              className="rounded-2xl border-2 border-orange-300 bg-white p-8 space-y-4 shadow-xl flex flex-col items-center text-center transition-all duration-300"
-            >
-              <div className="bg-orange-100 rounded-full p-4">
-                <HandCoins className="w-10 h-10 text-orange-600" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-800">Cuentas por Pagar (USD)</h2>
-              <p className="text-5xl font-extrabold text-orange-700">{formatCurrency(totalCuentasPorPagar)}</p>
-              <p className="text-sm text-gray-500">Total de cuentas por pagar activas (USD).</p>
-            </motion.div>
-            <motion.div
-              variants={cardVariants}
-              whileHover={{ scale: 1.02 }}
-              className="rounded-2xl border-2 border-green-300 bg-white p-8 space-y-4 shadow-xl flex flex-col items-center text-center transition-all duration-300"
-            >
-              <div className="bg-green-100 rounded-full p-4">
-                <CheckCircle2 className="w-10 h-10 text-green-600" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-800">Cuentas Pagadas (USD)</h2>
-              <p className="text-5xl font-extrabold text-green-700">{formatCurrency(totalCuentasPagadas)}</p>
-              <p className="text-sm text-gray-500">Total de cuentas por pagar pagadas (USD).</p>
-            </motion.div>
+            </div>
           </motion.div>
         )}
       </div>

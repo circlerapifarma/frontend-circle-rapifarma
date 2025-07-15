@@ -149,37 +149,53 @@ const ChequeoGastosPage: React.FC = () => {
                 (gastosPorLocalidad[localidadSeleccionadaId] || []).filter((gasto) => gasto.estado === "wait").map((g, idx) => {
                   const gasto = g as any; // Forzar tipado flexible para acceder a divisa y tasa
                   let montoUsd = gasto.monto;
-                  if (gasto.divisa === "Bs" && gasto.tasa && gasto.tasa > 0) {
-                    montoUsd = gasto.monto / gasto.tasa;
+                  let montoBs = gasto.monto;
+                  if (gasto.divisa === "Bs" && gasto.tasa && Number(gasto.tasa) > 0) {
+                    montoUsd = gasto.monto / Number(gasto.tasa);
+                    montoBs = gasto.monto;
+                  } else if (gasto.divisa === "USD" && gasto.tasa && Number(gasto.tasa) > 0) {
+                    montoBs = gasto.monto * Number(gasto.tasa);
+                    montoUsd = gasto.monto;
                   }
                   return (
-                    <Card key={gasto._id || idx} className="p-6 border-2 border-red-300 rounded-xl shadow-lg bg-red-50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <Card key={gasto._id || idx} className="p-8 border-2 border-red-400 rounded-2xl shadow-2xl bg-gradient-to-br from-white to-red-50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 transition-all duration-300 hover:shadow-3xl">
                       <div className="flex-grow">
-                        <div className="text-xl font-bold text-gray-900 mb-1">{gasto.titulo}</div>
-                        <div className="text-lg text-gray-700">
-                          Monto: <span className="font-semibold text-green-700">{gasto.monto.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {gasto.divisa || ''}</span>
-                          {gasto.divisa === "Bs" && gasto.tasa && gasto.tasa > 0 && (
-                            <span className="ml-2 text-gray-500">(Tasa: {gasto.tasa})</span>
-                          )}
+                        <div className="text-2xl font-extrabold text-gray-900 mb-2 flex items-center gap-2">
+                          {gasto.titulo}
+                          <span className="inline-block bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded-full ml-2 border border-blue-300">
+                            {gasto.divisa ? gasto.divisa : "Sin moneda"}
+                          </span>
                         </div>
-                        <div className="text-lg text-gray-700">
-                          Monto en USD: <span className="font-semibold text-blue-700">{montoUsd.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD</span>
+                        <div className="flex flex-wrap gap-3 mb-2">
+                          <span className="bg-green-100 text-green-800 font-semibold px-3 py-1 rounded-lg text-lg shadow-sm">
+                            Monto: {gasto.monto.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {gasto.divisa || ''}
+                          </span>
+                          <span className="bg-yellow-100 text-yellow-800 font-semibold px-3 py-1 rounded-lg text-lg shadow-sm">
+                            Tasa: {gasto.tasa !== undefined && gasto.tasa !== null && gasto.tasa !== "" ? gasto.tasa : "-"}
+                          </span>
+                          <span className="bg-blue-100 text-blue-800 font-semibold px-3 py-1 rounded-lg text-lg shadow-sm">
+                            {gasto.divisa === "Bs"
+                              ? `Equivalente: ${montoUsd.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`
+                              : gasto.divisa === "USD"
+                                ? `Equivalente: ${montoBs.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs`
+                                : ""}
+                          </span>
                         </div>
-                        <div className="text-base text-gray-600 mt-1">Descripción: {gasto.descripcion}</div>
+                        <div className="text-base text-gray-600 mt-1 mb-1">Descripción: {gasto.descripcion}</div>
                         <div className="text-sm text-gray-500 mt-1">Fecha: {typeof gasto.fecha === 'string' ? gasto.fecha : ''}</div>
                         {gasto.fechaRegistro && (
                           <div className="text-sm text-gray-500 mt-1">Fecha de registro: {new Date(gasto.fechaRegistro).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Caracas' })}</div>
                         )}
                         {/* Mostrar imágenes si existen */}
                         {Array.isArray(gasto.imagenesGasto) && gasto.imagenesGasto.length > 0 && (
-                          <div className="flex gap-2 mt-2 flex-wrap">
+                          <div className="flex gap-2 mt-3 flex-wrap">
                             {gasto.imagenesGasto.map((img: string, idx: number) => (
                               <ImageDisplay key={img + idx} imageName={img} style={{ maxWidth: 100, maxHeight: 100, borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }} />
                             ))}
                           </div>
                         )}
                         {gasto.imagenGasto && (!gasto.imagenesGasto || gasto.imagenesGasto.length === 0) && (
-                          <div className="mt-2">
+                          <div className="mt-3">
                             <ImageDisplay imageName={gasto.imagenGasto} style={{ maxWidth: 100, maxHeight: 100, borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }} />
                           </div>
                         )}
