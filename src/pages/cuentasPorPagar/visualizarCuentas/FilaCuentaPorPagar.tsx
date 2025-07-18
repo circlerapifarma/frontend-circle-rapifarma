@@ -236,17 +236,24 @@ const FilaCuentaPorPagar: React.FC<FilaCuentaPorPagarProps> = ({
             else color = 'text-green-600 font-bold';
             return (
               <span className={color}>
-                {diasParaVencer <= 0 ? 'Vencida' : `${diasParaVencer} días`}
+          {diasParaVencer <= 0 ? 'Vencida' : `${diasParaVencer} días`}
               </span>
             );
           })()}
         </td>
         <td className="px-5 py-4 whitespace-nowrap text-lg text-black text-center">
-          {formatFecha(c.fechaEmision)}
+          {(() => {
+            const fecha = new Date(c.fechaEmision);
+            const isValid = !isNaN(fecha.getTime());
+            return isValid ? formatFecha(c.fechaEmision) : null;
+          })()}
         </td>
         <td className="px-5 py-4 whitespace-nowrap text-lg text-black text-center">
           {(() => {
-            const fechaVencimiento = new Date(new Date(c.fechaEmision).getTime() + c.diasCredito * 24 * 60 * 60 * 1000);
+            const fechaEmision = new Date(c.fechaEmision);
+            const isValid = !isNaN(fechaEmision.getTime());
+            if (!isValid) return null;
+            const fechaVencimiento = new Date(fechaEmision.getTime() + c.diasCredito * 24 * 60 * 60 * 1000);
             return formatFecha(fechaVencimiento.toISOString());
           })()}
         </td>
