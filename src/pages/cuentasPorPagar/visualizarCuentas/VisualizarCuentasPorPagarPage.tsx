@@ -51,6 +51,7 @@ function calcularDiasRestantes(fechaEmision: string, diasCredito: number) {
 const formatFecha = (fechaISO: string) => {
   if (!fechaISO) return "-";
   const date = new Date(fechaISO);
+  if (isNaN(date.getTime())) return "-";
   const userTimezoneOffset = date.getTimezoneOffset() * 60000;
   return new Date(date.getTime() + userTimezoneOffset).toLocaleDateString('es-VE', {
     day: '2-digit',
