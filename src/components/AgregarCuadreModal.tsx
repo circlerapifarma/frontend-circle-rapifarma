@@ -60,6 +60,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
     null,
     null,
     null,
+    null,
   ]);
 
   // Cálculos automáticos
@@ -173,7 +174,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
       costoInventario: costoInventario,
       imagenesCuadre: imagenesCuadre
         .filter((img): img is string => img !== null)
-        .slice(0, 3),
+        .slice(0, 4),
     };
 
     console.log("Cuadre object being sent:", cuadre); // Log the cuadre object
@@ -683,7 +684,7 @@ const AgregarCuadreModal: React.FC<Props> = ({ farmacia, dia, onClose }) => {
                       });
                     }}
                     label={`Adjuntar imagen ${idx + 1}`}
-                    maxSizeMB={2}
+                    maxSizeMB={4}
                     initialFileUrl={imagenesCuadre[idx] || undefined}
                   />
                   {imagenesCuadre[idx] && (
