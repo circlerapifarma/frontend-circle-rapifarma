@@ -24,10 +24,10 @@ import VisualizarInventariosPage from '@/pages/VisualizarInventariosPage';
 import RetiroPage from '@/pages/RetiroPage';
 import VisualizarCuentasPorPagarPage from '@/pages/cuentasPorPagar/visualizarCuentas/VisualizarCuentasPorPagarPage';
 import VerificacionCuentasPorPagarPage from '@/pages/cuentasPorPagar/verificacionCuentas/VerificacionCuentasPorPagarPage';
-import VisualizarPagosCPPPage from '@/pages/cuentasPorPagar/pagos/VisualizarPagosCPPPage';
 import CuentasPorPagarPage from '@/pages/cuentasPorPagar/agregarCuentas/CuentasPorPagarPage';
 import GastosCuentasCuadresPorFarmaciaPage from '@/pages/GastosCuentasCuadresPorFarmaciaPage';
 import ValesPorFarmaciaPage from '@/pages/vales/ValesPorFarmaciaPage';
+import VisualizarPagos from '@/pages/pagosCPP/VisualizarPagos';
 
 const AppRouter = () => (
     <Routes>
@@ -224,7 +224,7 @@ const AppRouter = () => (
             path="/pagoscpp"
             element={
                 <PermissionRoute permiso="verificar_gastos">
-                    <VisualizarPagosCPPPage />
+                    <VisualizarPagos />
                 </PermissionRoute>
             }
         />
