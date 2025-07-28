@@ -52,14 +52,9 @@ const DenegarCuadresModal: React.FC<Props> = ({ open, onClose, farmaciaId, farma
     fetch(`${API_BASE_URL}/cuadres/${farmaciaId}`)
       .then(res => res.json())
       .then(data => {
-        // Filtrar solo cuadres del día actual y pendientes
-        const hoy = new Date();
-        const yyyy = hoy.getFullYear();
-        const mm = String(hoy.getMonth() + 1).padStart(2, '0');
-        const dd = String(hoy.getDate()).padStart(2, '0');
-        const hoyStr = `${yyyy}-${mm}-${dd}`;
+        // Mostrar todos los cuadres pendientes, sin importar la fecha
         setCuadres(
-          data.filter((c: CuadreCaja) => c.estado !== "verified" && c.estado !== "denied" && c.dia === hoyStr)
+          data.filter((c: CuadreCaja) => c.estado !== "verified" && c.estado !== "denied")
         );
       })
       .catch(() => setError("Error al cargar cuadres"))
