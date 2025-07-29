@@ -81,9 +81,7 @@ const VisualizarCuadresPage: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    fetchCuadres();
-  }, []);
+  // El fetchCuadres ahora se dispara solo al presionar el botón 'Obtener'
 
   useEffect(() => {
     const usuarioRaw = localStorage.getItem("usuario");
@@ -203,18 +201,27 @@ const VisualizarCuadresPage: React.FC = () => {
 
   // El return debe estar dentro del cuerpo del componente, no fuera de ninguna función ni bloque
   return (
-    <div className="min-h-screen bg-slate-50 py-8">
-      <div className="w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="h-screen bg-slate-50 py-8">
+      <div className="w-full max-w-screen mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold text-slate-800 text-center flex-1">Visualizar Cuadres</h1>
-          <button
-            className="ml-4 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow transition"
-            onClick={() => setModalOpen(true)}
-            title="Ver todos los cuadres"
-          >
-            <FaRegFileAlt className="text-xl" />
-            <span className="hidden sm:inline">Ver Cuadres</span>
-          </button>
+          <div className="flex gap-2">
+            <button
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow transition"
+              onClick={fetchCuadres}
+              title="Obtener cuadres"
+            >
+              <span className="font-semibold">Obtener</span>
+            </button>
+            <button
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow transition"
+              onClick={() => setModalOpen(true)}
+              title="Ver todos los cuadres"
+            >
+              <FaRegFileAlt className="text-xl" />
+              <span className="hidden sm:inline">Ver Cuadres</span>
+            </button>
+          </div>
         </div>
         <CuadresModal
           open={modalOpen}
@@ -344,7 +351,7 @@ const VisualizarCuadresPage: React.FC = () => {
                       const credito = Array.isArray(c.puntosVenta) ? c.puntosVenta.reduce((a, pv) => a + (parseFloat(pv.puntoCredito as any) || 0), 0) : 0;
                       return (
                         <tr key={c._id} className="hover:bg-slate-50 transition-colors duration-150 ease-in-out">
-                          <td className="px-2 py-4 whitespace-nowrap text-sm">
+                          <td className="px-2 py-4 pl-5 whitespace-nowrap text-sm">
                             <button
                               className="text-blue-600 hover:text-blue-800"
                               title="Ver detalles del cuadre"
@@ -353,12 +360,40 @@ const VisualizarCuadresPage: React.FC = () => {
                               <FaRegFileAlt />
                             </button>
                           </td>
-                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.dia?.slice(0, 10)}</td>
-                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.nombreFarmacia || '-'}</td>
-                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.cajaNumero}</td>
-                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.cajero || '-'}</td>
+                          <td className="px-5 py-4 whitespace-nowrap text-xl text-slate-700">{c.dia?.slice(0, 10)}</td>
+                          <td className="px-5 py-4 whitespace-nowrap text-xl text-slate-700 capitalize">{c.nombreFarmacia || '-'}</td>
+                          <td className="px-5 py-4 whitespace-nowrap text-xl text-slate-700">{c.cajaNumero}</td>
+                            <td className="px-5 py-4 whitespace-nowrap text-sm">
+                            <span className="inline-block bg-black text-white font-semibold rounded-full px-4 py-1 shadow-sm border border-indigo-300">
+                              {c.cajero || <span className="text-slate-300">-</span>}
+                            </span>
+                            </td>
                           <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.turno}</td>
-                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{c.estado}</td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm">
+                            <span
+                              className={
+                                'inline-flex items-center gap-1 font-semibold text-xs px-3 py-1 rounded-full border shadow-sm ' +
+                                (c.estado === 'verified'
+                                  ? 'bg-green-100 text-green-700 border-green-300'
+                                  : c.estado === 'wait'
+                                    ? 'bg-yellow-100 text-yellow-700 border-yellow-300'
+                                    : c.estado === 'denied'
+                                      ? 'bg-red-100 text-red-700 border-red-300'
+                                      : 'bg-slate-100 text-slate-700 border-slate-300')
+                              }
+                            >
+                              {c.estado === 'verified' && (
+                                <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                              )}
+                              {c.estado === 'wait' && (
+                                <svg className="w-4 h-4 text-yellow-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3" /></svg>
+                              )}
+                              {c.estado === 'denied' && (
+                                <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                              )}
+                              {c.estado.charAt(0).toUpperCase() + c.estado.slice(1)}
+                            </span>
+                          </td>
                           <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{c.tasa?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '-'}</td>
                           <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{c.efectivoBs?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '-'}</td>
                           <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{c.devolucionesBs?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '-'}</td>
