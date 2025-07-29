@@ -362,6 +362,7 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
       <div className="w-full max-w-screen-full mx-auto px-4 sm:px-6 lg:px-8">
         <h1 className="text-3xl font-bold text-slate-800 mb-8 text-center">Cuentas por Pagar</h1>
 
+
         {/* Mensajes de error/éxito con mejor estilo */}
         {error && (
           <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md shadow" role="alert">
@@ -410,15 +411,41 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+                {/* Cuadro para deseleccionar cuentas seleccionadas */}
+                {selectedCuentas.length > 0 && (
+                  <div className="bg-blue-100 border border-blue-300 rounded-lg p-4 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 shadow">
+                    <div className="flex flex-wrap gap-2 items-center">
+                      <span className="font-semibold text-blue-700">Cuentas seleccionadas:</span>
+                      {selectedCuentas.map(id => {
+                        const cuenta = cuentasParaPagar.find(c => c.cuentaPorPagarId === id || c._id === id);
+                        return (
+                          <span key={id} className="bg-blue-200 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                            {cuenta?.numeroFactura || id}
+                          </span>
+                        );
+                      })}
+                    </div>
+                    <button
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg font-semibold shadow hover:bg-red-700 transition"
+                      onClick={() => {
+                        setCuentasParaPagar([]);
+                        setSelectedCuentas([]);
+                        localStorage.setItem('cuentasParaPagar', JSON.stringify([]));
+                      }}
+                    >
+                      Deseleccionar todas
+                    </button>
+                  </div>
+                )}
             <div className="overflow-x-auto w-full">
               {/* Botón para pago masivo */}
               <div className="flex items-center gap-4 p-4">
                 <button
                   className={`px-5 py-2 rounded-lg font-semibold shadow transition-all duration-200
-                ${selectedCuentas.length === 0 ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700'}`}
-                  disabled={selectedCuentas.length === 0}
-                  onClick={() => setPagoMasivoModalOpen(true)}
-                >
+                    ${selectedCuentas.length === 0 ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700'}`}
+                    disabled={selectedCuentas.length === 0}
+                    onClick={() => setPagoMasivoModalOpen(true)}
+                    >
                   Registrar Pago para Seleccionadas
                 </button>
               </div>
