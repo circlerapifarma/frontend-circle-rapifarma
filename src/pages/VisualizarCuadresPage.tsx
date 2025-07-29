@@ -146,10 +146,10 @@ const VisualizarCuadresPage: React.FC = () => {
       // Se asume que el backend tiene un endpoint PATCH /cuadres/{farmacia_id}/{cuadre_id}/estado
       // Se debe obtener el id de la farmacia del cuadre
       const cuadre = cuadres.find((c) => c._id === confirmDialog.id);
-      if (!cuadre || !cuadre.farmacia)
-        throw new Error("No se encontró la farmacia del cuadre");
+      if (!cuadre || !cuadre.codigoFarmacia)
+        throw new Error("No se encontró el código de farmacia del cuadre");
       const res = await fetch(
-        `${API_BASE_URL}/cuadres/${cuadre.farmacia}/${confirmDialog.id}/estado`,
+        `${API_BASE_URL}/cuadres/${cuadre.codigoFarmacia}/${confirmDialog.id}/estado`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
