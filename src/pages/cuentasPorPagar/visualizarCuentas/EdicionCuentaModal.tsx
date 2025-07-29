@@ -433,7 +433,7 @@ const EdicionCuentaModal: React.FC<EdicionCuentaModalProps> = ({
     desc2 = descuento2;
   }
   const totalDescuentos = desc1 + desc2;
-  const totalAcreditar = Math.max(montoDePago - totalDescuentos - retencion, 0);
+  const totalAcreditar = Math.max(montoDePago - totalDescuentos, 0);
   // El nuevo saldo debe estar en la moneda de pago
   const nuevoSaldo = Math.max(montoOriginalEnMonedaPago - (montoDePago - retencion), 0);
 
