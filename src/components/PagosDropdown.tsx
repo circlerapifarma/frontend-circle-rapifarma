@@ -71,8 +71,14 @@ const PagosDropdown: React.FC<PagosDropdownProps> = ({ cuentaId, onOpenChange, m
       }
     }
   });
-  const pendienteBs = montoTotalBs - totalPagadoBs - totalRetencionBs;
-  const pendienteUSD = tasaCuenta && tasaCuenta > 0 ? pendienteBs / tasaCuenta : null;
+  let pendienteBs = montoTotalBs - totalPagadoBs - totalRetencionBs;
+  let pendienteUSD = tasaCuenta && tasaCuenta > 0 ? pendienteBs / tasaCuenta : null;
+  let diferenciaTasaBs = 0;
+  if (pendienteBs < 0) {
+    diferenciaTasaBs = Math.abs(pendienteBs);
+    pendienteBs = 0;
+    pendienteUSD = 0;
+  }
 
   const dropdownRef = React.useRef<HTMLDivElement>(null);
 
@@ -90,27 +96,35 @@ const PagosDropdown: React.FC<PagosDropdownProps> = ({ cuentaId, onOpenChange, m
   return (
     <DropdownMenu onOpenChange={handleOpenChange}>
       <DropdownMenuTrigger asChild>
-        <button className="px-2 py-1 rounded bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition text-xs font-medium border border-indigo-200">
+        <button className="px-3 py-2 rounded bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition text-2xl font-semibold border border-indigo-200">
           Ver pagos
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-80" ref={dropdownRef} role="listbox" aria-label="Pagos registrados">
-        <div className="mb-2 p-2 border-b border-slate-200">
-          <div className="text-xs text-slate-500 mb-1">
+      <DropdownMenuContent align="start" className="w-96 p-4" ref={dropdownRef} role="listbox" aria-label="Pagos registrados">
+        <div className="mb-4 p-3 border-b border-slate-200">
+          <div className="text-xl text-slate-700 mb-2">
+            <span className="font-semibold">Tasa original de la cuenta:</span> {tasaCuenta ? Number(tasaCuenta).toLocaleString('es-VE', { minimumFractionDigits: 2 }) : '--'}
+          </div>
+          <div className="text-xl text-slate-500 mb-2">
             <span className="font-semibold text-slate-700">Monto cuenta:</span> {montoTotalBs.toLocaleString('es-VE', { style: 'currency', currency: 'VES', minimumFractionDigits: 2 })} Bs / Ref: {montoTotalUSD != null ? montoTotalUSD.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }) + ' USD' : '--'}
           </div>
-          <div className="text-xs text-slate-500 mb-1">
+          <div className="text-xl text-slate-500 mb-2">
             <span className="font-semibold text-slate-700">Total pagado:</span> {totalPagadoBs.toLocaleString('es-VE', { style: 'currency', currency: 'VES', minimumFractionDigits: 2 })} Bs / Ref: {totalPagadoUSD ? totalPagadoUSD.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }) + ' USD' : '--'}
           </div>
-          <div className="text-xs text-slate-500 mb-1">
-            <span className="font-semibold text-slate-700">Deuda pendiente:</span> {pendienteBs.toLocaleString('es-VE', { style: 'currency', currency: 'VES', minimumFractionDigits: 2 })} Bs / Ref: {pendienteUSD != null ? pendienteUSD.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }) + ' USD' : '--'}
-          </div>
+          <div className={`text-xl font-semibold mb-2 text-slate-700`}>Deuda pendiente: {pendienteBs.toLocaleString('es-VE', { style: 'currency', currency: 'VES', minimumFractionDigits: 2 })} Bs / Ref: {pendienteUSD != null ? pendienteUSD.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }) + ' USD' : '--'}</div>
+          {/* Visualización especial si hay diferencia por tasa */}
+          {diferenciaTasaBs > 0 && (
+            <div className="text-xl text-red-700 bg-red-50 border border-red-200 rounded px-4 py-3 mt-3">
+              El monto pagado supera la deuda original debido a diferencias de tasa.<br />
+              <span className="font-semibold">Monto por diferencia de tasa:</span> {diferenciaTasaBs.toLocaleString('es-VE', { style: 'currency', currency: 'VES', minimumFractionDigits: 2 })} Bs
+            </div>
+          )}
         </div>
         <div className="divide-y divide-slate-200">
           {loading ? (
-            <div className="p-4 text-center text-slate-500 text-sm animate-pulse" aria-busy="true">
-              <div className="h-4 bg-slate-200 rounded w-2/3 mx-auto mb-2"></div>
-              <div className="h-4 bg-slate-200 rounded w-1/2 mx-auto"></div>
+            <div className="p-6 text-center text-slate-500 text-lg animate-pulse" aria-busy="true">
+              <div className="h-5 bg-slate-200 rounded w-2/3 mx-auto mb-3"></div>
+              <div className="h-5 bg-slate-200 rounded w-1/2 mx-auto"></div>
             </div>
           ) : pagosArray && pagosArray.length ? (
             pagosArray.map((pago, idx) => {
@@ -133,12 +147,12 @@ const PagosDropdown: React.FC<PagosDropdownProps> = ({ cuentaId, onOpenChange, m
               let fecha = pago.fecha ?? pago.fechaRegistro ?? '-';
               let usuario = pago.usuario ?? pago.usuarioCorreoCuenta ?? '--';
               return (
-                <div key={pago._id || idx} className={`pagos-dropdown-item-${cuentaId} px-3 py-2 text-xs text-slate-700 relative bg-white`} role="option" aria-selected="false">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="font-semibold text-green-700">
+                <div key={pago._id || idx} className={`pagos-dropdown-item-${cuentaId} px-4 py-3 text-lg text-slate-700 relative bg-white`} role="option" aria-selected="false">
+                  <div className="flex flex-col gap-1">
+                    <span className="font-semibold text-green-700 text-xl">
                       {`${montoOriginal.toLocaleString(labelOriginal === 'USD' ? 'en-US' : 'es-VE', { style: 'currency', currency: labelOriginal === 'USD' ? 'USD' : 'VES', minimumFractionDigits: 2 })} ${labelOriginal}`}
                     </span>
-                    <span className="text-[11px] text-slate-500 italic">
+                    <span className="text-xs text-slate-500 italic">
                       {(pago.moneda ?? pago.monedaDePago) === 'USD' && tasa > 0
                         ? `${montoBs.toLocaleString('es-VE', { style: 'currency', currency: 'VES', minimumFractionDigits: 2 })} Bs / Ref: ${montoOriginal.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 })} USD (Tasa: ${Number(tasa).toLocaleString('es-VE', { minimumFractionDigits: 2 })})`
                         : (pago.moneda ?? pago.monedaDePago) === 'Bs' && tasa > 0 && montoUSD != null
@@ -146,14 +160,14 @@ const PagosDropdown: React.FC<PagosDropdownProps> = ({ cuentaId, onOpenChange, m
                           : `${montoBs.toLocaleString('es-VE', { style: 'currency', currency: 'VES', minimumFractionDigits: 2 })} Bs`}
                     </span>
                   </div>
-                  <div className="text-slate-600">Referencia: {referencia}</div>
-                  <div className="text-slate-400 text-[11px]">Moneda: <span className="font-semibold">{pago.moneda ?? pago.monedaDePago ?? '--'}</span> | Tasa: <span className="font-semibold">{tasa ? Number(tasa).toLocaleString('es-VE', { minimumFractionDigits: 2 }) : '--'}</span></div>
+                  <div className="text-slate-600 text-base mt-1">Referencia: {referencia}</div>
+                  <div className="text-slate-400 text-xs">Moneda: <span className="font-semibold">{pago.moneda ?? pago.monedaDePago ?? '--'}</span> | Tasa: <span className="font-semibold">{tasa ? Number(tasa).toLocaleString('es-VE', { minimumFractionDigits: 2 }) : '--'}</span></div>
                   {pago.retencion !== undefined && (
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-slate-500">
+                    <div className="flex flex-col gap-0.5 mt-1">
+                      <span className="text-slate-500 text-base">
                         {`Retención: ${retencion.toLocaleString(labelOriginal === 'USD' ? 'en-US' : 'es-VE', { style: 'currency', currency: labelOriginal === 'USD' ? 'USD' : 'VES', minimumFractionDigits: 2 })} ${labelOriginal}`}
                       </span>
-                      <span className="text-[11px] text-slate-400 italic">
+                      <span className="text-xs text-slate-400 italic">
                         {(pago.moneda ?? pago.monedaDePago) === 'USD' && tasa > 0
                           ? `${(retencion * tasa).toLocaleString('es-VE', { style: 'currency', currency: 'VES', minimumFractionDigits: 2 })} Bs / Ref: ${retencion.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 })} USD (Tasa: ${Number(tasa).toLocaleString('es-VE', { minimumFractionDigits: 2 })})`
                           : (pago.moneda ?? pago.monedaDePago) === 'Bs' && tasa > 0 && retencion != null
@@ -162,33 +176,33 @@ const PagosDropdown: React.FC<PagosDropdownProps> = ({ cuentaId, onOpenChange, m
                       </span>
                     </div>
                   )}
-                  <div className="text-slate-500">Banco Emisor: {pago.bancoEmisor} | Banco Receptor: {pago.bancoReceptor}</div>
-                  <div className="text-slate-400">Fecha: {fecha}</div>
+                  <div className="text-slate-500 text-sm mt-1">Banco Emisor: {pago.bancoEmisor} | Banco Receptor: {pago.bancoReceptor}</div>
+                  <div className="text-slate-400 text-sm">Fecha: {fecha}</div>
                   {pago.imagenPago && (
-                    <div className="mt-2 flex items-center gap-2">
-                      <div className="border border-slate-200 rounded shadow-sm overflow-hidden bg-slate-50 p-1">
+                    <div className="mt-3 flex items-center gap-3">
+                      <div className="border border-slate-200 rounded shadow-sm overflow-hidden bg-slate-50 p-2">
                         <ImageDisplay
                           imageName={pago.imagenPago}
                           alt="Comprobante de pago"
                           style={{
-                            maxWidth: 120,
-                            maxHeight: 60,
-                            borderRadius: 4,
+                            maxWidth: 150,
+                            maxHeight: 80,
+                            borderRadius: 6,
                             objectFit: 'cover',
                             cursor: 'pointer',
                             transition: 'transform 0.2s',
                           }}
                         />
                       </div>
-                      <span className="text-[10px] text-slate-400">Comprobante</span>
+                      <span className="text-xs text-slate-400">Comprobante</span>
                     </div>
                   )}
-                  <div className="text-slate-400 text-[11px]">Usuario: {usuario}</div>
+                  <div className="text-slate-400 text-xs mt-1">Usuario: {usuario}</div>
                 </div>
               );
             })
           ) : (
-            <div className="p-4 text-center text-slate-400 text-xs">Sin pagos registrados</div>
+            <div className="p-6 text-center text-slate-400 text-xl">Sin pagos registrados</div>
           )}
         </div>
       </DropdownMenuContent>
