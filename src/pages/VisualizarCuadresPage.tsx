@@ -70,7 +70,24 @@ const VisualizarCuadresPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/cuadres/all`);
+      // Calcular fechas por defecto: mes actual
+      let fechaInicioFinal = fechaInicio;
+      let fechaFinFinal = fechaFin;
+      if (!fechaInicio && !fechaFin) {
+        const now = new Date();
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        fechaInicioFinal = firstDay.toISOString().slice(0, 10);
+        fechaFinFinal = lastDay.toISOString().slice(0, 10);
+      }
+      // Construir query params con todos los filtros
+      const params = new URLSearchParams();
+      if (selectedFarmacia) params.append('farmacia', selectedFarmacia);
+      if (fechaInicioFinal) params.append('fechaInicio', fechaInicioFinal);
+      if (fechaFinFinal) params.append('fechaFin', fechaFinFinal);
+      // Endpoint filtrado
+      const endpoint = `${API_BASE_URL}/cuadres?${params.toString()}`;
+      const res = await fetch(endpoint);
       if (!res.ok) throw new Error("Error al obtener cuadres");
       const data = await res.json();
       setCuadres(data);
@@ -81,8 +98,8 @@ const VisualizarCuadresPage: React.FC = () => {
     }
   };
 
-  // El fetchCuadres ahora se dispara solo al presionar el botón 'Obtener'
 
+  // Cargar farmacias al montar
   useEffect(() => {
     const usuarioRaw = localStorage.getItem("usuario");
     if (usuarioRaw) {
@@ -97,6 +114,18 @@ const VisualizarCuadresPage: React.FC = () => {
       }
     }
   }, []);
+
+  // Ejecutar fetchCuadres automáticamente al cambiar selectedFarmacia
+  useEffect(() => {
+    if (selectedFarmacia) {
+      fetchCuadres();
+    }
+    // Si se deselecciona, limpiar cuadres
+    else {
+      setCuadres([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedFarmacia]);
 
   const handleEstadoChange = (id: string, nuevoEstado: string) => {
     setConfirmDialog({ open: true, id, nuevoEstado });
@@ -133,23 +162,7 @@ const VisualizarCuadresPage: React.FC = () => {
     setConfirmDialog({ open: false, id: null, nuevoEstado: "" });
   };
 
-  const cuadresFiltrados = cuadres
-    .filter(c => {
-      if (!selectedFarmacia) return true;
-      // Filtra por el ID real de la farmacia (codigoFarmacia)
-      return c.codigoFarmacia === selectedFarmacia;
-    })
-    .filter(c => !turnoFiltro || (c.turno || "").toLowerCase().includes(turnoFiltro.toLowerCase()))
-    .filter(c => !cajeroFiltro || (c.cajero || "").toLowerCase().includes(cajeroFiltro.toLowerCase())) // Filtro por cajero
-    .filter(c => !estadoFiltro || c.estado === estadoFiltro)
-    .filter(c => {
-      if (!fechaInicio && !fechaFin) return true;
-      const fecha = c.dia?.slice(0, 10);
-      if (fechaInicio && fecha < fechaInicio) return false;
-      if (fechaFin && fecha > fechaFin) return false;
-      return true;
-    })
-    .sort((a, b) => (a.dia > b.dia ? -1 : 1));
+  const cuadresFiltrados: Cuadre[] = [...cuadres].sort((a, b) => (a.dia > b.dia ? -1 : 1));
 
 
   // Calcular totales agrupados por moneda y tipo de transacción
