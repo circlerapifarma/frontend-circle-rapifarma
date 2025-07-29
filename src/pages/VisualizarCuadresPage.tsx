@@ -745,9 +745,12 @@ const VisualizarCuadresPage: React.FC = () => {
               {totalesCalculados && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-totales-detallados">
                   {/* Moneda Nacional (Bs) */}
-                  <div className="bg-white rounded-2xl p-8 shadow-xl border-2 border-blue-300 flex flex-col items-center transition-transform hover:scale-105 duration-300 moneda-nacional-block">
-                    <h3 className="text-2xl font-extrabold mb-4 flex items-center gap-2">
-                      Moneda Nacional (Bs)
+                  <div className="rounded-2xl p-8 shadow-2xl border-2 border-blue-400 flex flex-col items-center transition-transform hover:scale-105 duration-300 moneda-nacional-block">
+                    <h3 className="text-2xl font-extrabold mb-4 flex items-center gap-3 text-blue-700">
+                      Moneda Nacional{" "}
+                      <span className="text-base font-bold bg-blue-200 text-blue-700 px-3 py-1 rounded-full ml-2">
+                        Bs
+                      </span>
                     </h3>
                     <table className="min-w-full text-base rounded-lg overflow-hidden">
                       <thead>
@@ -759,10 +762,12 @@ const VisualizarCuadresPage: React.FC = () => {
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-400">
+                      <tbody className="divide-y divide-blue-200">
                         <tr>
-                          <td>Efectivo</td>
-                          <td className="text-right">
+                          <td className="font-semibold text-blue-700">
+                            Efectivo
+                          </td>
+                          <td className="text-right font-mono text-lg text-blue-900">
                             {totalesCalculados.efectivoBs.toLocaleString(
                               "es-VE",
                               {
@@ -771,7 +776,7 @@ const VisualizarCuadresPage: React.FC = () => {
                               }
                             )}
                           </td>
-                          <td className="text-right">
+                          <td className="text-right font-mono text-lg text-blue-900">
                             {totalesCalculados.efectivoBsEnUsd.toLocaleString(
                               "es-VE",
                               {
@@ -782,8 +787,10 @@ const VisualizarCuadresPage: React.FC = () => {
                           </td>
                         </tr>
                         <tr>
-                          <td>Pago Móvil</td>
-                          <td className="text-right">
+                          <td className="font-semibold text-blue-700">
+                            Pago Móvil
+                          </td>
+                          <td className="text-right font-mono text-lg text-blue-900">
                             {totalesCalculados.pagoMovilBs.toLocaleString(
                               "es-VE",
                               {
@@ -792,7 +799,7 @@ const VisualizarCuadresPage: React.FC = () => {
                               }
                             )}
                           </td>
-                          <td className="text-right">
+                          <td className="text-right font-mono text-lg text-blue-900">
                             {totalesCalculados.pagoMovilBsEnUsd.toLocaleString(
                               "es-VE",
                               {
@@ -803,8 +810,10 @@ const VisualizarCuadresPage: React.FC = () => {
                           </td>
                         </tr>
                         <tr>
-                          <td>Débito</td>
-                          <td className="text-right">
+                          <td className="font-semibold text-blue-700">
+                            Débito
+                          </td>
+                          <td className="text-right font-mono text-lg text-blue-900">
                             {totalesCalculados.debitoBs.toLocaleString(
                               "es-VE",
                               {
@@ -813,7 +822,7 @@ const VisualizarCuadresPage: React.FC = () => {
                               }
                             )}
                           </td>
-                          <td className="text-right">
+                          <td className="text-right font-mono text-lg text-blue-900">
                             {totalesCalculados.debitoUsd.toLocaleString(
                               "es-VE",
                               {
@@ -824,8 +833,10 @@ const VisualizarCuadresPage: React.FC = () => {
                           </td>
                         </tr>
                         <tr>
-                          <td>Crédito</td>
-                          <td className="text-right">
+                          <td className="font-semibold text-blue-700">
+                            Crédito
+                          </td>
+                          <td className="text-right font-mono text-lg text-blue-900">
                             {totalesCalculados.creditoBs.toLocaleString(
                               "es-VE",
                               {
@@ -834,7 +845,7 @@ const VisualizarCuadresPage: React.FC = () => {
                               }
                             )}
                           </td>
-                          <td className="text-right">
+                          <td className="text-right font-mono text-lg text-blue-900">
                             {totalesCalculados.creditoUsd.toLocaleString(
                               "es-VE",
                               {
@@ -846,9 +857,9 @@ const VisualizarCuadresPage: React.FC = () => {
                         </tr>
                       </tbody>
                       <tfoot>
-                        <tr className="font-bold border-t border-gray-500">
-                          <td>Total Bs</td>
-                          <td className="text-right">
+                        <tr className="font-bold border-t border-blue-300">
+                          <td className="text-blue-700">Total Bs</td>
+                          <td className="text-right font-extrabold text-xl text-blue-900">
                             {(
                               totalesCalculados.efectivoBs +
                               totalesCalculados.pagoMovilBs +
@@ -859,7 +870,7 @@ const VisualizarCuadresPage: React.FC = () => {
                               maximumFractionDigits: 4,
                             })}
                           </td>
-                          <td className="text-right">
+                          <td className="text-right font-extrabold text-xl text-blue-900">
                             {(
                               totalesCalculados.efectivoBsEnUsd +
                               totalesCalculados.pagoMovilBsEnUsd +
@@ -875,22 +886,12 @@ const VisualizarCuadresPage: React.FC = () => {
                     </table>
                   </div>
                   {/* Moneda Extranjera (USD) */}
-                  <div className="rounded-2xl p-8 shadow-xl border-2 border-green-300 flex flex-col items-center transition-transform hover:scale-105 duration-300 moneda-extranjera-block">
-                    <h3 className="text-2xl font-extrabold mb-4 flex items-center gap-2">
-                      <svg
-                        className="w-7 h-7"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3zm0 0V4m0 16v-4m8-4h-4m-8 0H4"
-                        />
-                      </svg>
-                      Moneda Extranjera (USD)
+                  <div className="rounded-2xl p-8 shadow-2xl border-2 border-green-400 flex flex-col items-center transition-transform hover:scale-105 duration-300 moneda-extranjera-block">
+                    <h3 className="text-2xl font-extrabold mb-4 flex items-center gap-3 text-green-700">
+                      Moneda Extranjera{" "}
+                      <span className="text-base font-bold bg-green-200 text-green-700 px-3 py-1 rounded-full ml-2">
+                        USD
+                      </span>
                     </h3>
                     <table className="min-w-full text-base rounded-lg overflow-hidden">
                       <thead>
@@ -902,10 +903,12 @@ const VisualizarCuadresPage: React.FC = () => {
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-green-100">
+                      <tbody className="divide-y divide-green-200">
                         <tr>
-                          <td>Efectivo</td>
-                          <td className="text-right">
+                          <td className="font-semibold text-green-700">
+                            Efectivo
+                          </td>
+                          <td className="text-right font-mono text-lg text-green-900">
                             {totalesCalculados.efectivoUsd.toLocaleString(
                               "es-VE",
                               {
@@ -914,7 +917,7 @@ const VisualizarCuadresPage: React.FC = () => {
                               }
                             )}
                           </td>
-                          <td className="text-right">
+                          <td className="text-right font-mono text-lg text-green-900">
                             {totalesCalculados.efectivoUsdEnBs.toLocaleString(
                               "es-VE",
                               {
@@ -925,8 +928,10 @@ const VisualizarCuadresPage: React.FC = () => {
                           </td>
                         </tr>
                         <tr>
-                          <td>Zelle</td>
-                          <td className="text-right">
+                          <td className="font-semibold text-green-700">
+                            Zelle
+                          </td>
+                          <td className="text-right font-mono text-lg text-green-900">
                             {totalesCalculados.zelleUsd.toLocaleString(
                               "es-VE",
                               {
@@ -935,7 +940,7 @@ const VisualizarCuadresPage: React.FC = () => {
                               }
                             )}
                           </td>
-                          <td className="text-right">
+                          <td className="text-right font-mono text-lg text-green-900">
                             {totalesCalculados.zelleUsdEnBs.toLocaleString(
                               "es-VE",
                               {
@@ -947,9 +952,9 @@ const VisualizarCuadresPage: React.FC = () => {
                         </tr>
                       </tbody>
                       <tfoot>
-                        <tr className="font-bold border-t border-green-200">
-                          <td>Total USD</td>
-                          <td className="text-right">
+                        <tr className="font-bold border-t border-green-300">
+                          <td className="text-green-700">Total USD</td>
+                          <td className="text-right font-extrabold text-xl text-green-900">
                             {(
                               totalesCalculados.efectivoUsd +
                               totalesCalculados.zelleUsd
@@ -958,7 +963,7 @@ const VisualizarCuadresPage: React.FC = () => {
                               maximumFractionDigits: 4,
                             })}
                           </td>
-                          <td className="text-right">
+                          <td className="text-right font-extrabold text-xl text-green-900">
                             {(
                               totalesCalculados.efectivoUsdEnBs +
                               totalesCalculados.zelleUsdEnBs
@@ -977,28 +982,36 @@ const VisualizarCuadresPage: React.FC = () => {
               {/* Bloque de resumen: Total Bs y Total USD discriminados con y sin vales */}
               {cuadresFiltrados.length > 0 && (
                 <div className="mt-10 flex flex-col items-center justify-center animate-totales-detallados">
-                  <div className="w-full max-w-4xl rounded-lg border shadow-lg overflow-hidden mb-6">
+                  <div className="w-full max-w-4xl rounded-xl border-2 border-indigo-300 shadow-2xl overflow-hidden mb-8 bg-gradient-to-br from-indigo-50 via-white to-blue-100">
                     <Table>
                       <TableHeader>
-                        <TableRow className="bg-gray-50 dark:bg-gray-800">
-                          <TableHead className="w-[200px] text-lg font-semibold text-white ">
-                            Totales
+                        <TableRow className="">
+                          <TableHead className="w-[220px] text-lg font-bold px-6 py-4">
+                            <span className="flex items-center gap-2">
+                              <FaRegFileAlt className="text-xl" />
+                              Resumen Totales
+                            </span>
                           </TableHead>
-                          <TableHead className="text-right text-lg font-semibold text-white ">
+                          <TableHead className="text-right text-lg font-bold px-6 py-4">
                             Total Bs
                           </TableHead>
-                          <TableHead className="text-right text-lg font-semibold text-white ">
+                          <TableHead className="text-right text-lg font-bold px-6 py-4">
                             Total USD
                           </TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {/* Fila para "Con vales (sin ajustes)" */}
-                        <TableRow className="hover:bg-blue-50/50 dark:hover:bg-blue-950/20 transition-colors">
-                          <TableCell className="font-medium text-blue-800 dark:text-blue-200 py-4 pl-6">
-                            Con vales (sin ajustes)
+                        {/* Con vales (sin ajustes) */}
+                        <TableRow className="hover:bg-indigo-50/70 transition-colors">
+                          <TableCell className="font-semibold text-indigo-700 py-4 pl-6">
+                            Con vales{" "}
+                            <span className="text-xs text-slate-500">
+                              (sin ajustes)
+
+                            </span>
+                      <h2 className="text-sm text-slate-500">Total Cuadres sin vales restando sobrantes y sumando faltantes</h2>
                           </TableCell>
-                          <TableCell className="text-right text-blue-800 dark:text-blue-200 font-mono text-base">
+                          <TableCell className="text-right text-indigo-800 font-mono text-base px-6">
                             {(() => {
                               let totalBs = cuadresFiltrados.reduce(
                                 (acc, c) => {
@@ -1028,12 +1041,12 @@ const VisualizarCuadresPage: React.FC = () => {
                                 0
                               );
                               return totalBs.toLocaleString("es-VE", {
-                                minimumFractionDigits: 4,
-                                maximumFractionDigits: 4,
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
                               });
                             })()}
                           </TableCell>
-                          <TableCell className="text-right text-green-800 dark:text-green-200 font-mono text-base">
+                          <TableCell className="text-right text-green-800 font-mono text-base px-6">
                             {(() => {
                               let totalUsd = cuadresFiltrados.reduce(
                                 (acc, c) => {
@@ -1065,19 +1078,25 @@ const VisualizarCuadresPage: React.FC = () => {
                                 0
                               );
                               return totalUsd.toLocaleString("es-VE", {
-                                minimumFractionDigits: 4,
-                                maximumFractionDigits: 4,
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
                               });
                             })()}
                           </TableCell>
                         </TableRow>
-
-                        {/* Fila para "Sin vales (sin ajustes)" */}
-                        <TableRow className="hover:bg-blue-50/50 dark:hover:bg-blue-950/20 transition-colors">
-                          <TableCell className="font-medium text-blue-800 dark:text-blue-200 py-4 pl-6">
-                            Sin vales (sin ajustes)
+                        {/* Sin vales (sin ajustes) */}
+                        <TableRow className="hover:bg-indigo-50/70 transition-colors">
+                          <TableCell className="font-semibold text-indigo-700 py-4 pl-6">
+                            Sin vales{" "}
+                            <span className="text-xs text-slate-500">
+                              (sin ajustes)
+                            </span>
+                            <h2 className="text-sm text-slate-500">
+                              Total Cuadres sin vales restando sobrantes y
+                              sumando faltantes
+                            </h2>
                           </TableCell>
-                          <TableCell className="text-right text-blue-800 dark:text-blue-200 font-mono text-base">
+                          <TableCell className="text-right text-indigo-800 font-mono text-base px-6">
                             {(() => {
                               let totalBs = cuadresFiltrados.reduce(
                                 (acc, c) => {
@@ -1105,12 +1124,12 @@ const VisualizarCuadresPage: React.FC = () => {
                                 0
                               );
                               return totalBs.toLocaleString("es-VE", {
-                                minimumFractionDigits: 4,
-                                maximumFractionDigits: 4,
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
                               });
                             })()}
                           </TableCell>
-                          <TableCell className="text-right text-green-800 dark:text-green-200 font-mono text-base">
+                          <TableCell className="text-right text-green-800 font-mono text-base px-6">
                             {(() => {
                               let totalUsd = cuadresFiltrados.reduce(
                                 (acc, c) => {
@@ -1140,18 +1159,25 @@ const VisualizarCuadresPage: React.FC = () => {
                                 0
                               );
                               return totalUsd.toLocaleString("es-VE", {
-                                minimumFractionDigits: 4,
-                                maximumFractionDigits: 4,
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
                               });
                             })()}
                           </TableCell>
                         </TableRow>
-                        {/* Fila para "Con vales (ajustado)" */}
-                        <TableRow className="bg-blue-100/70 dark:bg-blue-900/40 hover:bg-blue-200/70 dark:hover:bg-blue-900/60 transition-colors">
-                          <TableCell className="font-bold text-lg text-white dark:text-blue-100 py-4 pl-6">
-                            Con vales (ajustado)
+                        {/* Con vales (ajustado) */}
+                        <TableRow className="bg-indigo-100/70 hover:bg-indigo-200/70 transition-colors">
+                          <TableCell className="font-bold text-lg text-indigo-900 py-4 pl-6">
+                            Con vales{" "}
+                            <span className="text-xs text-slate-500">
+                              (ajustado)
+                            </span>
+                            <h2 className="text-sm text-slate-500">
+                              Total Cuadres con vales restando sobrantes y
+                              sumando faltantes
+                            </h2>
                           </TableCell>
-                          <TableCell className="text-right font-extrabold text-2xl text-white dark:text-blue-100 font-mono">
+                          <TableCell className="text-right font-extrabold text-xl text-indigo-900 font-mono px-6">
                             {(() => {
                               let totalBs = cuadresFiltrados.reduce(
                                 (acc, c) => {
@@ -1207,12 +1233,12 @@ const VisualizarCuadresPage: React.FC = () => {
                               const totalFinal =
                                 totalBs + totalFaltanteBs - totalSobranteBs;
                               return totalFinal.toLocaleString("es-VE", {
-                                minimumFractionDigits: 4,
-                                maximumFractionDigits: 4,
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
                               });
                             })()}
                           </TableCell>
-                          <TableCell className="text-right font-extrabold text-2xl text-green-900 dark:text-green-100 font-mono">
+                          <TableCell className="text-right font-extrabold text-xl text-green-900 font-mono px-6">
                             {(() => {
                               let totalUsd = cuadresFiltrados.reduce(
                                 (acc, c) => {
@@ -1258,19 +1284,25 @@ const VisualizarCuadresPage: React.FC = () => {
                               const totalFinal =
                                 totalUsd + totalFaltanteUsd - totalSobranteUsd;
                               return totalFinal.toLocaleString("es-VE", {
-                                minimumFractionDigits: 4,
-                                maximumFractionDigits: 4,
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
                               });
                             })()}
                           </TableCell>
                         </TableRow>
-
-                        {/* Fila para "Sin vales (ajustado)" */}
-                        <TableRow className="bg-blue-100/70 dark:bg-blue-900/40 hover:bg-blue-200/70 dark:hover:bg-blue-900/60 transition-colors">
-                          <TableCell className="font-bold text-lg text-white dark:text-blue-100 py-4 pl-6">
-                            Sin vales (ajustado)
+                        {/* Sin vales (ajustado) */}
+                        <TableRow className="bg-indigo-100/70 hover:bg-indigo-200/70 transition-colors">
+                          <TableCell className="font-bold text-lg text-indigo-900 py-4 pl-6">
+                            Sin vales{" "}
+                            <span className="text-xs text-slate-500">
+                              (ajustado)
+                            </span>
+                            <h2 className="text-sm text-slate-500">
+                              Total Cuadres sin vales restando sobrantes y
+                              sumando faltantes
+                            </h2>
                           </TableCell>
-                          <TableCell className="text-right font-extrabold text-2xl text-white dark:text-blue-100 font-mono">
+                          <TableCell className="text-right font-extrabold text-xl text-indigo-900 font-mono px-6">
                             {(() => {
                               let totalBs = cuadresFiltrados.reduce(
                                 (acc, c) => {
@@ -1324,12 +1356,12 @@ const VisualizarCuadresPage: React.FC = () => {
                               const totalFinal =
                                 totalBs + totalFaltanteBs - totalSobranteBs;
                               return totalFinal.toLocaleString("es-VE", {
-                                minimumFractionDigits: 4,
-                                maximumFractionDigits: 4,
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
                               });
                             })()}
                           </TableCell>
-                          <TableCell className="text-right font-extrabold text-2xl text-green-900 dark:text-green-100 font-mono">
+                          <TableCell className="text-right font-extrabold text-xl text-green-900 font-mono px-6">
                             {(() => {
                               let totalUsd = cuadresFiltrados.reduce(
                                 (acc, c) => {
@@ -1373,32 +1405,22 @@ const VisualizarCuadresPage: React.FC = () => {
                               const totalFinal =
                                 totalUsd + totalFaltanteUsd - totalSobranteUsd;
                               return totalFinal.toLocaleString("es-VE", {
-                                minimumFractionDigits: 4,
-                                maximumFractionDigits: 4,
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
                               });
                             })()}
                           </TableCell>
                         </TableRow>
-                        {/* Fila para "Total Caja Sistema (Bs)" */}
-                        <TableRow className="bg-yellow-50 dark:bg-yellow-900/30">
-                          <TableCell className="font-bold text-lg text-yellow-800 dark:text-yellow-200 py-4 pl-6 flex items-center gap-2">
-                            <svg
-                              className="w-5 h-5 text-yellow-500"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3zm0 0V4m0 16v-4m8-4h-4m-8 0H4"
-                              />
-                            </svg>
-                            Total Caja Sistema (Bs)
+                        {/* Total Caja Sistema (Bs) */}
+                        <TableRow className="bg-yellow-50">
+                          <TableCell className="font-bold text-lg text-yellow-800 py-4 pl-6 flex items-center gap-2">
+                            <span className="inline-block bg-yellow-200 text-yellow-900 px-2 py-1 rounded-full text-xs font-bold">
+                              Caja Sistema
+                            </span>
+                            Total (Bs)
                           </TableCell>
                           <TableCell
-                            className="text-right font-bold text-yellow-800 dark:text-yellow-200 font-mono text-lg"
+                            className="text-right font-bold text-yellow-800 font-mono text-lg px-6"
                             colSpan={2}
                           >
                             {(() => {
@@ -1408,8 +1430,8 @@ const VisualizarCuadresPage: React.FC = () => {
                                 0
                               );
                               return totalCajaSistema.toLocaleString("es-VE", {
-                                minimumFractionDigits: 4,
-                                maximumFractionDigits: 4,
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
                               });
                             })()}
                           </TableCell>
