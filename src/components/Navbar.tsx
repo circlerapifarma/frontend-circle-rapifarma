@@ -12,6 +12,8 @@ const allLinks = [
             { to: '/gastoscxc-cuadres', label: 'Gastos, Cuentas y Cuadres', permiso: 'agregar_cuadre' },
             { to: '/resumenfarmacias', label: 'Resumen de Ventas', permiso: 'ver_resumen_mensual' },
             { to: '/ventatotal', label: 'Venta Total', permiso: 'ver_ventas_totales' },
+            { to: '/metas', label: 'Metas', permiso: 'ver_about' },
+            { to: '/gestionmetas', label: 'Gestión de Metas', permiso: 'metas' },
         ]
     },
     {
