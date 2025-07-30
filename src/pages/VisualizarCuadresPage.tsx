@@ -1009,8 +1009,8 @@ const VisualizarCuadresPage: React.FC = () => {
                               (sin ajustes)
                             </span>
                             <h2 className="text-sm text-slate-500">
-                              Total Cuadres sin vales sin restando sobrantes y
-                              sumando faltantes
+                              Total Cuadres con vales sin restar sobrantes ni
+                              sumar faltantes
                             </h2>
                           </TableCell>
                           <TableCell className="text-right text-indigo-800 font-mono text-base px-6">
@@ -1094,8 +1094,8 @@ const VisualizarCuadresPage: React.FC = () => {
                               (sin ajustes)
                             </span>
                             <h2 className="text-sm text-slate-500">
-                              Total Cuadres sin vales restando sobrantes y
-                              sumando faltantes
+                              Total Cuadres sin vales sin restar sobrantes ni
+                              sumar faltantes
                             </h2>
                           </TableCell>
                           <TableCell className="text-right text-indigo-800 font-mono text-base px-6">
