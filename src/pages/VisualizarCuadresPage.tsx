@@ -1007,9 +1007,11 @@ const VisualizarCuadresPage: React.FC = () => {
                             Con vales{" "}
                             <span className="text-xs text-slate-500">
                               (sin ajustes)
-
                             </span>
-                      <h2 className="text-sm text-slate-500">Total Cuadres sin vales restando sobrantes y sumando faltantes</h2>
+                            <h2 className="text-sm text-slate-500">
+                              Total Cuadres sin vales sin restando sobrantes y
+                              sumando faltantes
+                            </h2>
                           </TableCell>
                           <TableCell className="text-right text-indigo-800 font-mono text-base px-6">
                             {(() => {
