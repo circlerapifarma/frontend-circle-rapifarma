@@ -6,6 +6,7 @@ type CajeroEspecial = {
   farmacias?: Record<string, string> | string[];
   totalVentas: number;
   comisionPorcentaje?: number;
+  estado?: string; // Estado del cajero
 };
 
 const ComisionesEspecialesPage: React.FC = () => {
@@ -16,6 +17,7 @@ const ComisionesEspecialesPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [farmaciaFiltro, setFarmaciaFiltro] = useState<string>("");
+  const [estadoFiltro, setEstadoFiltro] = useState<string>("");
 
   const handleFetchComisiones = async () => {
     if (!startDate || !endDate) {
@@ -53,6 +55,11 @@ const ComisionesEspecialesPage: React.FC = () => {
     )
   );
 
+  // Chips de estados únicos para filtrar (solo activo/inactivo)
+  const estadosUnicos = ['activo', 'inactivo'].filter(e =>
+    cajeros.some(c => c.estado === e)
+  );
+
   // Filtro por búsqueda y farmacia
   const cajerosFiltrados = cajeros.filter((c) => {
     const coincideBusqueda =
@@ -65,7 +72,9 @@ const ComisionesEspecialesPage: React.FC = () => {
       : [];
     const coincideFarmacia =
       !farmaciaFiltro || farmaciasArr.includes(farmaciaFiltro);
-    return coincideBusqueda && coincideFarmacia;
+    const coincideEstado =
+      !estadoFiltro || c.estado === estadoFiltro;
+    return coincideBusqueda && coincideFarmacia && coincideEstado;
   });
 
   // Total de ventas filtradas
@@ -159,6 +168,28 @@ const ComisionesEspecialesPage: React.FC = () => {
             Limpiar filtro
           </button>
         )}
+        {/* Chips de filtro por estado */}
+        {estadosUnicos.map((estado) => (
+          <button
+            key={estado}
+            className={`px-3 py-1 rounded-full text-xs font-semibold border transition shadow-sm ${
+              estadoFiltro === estado
+                ? "bg-purple-500 text-white border-purple-600"
+                : "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100"
+            }`}
+            onClick={() => setEstadoFiltro(estadoFiltro === (estado ?? "") ? "" : (estado ?? ""))}
+          >
+            {estado}
+          </button>
+        ))}
+        {estadoFiltro && (
+          <button
+            className="px-3 py-1 rounded-full text-xs font-semibold border bg-gray-200 text-gray-700 border-gray-300 ml-2"
+            onClick={() => setEstadoFiltro("")}
+          >
+            Limpiar estado
+          </button>
+        )}
       </div>
       {/* Total de ventas filtradas */}
       <div className="mb-4 text-right text-base font-semibold text-blue-800">
@@ -177,6 +208,9 @@ const ComisionesEspecialesPage: React.FC = () => {
             return (
               <div key={c.cajeroId} className="border p-4 rounded-lg shadow">
                 <h2 className="text-lg font-semibold text-gray-800 mb-2">{c.cajero}</h2>
+                {c.estado && (
+                  <span className="text-xs text-purple-700 font-normal">Estado: {c.estado}</span>
+                )}
                 <ul className="divide-y divide-gray-200">
                   <li className="py-2 flex flex-col sm:flex-row sm:justify-between text-sm text-gray-700 gap-2">
                     <span>ID: <strong>{c.cajeroId}</strong></span>

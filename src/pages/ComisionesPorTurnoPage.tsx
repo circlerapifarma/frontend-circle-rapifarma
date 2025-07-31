@@ -11,6 +11,7 @@ type Comision = {
   farmacias?: Record<string, string> | string[];
   comisionPorcentaje?: number;
   dia?: string; // <-- Agregado para la fecha
+  estado?: string; // Estado del cajero
 };
 
 const ComisionesPorTurnoPage: React.FC = () => {
@@ -21,6 +22,7 @@ const ComisionesPorTurnoPage: React.FC = () => {
   const [search, setSearch] = useState("");
   const [farmaciaFiltro, setFarmaciaFiltro] = useState<string>("");
   const [openCajero, setOpenCajero] = useState<string | null>(null);
+  const [estadoFiltro, setEstadoFiltro] = useState<string>("");
 
   // Adjusted to handle updated backend response structure
   const handleFetchComisiones = async () => {
@@ -50,6 +52,7 @@ const ComisionesPorTurnoPage: React.FC = () => {
               farmacias: item.farmacias || [],
               comisionPorcentaje: item.comisionPorcentaje || 0,
               dia: item.dia || undefined, // <-- Mapear el campo dia
+              estado: item.estado || undefined, // <-- Mapear el campo estado
             }))
           : []
       );
@@ -77,6 +80,11 @@ const ComisionesPorTurnoPage: React.FC = () => {
     )
   );
 
+  // Chips de estados únicos para filtrar
+  const estadosUnicos = ['activo', 'inactivo'].filter(e =>
+    comisiones.some(c => c.estado === e)
+  );
+
   // Agrupar por cajero con filtro de farmacia
   const comisionesFiltradas = comisiones.filter((comision) => {
     const coincideBusqueda =
@@ -89,7 +97,9 @@ const ComisionesPorTurnoPage: React.FC = () => {
       : [];
     const coincideFarmacia =
       !farmaciaFiltro || farmaciasArr.includes(farmaciaFiltro);
-    return coincideBusqueda && coincideFarmacia;
+    const coincideEstado =
+      !estadoFiltro || comision.estado === estadoFiltro;
+    return coincideBusqueda && coincideFarmacia && coincideEstado;
   });
   const comisionesPorCajero = comisionesFiltradas.reduce<Record<string, Comision[]>>((acc, comision) => {
     if (!acc[comision.cajero]) acc[comision.cajero] = [];
@@ -188,6 +198,28 @@ const ComisionesPorTurnoPage: React.FC = () => {
             Limpiar filtro
           </button>
         )}
+        {/* Chips de filtro por estado */}
+        {estadosUnicos.map((estado) => (
+          <button
+            key={estado}
+            className={`px-3 py-1 rounded-full text-xs font-semibold border transition shadow-sm ${
+              estadoFiltro === estado
+                ? "bg-purple-500 text-white border-purple-600"
+                : "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100"
+            }`}
+            onClick={() => setEstadoFiltro(estadoFiltro === (estado ?? "") ? "" : (estado ?? ""))}
+          >
+            {estado}
+          </button>
+        ))}
+        {estadoFiltro && (
+          <button
+            className="px-3 py-1 rounded-full text-xs font-semibold border bg-gray-200 text-gray-700 border-gray-300 ml-2"
+            onClick={() => setEstadoFiltro("")}
+          >
+            Limpiar estado
+          </button>
+        )}
       </div>
       {/* Total de comisiones filtradas */}
       <div className="mb-4 text-right text-base font-semibold text-blue-800">
@@ -224,6 +256,9 @@ const ComisionesPorTurnoPage: React.FC = () => {
                   }}
                 >
                   <span>{cajero}</span>
+                  {lista[0].estado && (
+                    <span className="ml-2 text-xs text-purple-700 font-normal">Estado: {lista[0].estado}</span>
+                  )}
                   <span className="ml-2 text-xs text-blue-700 font-normal">
                     {lista[0].farmacias && (
                       <>Farmacia(s): {Array.isArray(lista[0].farmacias) ? lista[0].farmacias.join(", ") : Object.values(lista[0].farmacias).join(", ")}</>
