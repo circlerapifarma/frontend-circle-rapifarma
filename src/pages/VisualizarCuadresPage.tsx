@@ -47,7 +47,7 @@ interface FarmaciaChip {
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-const ESTADO_OPCIONES = ["verified", "wait", "denied"];
+const ESTADO_OPCIONES = ["verified", "wait", "denied", "finalizada"];
 
 const VisualizarCuadresPage: React.FC = () => {
   const [cuadres, setCuadres] = useState<Cuadre[]>([]);
