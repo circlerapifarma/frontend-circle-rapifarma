@@ -37,7 +37,7 @@ interface FarmaciaChip {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-const ESTATUS_OPCIONES = ["wait", "activa", "inactiva", "pagada", "abonada", "anulada"];
+const ESTATUS_OPCIONES = ["wait", "activa", "inactiva", "pagada", "abonada", "anulada", "finalizada"];
 
 function calcularDiasRestantes(fechaEmision: string, diasCredito: number) {
   const fechaEmi = new Date(fechaEmision);
