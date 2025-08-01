@@ -1,18 +1,17 @@
 // Hook y funciones para interactuar con los endpoints de metas
 import { useState } from "react";
 
-export interface Meta {
-  _id?: string;
+export type Meta = {
+  _id?: string; // ID opcional para metas existentes
   nombre: string;
-  descripcion?: string;
+  descripcion: string;
   fechaInicio: string;
   fechaFin: string;
   monto: number;
-  farmaciaId?: string;
-  usuario?: string;
-  cumplida?: boolean;
-}
-
+  farmaciaId: string;
+  usuario: string;
+  estado: 'por_lograr' | 'logrado' | 'no_logrado';
+};
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 export function useMetas() {

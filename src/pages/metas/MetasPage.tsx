@@ -56,10 +56,14 @@ const MetasPage: React.FC = () => {
               >
                 <div className="flex items-center gap-2 mb-2">
                   <span className="inline-block px-3 py-1 bg-yellow-600 text-white text-xs font-semibold rounded-full shadow">{farmaciaNombre}</span>
-                  {meta.cumplida ? (
-                    <span className="ml-auto text-green-600 text-sm font-bold" title="Cumplida">Logrado</span>
-                  ) : (
-                    <span className="ml-auto text-red-500 text-sm font-bold" title="No cumplida">No logrado</span>
+                  {meta.estado === 'logrado' && (
+                    <span className="ml-auto text-green-600 text-sm font-bold" title="Logrado">Logrado</span>
+                  )}
+                  {meta.estado === 'no_logrado' && (
+                    <span className="ml-auto text-red-500 text-sm font-bold" title="No logrado">No logrado</span>
+                  )}
+                  {meta.estado === 'por_lograr' && (
+                    <span className="ml-auto text-yellow-600 text-sm font-bold" title="Por lograr">Por lograr</span>
                   )}
                 </div>
                 <h2 className="text-xl font-bold text-yellow-700 mb-1">{meta.nombre}</h2>
@@ -67,7 +71,7 @@ const MetasPage: React.FC = () => {
                 <div className="flex flex-col gap-1 mt-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-slate-500">Monto objetivo</span>
-                    <span className="font-bold text-yellow-700 text-lg">Bs. {meta.monto.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
+                    <span className="font-bold text-yellow-700 text-lg">USD. {meta.monto.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-slate-500">Inicio</span>

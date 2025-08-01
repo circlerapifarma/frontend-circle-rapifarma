@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useMetas } from "./useMetas";
 import type { Meta } from "./useMetas";
 
+
 const initialMeta: Meta = {
   nombre: "",
   descripcion: "",
@@ -10,7 +11,7 @@ const initialMeta: Meta = {
   monto: 0,
   farmaciaId: "",
   usuario: "",
-  cumplida: false,
+  estado: 'por_lograr',
 };
 
 const GestionMetas: React.FC = () => {
@@ -34,10 +35,10 @@ const GestionMetas: React.FC = () => {
   })();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value, type, checked }: any = e.target;
+    const { name, value, type } = e.target;
     setMeta((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : type === "number" ? Number(value) : value,
+      [name]: type === "number" ? Number(value) : value,
     }));
   };
 
@@ -98,9 +99,12 @@ const GestionMetas: React.FC = () => {
           </select>
         </div>
         <div className="mb-4">
-          <label className="block font-medium mb-1">Cumplida</label>
-          <input type="checkbox" name="cumplida" checked={!!meta.cumplida} onChange={handleChange} className="mr-2" />
-          <span>{meta.cumplida ? "Sí" : "No"}</span>
+          <label className="block font-medium mb-1">Estado</label>
+          <select name="estado" value={meta.estado} onChange={handleChange} required className="w-full border rounded px-3 py-2">
+            <option value="por_lograr">Por lograr</option>
+            <option value="logrado">Logrado</option>
+            <option value="no_logrado">No logrado</option>
+          </select>
         </div>
         <button type="submit" disabled={loading} className="w-full bg-indigo-600 text-white font-bold py-2 rounded hover:bg-indigo-700 transition">
           {loading ? "Guardando..." : "Crear Meta"}

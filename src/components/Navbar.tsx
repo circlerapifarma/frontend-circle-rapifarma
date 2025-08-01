@@ -13,7 +13,8 @@ const allLinks = [
             { to: '/resumenfarmacias', label: 'Resumen de Ventas', permiso: 'ver_resumen_mensual' },
             { to: '/ventatotal', label: 'Venta Total', permiso: 'ver_ventas_totales' },
             { to: '/metas', label: 'Metas', permiso: 'ver_about' },
-            { to: '/gestionmetas', label: 'Gestión de Metas', permiso: 'metas' },
+            { to: '/gestionmetas', label: 'Crear Meta', permiso: 'metas' },
+            { to: '/metasconf', label: 'Metas Configuración', permiso: 'ver_about' },
         ]
     },
     {

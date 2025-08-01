@@ -30,6 +30,7 @@ import CuentasPorPagarPage from "@/pages/cuentasPorPagar/agregarCuentas/CuentasP
 import GastosCuentasCuadresPorFarmaciaPage from "@/pages/GastosCuentasCuadresPorFarmaciaPage";
 import ValesPorFarmaciaPage from "@/pages/vales/ValesPorFarmaciaPage";
 import VisualizarPagos from "@/pages/pagosCPP/VisualizarPagos";
+import ModificarEstadoMeta from "@/pages/metas/ModificarEstadoMeta";
 
 const AppRouter = () => (
   <Routes>
@@ -73,6 +74,14 @@ const AppRouter = () => (
       element={
         <PermissionRoute permiso="ver_about">
           <MetasPage />
+        </PermissionRoute>
+      }
+    />
+    <Route
+      path="/metasconf"
+      element={
+        <PermissionRoute permiso="metas">
+          <ModificarEstadoMeta />
         </PermissionRoute>
       }
     />
