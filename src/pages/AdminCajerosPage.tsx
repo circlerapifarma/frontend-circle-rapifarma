@@ -22,6 +22,7 @@ const AdminCajerosPage: React.FC = () => {
   const [modalCrearOpen, setModalCrearOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [farmaciaFiltro, setFarmaciaFiltro] = useState<string>("");
+  const [estadoFiltro, setEstadoFiltro] = useState<string>("");
 
   useEffect(() => {
     const fetchCajeros = async () => {
@@ -63,7 +64,11 @@ const AdminCajerosPage: React.FC = () => {
       cajeros.flatMap((c) => Object.values(c.farmacias || {})).filter(Boolean)
     )
   );
-  // Filtrado de cajeros por búsqueda y farmacia
+  // Obtener estados únicos de todos los cajeros
+  // Obtener estados únicos de todos los cajeros, agregando "todos" al inicio
+  const estadosUnicos = ["todos", ...Array.from(new Set(cajeros.map(c => c.estado).filter(Boolean)))];
+
+  // Filtrado de cajeros por búsqueda, farmacia y estado
   const cajerosFiltrados = cajeros.filter((cajero) => {
     const coincideBusqueda =
       cajero.nombre.toLowerCase().includes(search.toLowerCase()) ||
@@ -71,7 +76,10 @@ const AdminCajerosPage: React.FC = () => {
     const farmaciasArr = Object.values(cajero.farmacias || {});
     const coincideFarmacia =
       !farmaciaFiltro || farmaciasArr.includes(farmaciaFiltro);
-    return coincideBusqueda && coincideFarmacia;
+    // Si estadoFiltro es vacío o "todos", mostrar todos los estados
+    const coincideEstado =
+      !estadoFiltro || estadoFiltro === "todos" || cajero.estado === estadoFiltro;
+    return coincideBusqueda && coincideFarmacia && coincideEstado;
   });
 
   return (
@@ -87,8 +95,9 @@ const AdminCajerosPage: React.FC = () => {
           className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm shadow-sm focus:ring-blue-500"
         />
       </div>
-      {/* Chips de filtro por farmacia */}
+      {/* Chips de filtro por farmacia y estado */}
       <div className="mb-4 flex flex-wrap gap-2">
+        {/* Chips de farmacia */}
         {farmaciasUnicas.map((f) => (
           <button
             key={f}
@@ -99,7 +108,7 @@ const AdminCajerosPage: React.FC = () => {
             }`}
             onClick={() => setFarmaciaFiltro(farmaciaFiltro === f ? "" : f)}
           >
-            {f}
+            {farmaciaFiltro === f ? `Farmacia: ${f}` : f}
           </button>
         ))}
         {farmaciaFiltro && (
@@ -107,9 +116,28 @@ const AdminCajerosPage: React.FC = () => {
             className="px-3 py-1 rounded-full text-xs font-semibold border bg-gray-200 text-gray-700 border-gray-300 ml-2"
             onClick={() => setFarmaciaFiltro("")}
           >
-            Limpiar filtro
+            Limpiar filtro farmacia
           </button>
         )}
+        {/* Botón único de estado */}
+        <button
+          className={`px-3 py-1 rounded-full text-xs font-semibold border transition shadow-sm ml-2 ${
+            estadoFiltro === "" || estadoFiltro === "todos"
+              ? "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100"
+              : "bg-purple-500 text-white border-purple-600"
+          }`}
+          onClick={() => {
+            // Alternar entre los estados disponibles
+            const actual = estadoFiltro === "" ? "todos" : estadoFiltro;
+            const idx = estadosUnicos.indexOf(actual);
+            const siguiente = estadosUnicos[(idx + 1) % estadosUnicos.length];
+            setEstadoFiltro(siguiente === "todos" ? "" : siguiente);
+          }}
+        >
+          {estadoFiltro === "" || estadoFiltro === "todos"
+            ? "Estado: Todos"
+            : `Estado: ${estadoFiltro.charAt(0).toUpperCase() + estadoFiltro.slice(1)}`}
+        </button>
       </div>
       {/* Botón para abrir modal de crear cajero */}
       <div className="mb-6 text-right">
