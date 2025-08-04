@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import ImageDisplay from "../components/upfile/ImageDisplay";
 import { animate, stagger } from 'animejs';
 
 interface Gasto {
@@ -12,6 +13,8 @@ interface Gasto {
   localidad: string;
   divisa?: string;
   tasa?: number;
+  imagenGasto?: string;
+  imagenesGasto?: string[];
 }
 
 interface FarmaciaChip {
@@ -96,6 +99,7 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
   const [proveedorFiltro, setProveedorFiltro] = useState<string>(""); // Usado para filtrar por título
   const [success, setSuccess] = useState<string | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; gastoId: string | null; nuevoEstado: string }>({ open: false, gastoId: null, nuevoEstado: "" });
+  const [imagenAmpliada, setImagenAmpliada] = useState<{imagenes: string[], index: number} | null>(null);
 
   const fetchGastos = async () => {
     setLoading(true);
@@ -350,6 +354,7 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
                 <table className="min-w-full divide-y divide-slate-200 table-fixed" style={{ maxWidth: '100vw' }}>
                   <thead className="bg-red-50">
                     <tr>
+                      <th scope="col" className="px-5 py-3.5 text-left text-xs font-semibold text-red-700 uppercase tracking-wider whitespace-nowrap">Imagen</th>
                       {['Fecha','Fecha R.', 'Título', 'Descripción', 'Monto', 'Moneda', 'Tasa', 'Estado', 'Acción'].map(header => (
                         <th key={header} scope="col" className="px-5 py-3.5 text-left text-xs font-semibold text-red-700 uppercase tracking-wider whitespace-nowrap">
                           {header}
@@ -360,6 +365,25 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
                   <tbody className="bg-white divide-y divide-slate-200">
                     {gastosFiltrados.map(g => (
                       <tr key={g._id} className="hover:bg-red-50/50 transition-colors duration-150 ease-in-out">
+                        <td className="px-5 py-4 whitespace-nowrap">
+                          {Array.isArray(g.imagenesGasto) && g.imagenesGasto.length > 0 ? (
+                            <ImageDisplay
+                              imageName={g.imagenesGasto[0]}
+                              alt="Imagen gasto"
+                              style={{ height: 48, width: 48, objectFit: 'cover', borderRadius: 8, cursor: 'pointer', border: '1px solid #e2e8f0', boxShadow: '0 1px 4px #0001' }}
+                              onClickImage={() => setImagenAmpliada({imagenes: g.imagenesGasto ?? [], index: 0})}
+                            />
+                          ) : g.imagenGasto ? (
+                            <ImageDisplay
+                              imageName={g.imagenGasto}
+                              alt="Imagen gasto"
+                              style={{ height: 48, width: 48, objectFit: 'cover', borderRadius: 8, cursor: 'pointer', border: '1px solid #e2e8f0', boxShadow: '0 1px 4px #0001' }}
+                              onClickImage={() => setImagenAmpliada({imagenes: g.imagenGasto ? [g.imagenGasto] : [], index: 0})}
+                            />
+                          ) : (
+                            <span className="text-slate-400 text-xs">Sin imagen</span>
+                          )}
+                        </td>
                         <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 gasto-fecha">{formatFecha(g.fecha,)}</td>
                         <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 gasto-fecha">{formatFecha(g.fecha, g.fechaRegistro)}</td>
                         <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-800 font-medium">{g.titulo}</td>
@@ -501,6 +525,37 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
                   Aceptar
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+        {imagenAmpliada && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+            <button
+              className="absolute top-4 right-4 text-white text-2xl bg-black bg-opacity-40 rounded-full px-3 py-1"
+              onClick={() => setImagenAmpliada(null)}
+              aria-label="Cerrar"
+            >×</button>
+            <div className="flex flex-col items-center">
+              <ImageDisplay
+                imageName={imagenAmpliada.imagenes[imagenAmpliada.index]}
+                alt={`Imagen ampliada ${imagenAmpliada.index + 1}`}
+                style={{ maxHeight: '80vh', maxWidth: '90vw', borderRadius: 12, boxShadow: '0 0 24px #0008', border: '4px solid #fff', marginBottom: 16 }}
+              />
+              {imagenAmpliada.imagenes.length > 1 && (
+                <div className="flex gap-2 justify-center">
+                  <button
+                    className="px-3 py-1 bg-white bg-opacity-80 rounded shadow text-slate-700 font-bold"
+                    disabled={imagenAmpliada.index === 0}
+                    onClick={() => setImagenAmpliada(imagenAmpliada => imagenAmpliada ? {...imagenAmpliada, index: imagenAmpliada.index - 1} : null)}
+                  >Anterior</button>
+                  <span className="text-white font-semibold">{imagenAmpliada.index + 1} / {imagenAmpliada.imagenes.length}</span>
+                  <button
+                    className="px-3 py-1 bg-white bg-opacity-80 rounded shadow text-slate-700 font-bold"
+                    disabled={imagenAmpliada.index === imagenAmpliada.imagenes.length - 1}
+                    onClick={() => setImagenAmpliada(imagenAmpliada => imagenAmpliada ? {...imagenAmpliada, index: imagenAmpliada.index + 1} : null)}
+                  >Siguiente</button>
+                </div>
+              )}
             </div>
           </div>
         )}
