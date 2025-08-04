@@ -325,7 +325,7 @@ const VisualizarCuadresPage: React.FC = () => {
         )}
         <div className="bg-white p-6 rounded-lg shadow-lg mb-8">
           <h2 className="text-xl font-semibold text-slate-700 mb-4">Filtros</h2>
-          <div className="text-xl flex flex-row mb-6">
+          <div className="text-xl flex flex-col sm:flex-row mb-6">
             <div>
               <label className="block font-medium text-slate-600 mb-1">
                 Fecha desde
