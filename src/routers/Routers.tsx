@@ -32,6 +32,8 @@ import ValesPorFarmaciaPage from "@/pages/vales/ValesPorFarmaciaPage";
 import VisualizarPagos from "@/pages/pagosCPP/VisualizarPagos";
 import ModificarEstadoMeta from "@/pages/metas/ModificarEstadoMeta";
 
+import ModificacionCuadrePage from "@/pages/cuadres/modificarCuadre/ModificacionCuadrePage";
+
 const AppRouter = () => (
   <Routes>
     <Route path="/login" element={<LoginPage />} />
@@ -44,6 +46,15 @@ const AppRouter = () => (
       }
     />
     <Route path="/about" element={<AboutPage />} />
+
+    <Route
+      path="/modificar-cuadres"
+      element={
+        <PermissionRoute permiso="agregar_cuadre">
+          <ModificacionCuadrePage />
+        </PermissionRoute>
+      }
+    />
 
     <Route
       path="/gastoscxc-cuadres"
