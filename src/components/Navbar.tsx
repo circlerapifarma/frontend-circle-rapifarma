@@ -26,6 +26,7 @@ const allLinks = [
             { to: '/verificacion-cuadres', label: 'Verificación Cuadres', permiso: 'verificar_cuadres' },
             { to: '/ver-cuadres-dia', label: 'Cuadres por Día', permiso: 'ver_cuadres_dia' },
             { to: '/visualizarcuadres', label: 'Visualizar Cuadres', permiso: 'ver_cuadres_dia' },
+            { to: '/modificar-cuadre', label: 'Modificar Cuadre', permiso: 'modificar_cuadre' },
         ]
     },
     {

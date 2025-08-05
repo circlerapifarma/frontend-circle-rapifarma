@@ -55,6 +55,14 @@ const AppRouter = () => (
         </PermissionRoute>
       }
     />
+    <Route
+      path="/modificar-cuadre"
+      element={
+        <PermissionRoute permiso="modificar_cuadre">
+          <ModificacionCuadrePage />
+        </PermissionRoute>
+      }
+    />
 
     <Route
       path="/gastoscxc-cuadres"
