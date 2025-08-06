@@ -12,6 +12,17 @@ import ImageDisplay from "@/components/upfile/ImageDisplay";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
+
+const FARMACIAS: Record<string, string> = {
+  "01": "Santa Elena",
+  "02": "Sur America",
+  "03": "Rapifarma",
+  "04": "San Carlos",
+  "05": "Las Alicias",
+  "06": "San Martin",
+  "07": "Milagro Norte",
+};
+
 interface TablaPagosProps {
   pagos: Pago[];
 }
@@ -71,11 +82,12 @@ const TablaPagos: React.FC<TablaPagosProps> = ({ pagos }) => {
                 <TableHead>Fecha</TableHead>
                 <TableHead>Usuario</TableHead>
                 <TableHead>Referencia</TableHead>
-                <TableHead>Banco Emisor</TableHead>
-                <TableHead>Banco Receptor</TableHead>
+                <TableHead>Proveedor</TableHead>
+                <TableHead>Farmacia</TableHead>
+                <TableHead>N° Factura</TableHead>
                 <TableHead>Monto</TableHead>
                 <TableHead>Estado</TableHead>
-                <TableHead>Fotos Cuenta x Pagar</TableHead>
+                <TableHead>Comprobante</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -87,73 +99,33 @@ const TablaPagos: React.FC<TablaPagosProps> = ({ pagos }) => {
                     <TableCell>{pago.fecha}</TableCell>
                     <TableCell>{pago.usuario}</TableCell>
                     <TableCell>{pago.referencia}</TableCell>
-                    <TableCell>{pago.bancoEmisor}</TableCell>
-                    <TableCell>{pago.bancoReceptor}</TableCell>
-                    <TableCell>
-                      {pago.montoDePago} {pago.monedaDePago}
-                    </TableCell>
+                    <TableCell>{pago.proveedor}</TableCell>
+                    <TableCell>{FARMACIAS[pago.farmaciaId] || pago.farmaciaId}</TableCell>
+                    <TableCell>{pago.numeroFactura}</TableCell>
+                    <TableCell>{pago.montoDePago} {pago.monedaDePago}</TableCell>
                     <TableCell>{pago.estado}</TableCell>
                     <TableCell>
                       <div>
-                        {!open && (
+                        {!open && imagen !== "Sin comprobante" && (
                           <Button onClick={() => handleToggle(key)}>
                             Ver Comprobante
                           </Button>
                         )}
-                        {open && (
-                          <>
-                            {Array.isArray(pago.imagenesCuentaPorPagar) &&
-                            pago.imagenesCuentaPorPagar.length > 0 ? (
-                              <div className="flex gap-2 flex-wrap">
-                                {pago.imagenesCuentaPorPagar.map((img, idx) => {
-                                  if (typeof img === "string") {
-                                    return (
-                                      <ImageDisplay
-                                        key={img + idx}
-                                        imageName={img}
-                                        alt={`Cuenta por pagar ${idx + 1}`}
-                                        style={{
-                                          width: 48,
-                                          height: 48,
-                                          objectFit: "cover",
-                                          borderRadius: 6,
-                                          boxShadow: "0 0 2px #0002",
-                                        }}
-                                      />
-                                    );
-                                  } else if (
-                                    img &&
-                                    typeof img === "object" &&
-                                    "url" in img
-                                  ) {
-                                    return (
-                                      <ImageDisplay
-                                        key={img.url + idx}
-                                        imageName={img.url}
-                                        alt={
-                                          img.descripcion ||
-                                          `Cuenta por pagar ${idx + 1}`
-                                        }
-                                        style={{
-                                          width: 48,
-                                          height: 48,
-                                          objectFit: "cover",
-                                          borderRadius: 6,
-                                          boxShadow: "0 0 2px #0002",
-                                        }}
-                                      />
-                                    );
-                                  } else {
-                                    return null;
-                                  }
-                                })}
-                              </div>
-                            ) : (
-                              <span className="text-gray-400 text-xs">
-                                Sin foto
-                              </span>
-                            )}
-                          </>
+                        {open && imagen !== "Sin comprobante" && (
+                          <ImageDisplay
+                            imageName={imagen}
+                            alt="Comprobante"
+                            style={{
+                              width: 48,
+                              height: 48,
+                              objectFit: "cover",
+                              borderRadius: 6,
+                              boxShadow: "0 0 2px #0002",
+                            }}
+                          />
+                        )}
+                        {imagen === "Sin comprobante" && (
+                          <span className="text-gray-400 text-xs">Sin comprobante</span>
                         )}
                       </div>
                     </TableCell>
