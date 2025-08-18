@@ -140,10 +140,14 @@ const EdicionCuentaModal: React.FC<EdicionCuentaModalProps> = ({
   ) {
     if (!monto || !tasa || tasa <= 0) return monto;
     if (monedaOrigen === monedaDestino) return monto;
-    if (monedaDestino === "USD") {
-      return Number((monto / tasa).toFixed(4));
-    } else if (monedaDestino === "Bs") {
+    if (monedaOrigen === "Bs" && monedaDestino === "Bs") {
+      return monto;
+    }
+    if (monedaOrigen === "USD" && monedaDestino === "Bs") {
       return Number((monto * tasa).toFixed(2));
+    }
+    if (monedaOrigen === "Bs" && monedaDestino === "USD") {
+      return Number((monto / tasa).toFixed(4));
     }
     return monto;
   }
@@ -215,7 +219,7 @@ const EdicionCuentaModal: React.FC<EdicionCuentaModalProps> = ({
         ) {
           next.montoDePago = convertirMontoDePago(
             montoBaseMenosRetencion,
-            cuentaEditada.monedaDePago,
+            cuentaEditada.monedaOriginal,
             value,
             cuentaEditada.tasaDePago
           );
@@ -280,8 +284,16 @@ const EdicionCuentaModal: React.FC<EdicionCuentaModalProps> = ({
 
         // Convertir monto base a la moneda de pago si es necesario
         let montoBase = montoBaseOriginal;
+        console.log("montoBaseOriginal:", montoBaseOriginal);
+        console.log("monedaBaseOriginal:", monedaBaseOriginal);
+        console.log("monedaPago:", monedaPago);
+        console.log("tasa:", tasa);
         if (monedaBaseOriginal !== monedaPago && tasa > 0) {
-          if (monedaBaseOriginal === "USD" && monedaPago === "Bs") {
+          if (monedaBaseOriginal === "Bs" && monedaPago === "Bs") {
+            montoBase = montoBaseOriginal;
+          } else if (monedaBaseOriginal === "USD" && monedaPago === "USD") {
+            montoBase = montoBaseOriginal;
+          } else if (monedaBaseOriginal === "USD" && monedaPago === "Bs") {
             montoBase = montoBaseOriginal * tasa;
           } else if (monedaBaseOriginal === "Bs" && monedaPago === "USD") {
             montoBase = montoBaseOriginal / tasa;
