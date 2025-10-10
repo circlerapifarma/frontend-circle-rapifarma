@@ -141,8 +141,8 @@ const Navbar = () => {
                 {/* Logo / Brand Name */}
                 <Link to="/admin" className="text-2xl font-extrabold tracking-wide flex items-center gap-2 text-black">
                     {/* Consider placing your actual logo image here */}
-                    <img src="/path/to/your/logo.png" alt="Donaive Logo" className="h-8 w-auto" onError={(e) => (e.currentTarget.style.display = 'none')} />
-                    <span>DONAIVE</span>
+                    <img src="/path/to/your/logo.png" alt="Rapifarma Logo" className="h-8 w-auto" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                    <span>Rapifarma</span>
                 </Link>
 
                 {/* Desktop Menu (Dropdown) */}
