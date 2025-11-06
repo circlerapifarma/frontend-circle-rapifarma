@@ -11,7 +11,7 @@ const GastosCuentasCuadresPorFarmaciaPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Nuevo uso del hook useGastos
-  const { gastos, loading, error: errorGastos, fetchGastos } = useGastos(selectedFarmacia?.id);
+  const { gastos, loading, error: errorGastos, fetchGastosAll } = useGastos(selectedFarmacia?.id);
 
   // Filtros locales para cada card
   const [fechaInicio, setFechaInicio] = useState("");
@@ -48,9 +48,9 @@ const GastosCuentasCuadresPorFarmaciaPage: React.FC = () => {
   // Cuando selecciona una farmacia, puedes cargar gastos si lo deseas
   useEffect(() => {
     if (selectedFarmacia) {
-      fetchGastos && fetchGastos(selectedFarmacia.id);
+      fetchGastosAll && fetchGastosAll(selectedFarmacia.id);
     }
-  }, [selectedFarmacia, fetchGastos]);
+  }, [selectedFarmacia, fetchGastosAll]);
 
   // Chip visual reutilizable para estado
   const EstadoChip: React.FC<{ estado: string }> = ({ estado }) => {

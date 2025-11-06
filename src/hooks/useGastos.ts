@@ -5,9 +5,9 @@ interface Gasto {
   monto: number;
   titulo: string;
   descripcion: string;
-  localidad: string; // Este campo es el ID de la localidad
+  localidad: string;
   fecha: string;
-  fechaRegistro?: string; // <-- Nueva fecha de registro
+  fechaRegistro?: string;
   estado: string;
   divisa?: string;
   tasa?: number;
@@ -23,72 +23,77 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 export function useGastos(localidadId?: string) {
   const [localidades, setLocalidades] = useState<Localidad[]>([]);
   const [gastos, setGastos] = useState<Gasto[]>([]);
-  const [gastosPorLocalidad, setGastosPorLocalidad] = useState<Record<string, Gasto[]>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch de localidades (farmacias)
   const fetchLocalidades = useCallback(async () => {
     try {
-      const resLocalidades = await fetch(`${API_BASE_URL}/farmacias`);
-      if (!resLocalidades.ok) throw new Error("Error al obtener localidades.");
-      const dataLocalidades = await resLocalidades.json();
-      const listaLocalidades = dataLocalidades.farmacias
-        ? Object.entries(dataLocalidades.farmacias).map(([id, nombre]) => ({ id, nombre: String(nombre) }))
-        : Object.entries(dataLocalidades).map(([id, nombre]) => ({ id, nombre: String(nombre) }));
-      setLocalidades(listaLocalidades);
-    } catch (err: any) {
+      const res = await fetch(`${API_BASE_URL}/farmacias`);
+      if (!res.ok) throw new Error("Error al obtener localidades.");
+      const data = await res.json();
+      const lista = data.farmacias
+        ? Object.entries(data.farmacias).map(([id, nombre]) => ({ id, nombre: String(nombre) }))
+        : Object.entries(data).map(([id, nombre]) => ({ id, nombre: String(nombre) }));
+      setLocalidades(lista);
+    } catch {
       setLocalidades([]);
     }
   }, []);
 
-  // Fetch de gastos, filtrando por localidad si se pasa localidadId
-  const fetchGastos = useCallback(async (id?: string) => {
+  // --- /gastos (todos o por localidad)
+  const fetchGastosAll = useCallback(async (locId?: string) => {
     setLoading(true);
     setError(null);
     try {
       let url = `${API_BASE_URL}/gastos`;
-      if (id) url += `?localidad=${id}`;
-      const resGastos = await fetch(url);
-      if (!resGastos.ok) throw new Error("Error al obtener gastos.");
-      const dataGastos: Gasto[] = await resGastos.json();
-      setGastos(dataGastos);
-      if (!id) {
-        // Agrupar por localidad solo si no se filtra
-        const agrupados = dataGastos.reduce((acc: Record<string, Gasto[]>, gasto: Gasto) => {
-          if (!acc[gasto.localidad]) acc[gasto.localidad] = [];
-          acc[gasto.localidad].push(gasto);
-          return acc;
-        }, {});
-        setGastosPorLocalidad(agrupados);
-      }
+      if (locId) url += `?localidad=${locId}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Error al obtener gastos.");
+      const data: Gasto[] = await res.json();
+      setGastos(data);
     } catch (err: any) {
       setError(err.message || "Error desconocido al cargar los datos.");
       setGastos([]);
-      setGastosPorLocalidad({});
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Cargar farmacias y gastos al montar (solo si no se filtra por localidad)
+  // --- /gastos/estado (nuevo)
+  const fetchGastosPorEstado = useCallback(
+    async (estado?: string, locId?: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const params = new URLSearchParams();
+        if (estado) params.append("estado", estado);
+        if (locId) params.append("localidad", locId);
+        const url = `${API_BASE_URL}/gastos/estado?${params.toString()}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Error al obtener gastos por estado.");
+        const data: Gasto[] = await res.json();
+        setGastos(data);
+      } catch (err: any) {
+        setError(err.message || "Error desconocido al cargar los datos.");
+        setGastos([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
   useEffect(() => {
     fetchLocalidades();
-    if (!localidadId) fetchGastos();
-  }, [fetchLocalidades, fetchGastos, localidadId]);
-
-  // Si cambia la localidadId, cargar gastos de esa farmacia
-  useEffect(() => {
-    if (localidadId) fetchGastos(localidadId);
-  }, [localidadId, fetchGastos]);
+  }, [fetchLocalidades, fetchGastosAll, localidadId]);
 
   return {
     localidades,
-    gastos: localidadId ? gastos : undefined,
-    gastosPorLocalidad: localidadId ? undefined : gastosPorLocalidad,
+    gastos,
     loading,
     error,
-    fetchGastos,
-    refreshGastos: fetchGastos, // Alias para compatibilidad
+    fetchGastosAll,
+    fetchGastosPorEstado,
+    refreshGastos: fetchGastosAll,
   };
 }
