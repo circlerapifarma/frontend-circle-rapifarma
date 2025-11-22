@@ -36,14 +36,24 @@ const VerificacionCuadresPage: React.FC = () => {
   useEffect(() => {
     const fetchCuadresPorFarmacia = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/cuadres/all`);
+        const hoy = new Date();
+        const fechaFin = hoy.toISOString().split("T")[0]; // YYYY-MM-DD
+        const fechaInicioDate = new Date(hoy);
+        fechaInicioDate.setDate(hoy.getDate() - 7); // 7 días atrás
+        const fechaInicio = fechaInicioDate.toISOString().split("T")[0];
+
+        const response = await fetch(
+          `${API_BASE_URL}/cuadres?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`
+        );
         const data = await response.json();
+
         const cuadresCount = data.reduce((acc: Record<string, number>, cuadre: any) => {
           if (cuadre.estado === "wait") {
             acc[cuadre.codigoFarmacia] = (acc[cuadre.codigoFarmacia] || 0) + 1;
           }
           return acc;
         }, {});
+
         setCuadresPorFarmacia(cuadresCount);
       } catch (err) {
         console.error("Error al obtener cuadres por farmacia", err);
@@ -52,6 +62,7 @@ const VerificacionCuadresPage: React.FC = () => {
 
     fetchCuadresPorFarmacia();
   }, []);
+
 
   const abrirModal = (id: string, nombre: string) => {
     setFarmaciaSeleccionada(id);
