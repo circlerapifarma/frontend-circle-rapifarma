@@ -51,19 +51,24 @@ const VerificacionCuadresModal: React.FC<Props> = ({ open, onClose, farmaciaId, 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!open || !farmaciaId) return;
-    setLoading(true);
-    setError(null);
-    fetch(`${API_BASE_URL}/cuadres/${farmaciaId}`)
-      .then(res => res.json())
-      .then(data => {
-        // Solo pendientes de verificación
-        setCuadres(data.filter((c: CuadreCaja) => c.estado !== "verified" && c.estado !== "denied"));
-      })
-      .catch(() => setError("Error al cargar cuadres"))
-      .finally(() => setLoading(false));
-  }, [open, farmaciaId]);
+useEffect(() => {
+  if (!open || !farmaciaId) return;
+
+  setLoading(true);
+  setError(null);
+
+  const params = new URLSearchParams({
+    estado: "wait" // solo cuadres pendientes
+  });
+
+  fetch(`${API_BASE_URL}/cuadres?farmacia=${farmaciaId}&${params.toString()}`)
+    .then(res => res.json())
+    .then(data => {
+      setCuadres(data); // ya filtrado por backend
+    })
+    .catch(() => setError("Error al cargar cuadres"))
+    .finally(() => setLoading(false));
+}, [open, farmaciaId]);
 
   const actualizarEstado = async (cuadre: CuadreCaja, nuevoEstado: "verified" | "denied") => {
     if (!farmaciaId || !cuadre._id) return;
