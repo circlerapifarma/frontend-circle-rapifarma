@@ -160,29 +160,40 @@ export function useResumenData() {
         const dataFarmacias = await resFarmacias.json();
         const listaFarmacias = dataFarmacias.farmacias
           ? Object.entries(dataFarmacias.farmacias).map(([id, nombre]) => ({
-              id,
-              nombre: String(nombre),
-            }))
+            id,
+            nombre: String(nombre),
+          }))
           : Object.entries(dataFarmacias).map(([id, nombre]) => ({
-              id,
-              nombre: String(nombre),
-            }));
+            id,
+            nombre: String(nombre),
+          }));
         setFarmacias(listaFarmacias);
 
         const resultCuadres: { [key: string]: Cuadre[] } = {};
         const cuadrePromises = listaFarmacias.map(async (farm) => {
           try {
+            const params = new URLSearchParams({
+              farmacia: farm.id,
+              fechaInicio,
+              fechaFin,
+              // estado: "wait"   // <-- opcional
+            });
+
             const resCuadres = await fetch(
-              `${API_BASE_URL}/cuadres/${farm.id}`,
+              `${API_BASE_URL}/cuadres?${params.toString()}`,
               { headers }
             );
+
             if (!resCuadres.ok) return { farmId: farm.id, data: [] };
+
             const data = await resCuadres.json();
             return { farmId: farm.id, data };
+
           } catch (err) {
             return { farmId: farm.id, data: [] };
           }
         });
+
         const settledResults = await Promise.allSettled(cuadrePromises);
         settledResults.forEach((settledResult) => {
           if (settledResult.status === "fulfilled") {
@@ -220,8 +231,8 @@ export function useResumenData() {
         setLoading(false);
       }
     };
-    fetchInitialData();
     setMesActual();
+    fetchInitialData();
   }, [setMesActual]);
 
   useEffect(() => {
@@ -294,6 +305,7 @@ export function useResumenData() {
     });
     setVentas(ventasPorFarmacia);
   }, [cuadresPorFarmacia, farmacias, fechaInicio, fechaFin]);
+
   useEffect(() => {
     const fetchPagosPorRango = async () => {
       if (!fechaInicio || !fechaFin) {
