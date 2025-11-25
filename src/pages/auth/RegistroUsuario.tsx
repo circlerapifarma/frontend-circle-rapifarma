@@ -8,7 +8,7 @@ import {
 } from "react-icons/ai";
 
 // Asegúrate de definir la URL base de tu API, por ejemplo, usando una variable de entorno:
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000"; // Reemplaza con tu base URL real
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"; // Reemplaza con tu base URL real
 
 // --- INTERFACES DE TYPESCRIPT ---
 
