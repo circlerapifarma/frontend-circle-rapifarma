@@ -12,6 +12,8 @@ const FARMACIAS_MOCK = [
   { id: '05', nombre: 'Las Alicias' },
   { id: '06', nombre: 'San Martin' },
   { id: '07', nombre: 'Milagro Norte' },
+  { id: '08', nombre: 'Virginia' },
+  { id: '09', nombre: 'Santo tomas' },
 ];
 
 const VisualizarPagos: React.FC = () => {

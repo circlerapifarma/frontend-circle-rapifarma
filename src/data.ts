@@ -6,7 +6,9 @@ export const farmacias: string[] = [
     'las alicias',
     'san carlos',
     'san ignacio',
-    'rapifarma'
+    'rapifarma',
+    'Virginia',
+    'Santo Tomas'
 ];
 export interface PuntoVenta {
   banco: string;

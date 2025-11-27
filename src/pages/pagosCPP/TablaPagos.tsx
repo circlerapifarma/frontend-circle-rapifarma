@@ -21,6 +21,8 @@ const FARMACIAS: Record<string, string> = {
   "05": "Las Alicias",
   "06": "San Martin",
   "07": "Milagro Norte",
+  "08": "Virginia",
+  "09": "Santo Tomas",
 };
 
 interface TablaPagosProps {
