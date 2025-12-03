@@ -181,7 +181,7 @@ const allLinks = [
       {
         to: "/adminusuarios",
         label: "Gestionar Usuarios",
-        permiso: undefined, // Sin permiso requerido - visible para todos
+        // Sin propiedad permiso - visible para todos
       },
     ],
   },
@@ -290,23 +290,16 @@ const Navbar = () => {
     .map((category) => ({
       ...category,
       items: category.items.filter((link) => {
-        // Si no tiene permiso definido (undefined), es visible para todos
-        if (link.permiso === undefined || link.permiso === null || link.permiso === "") {
-          console.log(`✅ Enlace "${link.label}" visible (sin permiso requerido)`);
+        // Si no tiene propiedad permiso, es visible para todos
+        if (!("permiso" in link) || link.permiso === undefined || link.permiso === null || link.permiso === "") {
           return true;
         }
         // Si tiene acceso_admin, puede ver todo (incluyendo módulos de usuarios)
         if (permisosUsuario.includes("acceso_admin")) {
-          console.log(`✅ Enlace "${link.label}" visible por acceso_admin`);
           return true;
         }
         // Si tiene el permiso específico, puede verlo
-        const tienePermiso = permisosUsuario.includes(link.permiso);
-        if (!tienePermiso && link.permiso === "usuarios") {
-          console.log(`❌ Enlace "${link.label}" oculto - requiere permiso: "${link.permiso}"`);
-          console.log(`   Permisos actuales del usuario:`, permisosUsuario);
-        }
-        return tienePermiso;
+        return permisosUsuario.includes(link.permiso);
       }),
     }))
     .filter((category) => category.items.length > 0);
