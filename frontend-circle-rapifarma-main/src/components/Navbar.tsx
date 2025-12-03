@@ -275,7 +275,7 @@ const Navbar = () => {
       ...category,
       items: category.items.filter((link) => {
         if (!link.permiso) return true;
-        // Si tiene acceso_admin, puede ver todo
+        // Si tiene acceso_admin, puede ver todo (incluyendo módulos de usuarios)
         if (permisosUsuario.includes("acceso_admin")) return true;
         // Si tiene el permiso específico, puede verlo
         return permisosUsuario.includes(link.permiso);
@@ -283,11 +283,15 @@ const Navbar = () => {
     }))
     .filter((category) => category.items.length > 0);
 
-  // Debug: Ver permisos del usuario (temporal)
+  // Debug: Ver permisos del usuario (temporal - remover después)
   useEffect(() => {
+    console.log("=== DEBUG PERMISOS ===");
+    console.log("Usuario completo:", usuario);
     console.log("Permisos del usuario:", permisosUsuario);
     console.log("Tiene acceso_admin:", permisosUsuario.includes("acceso_admin"));
-  }, [permisosUsuario]);
+    console.log("Tiene usuarios:", permisosUsuario.includes("usuarios"));
+    console.log("Array de permisos es:", Array.isArray(permisosUsuario) ? "Sí" : "No");
+  }, [permisosUsuario, usuario]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
