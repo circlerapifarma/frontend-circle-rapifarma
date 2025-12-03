@@ -532,3 +532,4 @@ Si tienes dudas sobre la implementación, revisa el código del frontend en:
 - `src/hooks/useProveedores.ts` - Para ver cómo se consumen los endpoints
 - `src/pages/ProveedoresPage.tsx` - Para ver la estructura de datos esperada
 
+

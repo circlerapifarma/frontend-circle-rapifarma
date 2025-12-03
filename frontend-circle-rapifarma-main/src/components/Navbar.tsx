@@ -149,7 +149,7 @@ const allLinks = [
       {
         to: "/proveedores",
         label: "Proveedores",
-        permiso: "acceso_admin",
+        permiso: "proveedores",
         showCount: true,
       },
       {
@@ -176,6 +176,11 @@ const allLinks = [
       {
         to: "/registrarusuario",
         label: "Registrar Usuario",
+        permiso: "usuarios",
+      },
+      {
+        to: "/adminusuarios",
+        label: "Gestionar Usuarios",
         permiso: "usuarios",
       },
     ],
@@ -218,7 +223,7 @@ const Navbar = () => {
 
   // Effect para obtener el total de proveedores
   useEffect(() => {
-    if (permisosUsuario.includes("acceso_admin")) {
+    if (permisosUsuario.includes("proveedores")) {
       fetchTotalProveedores();
     }
   }, [permisosUsuario]);

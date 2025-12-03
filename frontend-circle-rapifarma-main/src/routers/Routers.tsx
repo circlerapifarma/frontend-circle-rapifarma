@@ -35,6 +35,7 @@ import ModificarEstadoMeta from "@/pages/metas/ModificarEstadoMeta";
 import ModificacionCuadrePage from "@/pages/cuadres/modificarCuadre/ModificacionCuadrePage";
 import RegistroUsuario from "@/pages/auth/RegistroUsuario";
 import ProveedoresPage from "@/pages/ProveedoresPage";
+import UsuariosAdminPage from "@/pages/UsuariosAdminPage";
 
 const AppRouter = () => (
   <Routes>
@@ -293,9 +294,17 @@ const AppRouter = () => (
       }
     />
     <Route
+      path="/adminusuarios"
+      element={
+        <PermissionRoute permiso="usuarios">
+          <UsuariosAdminPage />
+        </PermissionRoute>
+      }
+    />
+    <Route
       path="/proveedores"
       element={
-        <PermissionRoute permiso="acceso_admin">
+        <PermissionRoute permiso="proveedores">
           <ProveedoresPage />
         </PermissionRoute>
       }

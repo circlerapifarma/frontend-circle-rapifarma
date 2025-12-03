@@ -21,7 +21,13 @@ const PERMISOS = [
   "acceso_admin",
   "eliminar_cuadres",
   "ver_ventas_totales",
-  "verificar_gastos"
+  "verificar_gastos",
+  "comisiones",
+  "cajeros",
+  "metas",
+  "modificar_cuadre",
+  "proveedores",
+  "usuarios",
 ];
 
 const UsuariosAdminPage: React.FC = () => {

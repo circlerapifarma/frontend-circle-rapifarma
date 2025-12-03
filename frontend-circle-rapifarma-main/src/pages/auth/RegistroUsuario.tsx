@@ -54,6 +54,7 @@ const PERMISOS_DISPONIBLES: string[] = [
   "cajeros",
   "metas",
   "modificar_cuadre",
+  "proveedores",
 ];
 
 // --- COMPONENTE ---
