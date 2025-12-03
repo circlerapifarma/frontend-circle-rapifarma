@@ -194,6 +194,7 @@ const allLinks = [
 ];
 
 const Navbar = () => {
+  console.log("🚀 NAVBAR SE ESTÁ RENDERIZANDO");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [permisosUsuario, setPermisosUsuario] = useState<string[]>([]);
@@ -202,15 +203,28 @@ const Navbar = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const { totalProveedores, fetchTotalProveedores } = useProveedores();
+  
+  console.log("🚀 NAVBAR INICIALIZADO - permisosUsuario:", permisosUsuario);
 
   // Effect for handling user data and permissions from localStorage
   useEffect(() => {
+    console.log("🔄 useEffect de permisos se está ejecutando");
     const loadUsuario = () => {
-      const storedUsuario = JSON.parse(localStorage.getItem("usuario") || "null");
-      console.log("🔍 Usuario cargado desde localStorage:", storedUsuario);
-      console.log("🔍 Permisos extraídos:", storedUsuario?.permisos);
-      setUsuario(storedUsuario);
-      setPermisosUsuario(storedUsuario?.permisos || []);
+      try {
+        const usuarioRaw = localStorage.getItem("usuario");
+        console.log("📦 Usuario RAW desde localStorage:", usuarioRaw);
+        const storedUsuario = JSON.parse(usuarioRaw || "null");
+        console.log("🔍 Usuario parseado:", storedUsuario);
+        console.log("🔍 Permisos extraídos:", storedUsuario?.permisos);
+        console.log("🔍 Tipo de permisos:", typeof storedUsuario?.permisos);
+        console.log("🔍 Es array?", Array.isArray(storedUsuario?.permisos));
+        setUsuario(storedUsuario);
+        const permisos = storedUsuario?.permisos || [];
+        console.log("🔍 Permisos que se van a establecer:", permisos);
+        setPermisosUsuario(permisos);
+      } catch (error) {
+        console.error("❌ ERROR al cargar usuario:", error);
+      }
     };
 
     // Cargar usuario al montar
