@@ -207,6 +207,8 @@ const Navbar = () => {
   useEffect(() => {
     const loadUsuario = () => {
       const storedUsuario = JSON.parse(localStorage.getItem("usuario") || "null");
+      console.log("🔍 Usuario cargado desde localStorage:", storedUsuario);
+      console.log("🔍 Permisos extraídos:", storedUsuario?.permisos);
       setUsuario(storedUsuario);
       setPermisosUsuario(storedUsuario?.permisos || []);
     };
@@ -276,12 +278,23 @@ const Navbar = () => {
       items: category.items.filter((link) => {
         if (!link.permiso) return true;
         // Si tiene acceso_admin, puede ver todo (incluyendo módulos de usuarios)
-        if (permisosUsuario.includes("acceso_admin")) return true;
+        if (permisosUsuario.includes("acceso_admin")) {
+          console.log(`✅ Enlace "${link.label}" visible por acceso_admin`);
+          return true;
+        }
         // Si tiene el permiso específico, puede verlo
-        return permisosUsuario.includes(link.permiso);
+        const tienePermiso = permisosUsuario.includes(link.permiso);
+        if (!tienePermiso && link.permiso === "usuarios") {
+          console.log(`❌ Enlace "${link.label}" oculto - requiere permiso: "${link.permiso}"`);
+          console.log(`   Permisos actuales del usuario:`, permisosUsuario);
+        }
+        return tienePermiso;
       }),
     }))
     .filter((category) => category.items.length > 0);
+
+  console.log("📋 Total de categorías accesibles:", accessibleLinks.length);
+  console.log("📋 Categorías:", accessibleLinks.map(c => c.category));
 
   // Debug: Ver permisos del usuario (temporal - remover después)
   useEffect(() => {
@@ -324,7 +337,12 @@ const Navbar = () => {
         >
           <button
             className="flex items-center gap-2 px-4 text-2xl font-extrabold py-2 rounded-full text-black transition-all duration-200"
-            onClick={() => setIsDropdownOpen((prev) => !prev)}
+            onClick={() => {
+              console.log("🔘 Click en MODULOS - Permisos actuales:", permisosUsuario);
+              console.log("🔘 Tiene acceso_admin:", permisosUsuario.includes("acceso_admin"));
+              console.log("🔘 Tiene usuarios:", permisosUsuario.includes("usuarios"));
+              setIsDropdownOpen((prev) => !prev);
+            }}
             aria-expanded={isDropdownOpen}
           >
             MODULOS
