@@ -41,11 +41,23 @@ const UsuariosAdminPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/usuarios`);
+      const token = localStorage.getItem("token");
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      const res = await fetch(`${API_BASE_URL}/usuarios`, { headers });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || "Error al obtener usuarios");
+      }
       const data = await res.json();
       setUsuarios(data);
-    } catch {
-      setError("Error al obtener usuarios");
+    } catch (err: any) {
+      setError(err.message || "Error al obtener usuarios");
     } finally {
       setLoading(false);
     }
@@ -86,15 +98,29 @@ const UsuariosAdminPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      await fetch(`${API_BASE_URL}/usuarios`, {
+      const token = localStorage.getItem("token");
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      const res = await fetch(`${API_BASE_URL}/usuarios`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(nuevo)
       });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || "Error al crear usuario");
+      }
+
       setNuevo({ correo: "", contraseña: "", farmacias: {}, permisos: [] });
       fetchUsuarios();
-    } catch {
-      setError("Error al crear usuario");
+    } catch (err: any) {
+      setError(err.message || "Error al crear usuario");
     } finally {
       setLoading(false);
     }
@@ -105,15 +131,29 @@ const UsuariosAdminPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      await fetch(`${API_BASE_URL}/usuarios/${editando._id}`, {
+      const token = localStorage.getItem("token");
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      const res = await fetch(`${API_BASE_URL}/usuarios/${editando._id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(editando)
       });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || "Error al actualizar usuario");
+      }
+
       setEditando(null);
       fetchUsuarios();
-    } catch {
-      setError("Error al actualizar usuario");
+    } catch (err: any) {
+      setError(err.message || "Error al actualizar usuario");
     } finally {
       setLoading(false);
     }
