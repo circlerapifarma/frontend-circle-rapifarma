@@ -296,9 +296,9 @@ const AppRouter = () => (
     <Route
       path="/adminusuarios"
       element={
-        <PermissionRoute permiso="usuarios">
+        <PrivateRoute>
           <UsuariosAdminPage />
-        </PermissionRoute>
+        </PrivateRoute>
       }
     />
     <Route

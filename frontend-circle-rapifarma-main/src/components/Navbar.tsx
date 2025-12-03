@@ -181,7 +181,7 @@ const allLinks = [
       {
         to: "/adminusuarios",
         label: "Gestionar Usuarios",
-        permiso: "usuarios",
+        permiso: undefined, // Sin permiso requerido - visible para todos
       },
     ],
   },
