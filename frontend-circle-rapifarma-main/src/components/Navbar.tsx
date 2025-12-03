@@ -290,7 +290,11 @@ const Navbar = () => {
     .map((category) => ({
       ...category,
       items: category.items.filter((link) => {
-        if (!link.permiso) return true;
+        // Si no tiene permiso definido (undefined), es visible para todos
+        if (link.permiso === undefined || link.permiso === null || link.permiso === "") {
+          console.log(`✅ Enlace "${link.label}" visible (sin permiso requerido)`);
+          return true;
+        }
         // Si tiene acceso_admin, puede ver todo (incluyendo módulos de usuarios)
         if (permisosUsuario.includes("acceso_admin")) {
           console.log(`✅ Enlace "${link.label}" visible por acceso_admin`);
@@ -309,6 +313,8 @@ const Navbar = () => {
 
   console.log("📋 Total de categorías accesibles:", accessibleLinks.length);
   console.log("📋 Categorías:", accessibleLinks.map(c => c.category));
+  console.log("📋 Categoría Configuracion:", accessibleLinks.find(c => c.category === "Configuracion"));
+  console.log("📋 Todos los enlaces de Configuracion antes del filtro:", allLinks.find(c => c.category === "Configuracion")?.items);
 
   // Debug: Ver permisos del usuario (temporal - remover después)
   useEffect(() => {
