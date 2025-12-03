@@ -261,9 +261,13 @@ const Navbar = () => {
   const accessibleLinks = allLinks
     .map((category) => ({
       ...category,
-      items: category.items.filter(
-        (link) => !link.permiso || permisosUsuario.includes(link.permiso)
-      ),
+      items: category.items.filter((link) => {
+        if (!link.permiso) return true;
+        // Si tiene acceso_admin, puede ver todo
+        if (permisosUsuario.includes("acceso_admin")) return true;
+        // Si tiene el permiso específico, puede verlo
+        return permisosUsuario.includes(link.permiso);
+      }),
     }))
     .filter((category) => category.items.length > 0);
 
