@@ -205,20 +205,32 @@ const Navbar = () => {
 
   // Effect for handling user data and permissions from localStorage
   useEffect(() => {
-    const storedUsuario = JSON.parse(localStorage.getItem("usuario") || "null");
-    setUsuario(storedUsuario);
-    setPermisosUsuario(storedUsuario?.permisos || []);
+    const loadUsuario = () => {
+      const storedUsuario = JSON.parse(localStorage.getItem("usuario") || "null");
+      setUsuario(storedUsuario);
+      setPermisosUsuario(storedUsuario?.permisos || []);
+    };
 
+    // Cargar usuario al montar
+    loadUsuario();
+
+    // Listener para cambios en otras pestañas
     const handleStorageChange = () => {
-      const updatedUsuario = JSON.parse(
-        localStorage.getItem("usuario") || "null"
-      );
-      setUsuario(updatedUsuario);
-      setPermisosUsuario(updatedUsuario?.permisos || []);
+      loadUsuario();
+    };
+
+    // Listener para cambios en la misma pestaña (usando evento personalizado)
+    const handleCustomStorageChange = () => {
+      loadUsuario();
     };
 
     window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+    window.addEventListener("localStorageChange", handleCustomStorageChange);
+    
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("localStorageChange", handleCustomStorageChange);
+    };
   }, []);
 
   // Effect para obtener el total de proveedores
@@ -270,6 +282,12 @@ const Navbar = () => {
       }),
     }))
     .filter((category) => category.items.length > 0);
+
+  // Debug: Ver permisos del usuario (temporal)
+  useEffect(() => {
+    console.log("Permisos del usuario:", permisosUsuario);
+    console.log("Tiene acceso_admin:", permisosUsuario.includes("acceso_admin"));
+  }, [permisosUsuario]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
