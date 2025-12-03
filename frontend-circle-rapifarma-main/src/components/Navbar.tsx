@@ -412,6 +412,32 @@ const Navbar = () => {
                     </ul>
                   </div>
                 ))}
+                {/* Categoría Configuracion - siempre visible con Gestionar Usuarios */}
+                {(!accessibleLinks.find(c => c.category === "Configuracion") || 
+                  !accessibleLinks.find(c => c.category === "Configuracion")?.items.find(l => l.to === "/adminusuarios")) && (
+                  <div className="mb-2">
+                    <h3 className="px-4 pt-3 pb-2 text-xs font-bold uppercase text-gray-700 flex items-center gap-2 border-b border-gray-100">
+                      <Users className="w-4 h-4 text-gray-700" />
+                      Configuracion
+                    </h3>
+                    <ul className="pb-1">
+                      <li>
+                        <Link
+                          to="/adminusuarios"
+                          onClick={() => setIsDropdownOpen(false)}
+                          className={`block px-4 py-2 text-sm whitespace-nowrap transition-all duration-150 rounded mx-2 my-1
+                            ${
+                              location.pathname === "/adminusuarios"
+                                ? "text-black font-semibold bg-gray-100 hover:bg-gray-200"
+                                : "text-gray-800 hover:text-black hover:bg-gray-50"
+                            }`}
+                        >
+                          Gestionar Usuarios
+                        </Link>
+                      </li>
+                    </ul>
+                  </div>
+                )}
                 {usuario && (
                   <div className="border-t border-gray-200 pt-2 mt-2">
                     <button
@@ -486,6 +512,32 @@ const Navbar = () => {
               </ul>
             </div>
           ))}
+          {/* Categoría Configuracion - siempre visible con Gestionar Usuarios (Mobile) */}
+          {(!accessibleLinks.find(c => c.category === "Configuracion") || 
+            !accessibleLinks.find(c => c.category === "Configuracion")?.items.find(l => l.to === "/adminusuarios")) && (
+            <div className="mb-4 last:mb-0">
+              <h3 className="text-sm font-bold uppercase text-gray-600 mb-2 flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                Configuracion
+              </h3>
+              <ul className="space-y-1">
+                <li>
+                  <Link
+                    to="/adminusuarios"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`block px-3 py-2 text-sm transition-all duration-150 rounded
+                      ${
+                        location.pathname === "/adminusuarios"
+                          ? "text-black font-semibold bg-gray-200"
+                          : "text-gray-800 hover:text-black hover:bg-gray-50"
+                      }`}
+                  >
+                    Gestionar Usuarios
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          )}
           {usuario && (
             <div className="border-t border-gray-200 pt-4 mt-4">
               <button
