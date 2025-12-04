@@ -37,15 +37,73 @@ const UsuariosAdminPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Función helper para verificar si el token es válido
+  const isTokenValid = (): boolean => {
+    const token = localStorage.getItem("token");
+    if (!token) return false;
+    
+    try {
+      // Decodificar el token (sin verificar firma, solo para ver expiración)
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const exp = payload.exp * 1000; // Convertir a milisegundos
+      return Date.now() < exp;
+    } catch (e) {
+      return false;
+    }
+  };
+
+  // Función helper para redirigir al login
+  const redirectToLogin = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("usuario");
+    window.location.href = "/login";
+  };
+
   const fetchUsuarios = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/usuarios`);
+      const token = localStorage.getItem("token");
+      
+      if (!token || !isTokenValid()) {
+        redirectToLogin();
+        return;
+      }
+
+      const res = await fetch(`${API_BASE_URL}/adminusuarios`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      });
+
+      // Verificar si la respuesta es exitosa
+      if (!res.ok) {
+        if (res.status === 401) {
+          // Token inválido o expirado - redirigir al login
+          redirectToLogin();
+          return;
+        }
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Error ${res.status}: ${res.statusText}`);
+      }
+
+      // Parsear la respuesta
       const data = await res.json();
-      setUsuarios(data);
-    } catch {
-      setError("Error al obtener usuarios");
+      
+      // Verificar que sea un array antes de usar .map()
+      if (Array.isArray(data)) {
+        setUsuarios(data);
+      } else {
+        console.error("La respuesta no es un array:", data);
+        setError("Error: La respuesta del servidor no es válida");
+        setUsuarios([]);
+      }
+    } catch (err: any) {
+      console.error("Error al obtener usuarios:", err);
+      setError(err.message || "Error al obtener usuarios");
+      setUsuarios([]);
     } finally {
       setLoading(false);
     }
@@ -86,15 +144,36 @@ const UsuariosAdminPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      await fetch(`${API_BASE_URL}/usuarios`, {
+      const token = localStorage.getItem("token");
+      
+      if (!token || !isTokenValid()) {
+        redirectToLogin();
+        return;
+      }
+
+      const res = await fetch(`${API_BASE_URL}/usuarios`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify(nuevo)
       });
+
+      if (!res.ok) {
+        if (res.status === 401) {
+          redirectToLogin();
+          return;
+        }
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Error ${res.status}: ${res.statusText}`);
+      }
+
       setNuevo({ correo: "", contraseña: "", farmacias: {}, permisos: [] });
-      fetchUsuarios();
-    } catch {
-      setError("Error al crear usuario");
+      await fetchUsuarios();
+    } catch (err: any) {
+      console.error("Error al crear usuario:", err);
+      setError(err.message || "Error al crear usuario");
     } finally {
       setLoading(false);
     }
@@ -105,15 +184,36 @@ const UsuariosAdminPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      await fetch(`${API_BASE_URL}/usuarios/${editando._id}`, {
+      const token = localStorage.getItem("token");
+      
+      if (!token || !isTokenValid()) {
+        redirectToLogin();
+        return;
+      }
+
+      const res = await fetch(`${API_BASE_URL}/usuarios/${editando._id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify(editando)
       });
+
+      if (!res.ok) {
+        if (res.status === 401) {
+          redirectToLogin();
+          return;
+        }
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Error ${res.status}: ${res.statusText}`);
+      }
+
       setEditando(null);
-      fetchUsuarios();
-    } catch {
-      setError("Error al actualizar usuario");
+      await fetchUsuarios();
+    } catch (err: any) {
+      console.error("Error al actualizar usuario:", err);
+      setError(err.message || "Error al actualizar usuario");
     } finally {
       setLoading(false);
     }
