@@ -233,29 +233,43 @@ const VisualizarInventariosPage: React.FC = () => {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("No se encontró el token de autenticación");
       
-      // Obtener todos los items de esa farmacia
-      const itemsFarmacia = items.filter(item => item.farmacia === farmaciaId);
+      // Obtener todos los items de esa farmacia que tengan _id válido
+      const itemsFarmacia = items.filter(item => 
+        item.farmacia === farmaciaId && item._id && item._id !== "undefined"
+      );
       
       if (itemsFarmacia.length === 0) {
-        setError("No hay items para eliminar en esta farmacia");
+        setError("No hay items válidos para eliminar en esta farmacia");
         return;
       }
 
-      // Eliminar cada item
-      const deletePromises = itemsFarmacia.map(item =>
-        fetch(`${API_BASE_URL}/inventarios/${item._id}`, {
-          method: "DELETE",
-          headers: {
-            "Authorization": `Bearer ${token}`
-          }
-        })
-      );
+      // Eliminar cada item con validación
+      const deletePromises = itemsFarmacia.map(async (item) => {
+        if (!item._id || item._id === "undefined") {
+          console.warn(`Item sin ID válido:`, item);
+          return { ok: false, item };
+        }
+        
+        try {
+          const res = await fetch(`${API_BASE_URL}/inventarios/${item._id}`, {
+            method: "DELETE",
+            headers: {
+              "Authorization": `Bearer ${token}`
+            }
+          });
+          return { ok: res.ok, item, status: res.status };
+        } catch (error) {
+          console.error(`Error al eliminar item ${item._id}:`, error);
+          return { ok: false, item, error };
+        }
+      });
 
       const results = await Promise.all(deletePromises);
       const failed = results.filter(r => !r.ok);
       
       if (failed.length > 0) {
-        throw new Error(`Error al eliminar algunos items`);
+        console.error("Items que fallaron al eliminar:", failed);
+        throw new Error(`Error al eliminar ${failed.length} de ${itemsFarmacia.length} items`);
       }
 
       // Recargar inventarios
@@ -263,6 +277,7 @@ const VisualizarInventariosPage: React.FC = () => {
       setShowDeleteModal(false);
       setPendingDeleteFarmacia(null);
     } catch (err: any) {
+      console.error("Error completo al eliminar inventario:", err);
       setError(err.message || "Error al eliminar inventario");
       setShowDeleteModal(false);
       setPendingDeleteFarmacia(null);
