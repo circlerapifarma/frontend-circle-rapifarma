@@ -35,10 +35,10 @@ const VisualizarInventariosPage: React.FC = () => {
   const [farmacias, setFarmacias] = useState<FarmaciaChip[]>([]);
   const [selectedFarmacia, setSelectedFarmacia] = useState<string>("");
   const [usuarioFiltro, setUsuarioFiltro] = useState<string>("");
-  const [fechaInicio, setFechaInicio] = useState<string>("");
-  const [fechaFin, setFechaFin] = useState<string>("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingEstado, setPendingEstado] = useState<{ id: string; nuevoEstado: string } | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [showExcelModal, setShowExcelModal] = useState(false);
   const [excelFarmacia, setExcelFarmacia] = useState<string>("");
   const [excelFile, setExcelFile] = useState<File | null>(null);
@@ -266,17 +266,55 @@ const VisualizarInventariosPage: React.FC = () => {
     setExcelError(null);
   };
 
+  const handleDeleteInventario = async (id: string) => {
+    setError(null);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("No se encontró el token de autenticación");
+      const res = await fetch(`${API_BASE_URL}/inventarios/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.detail || "Error al eliminar inventario");
+      }
+      setInventarios(prev => prev.filter(i => i._id !== id));
+      setShowDeleteModal(false);
+      setPendingDelete(null);
+    } catch (err: any) {
+      setError(err.message || "Error al eliminar inventario");
+      setShowDeleteModal(false);
+      setPendingDelete(null);
+    }
+  };
+
+  const handleDeleteClick = (id: string) => {
+    setPendingDelete(id);
+    setShowDeleteModal(true);
+  };
+
   const inventariosFiltrados = inventarios
     .filter(i => !selectedFarmacia || i.farmacia === selectedFarmacia)
     .filter(i => !usuarioFiltro || i.usuarioCorreo.toLowerCase().includes(usuarioFiltro.toLowerCase()))
-    .filter(i => {
-      if (!fechaInicio && !fechaFin) return true;
-      const fecha = i.fecha?.slice(0, 10);
-      if (fechaInicio && fecha < fechaInicio) return false;
-      if (fechaFin && fecha > fechaFin) return false;
-      return true;
-    })
     .sort((a, b) => b.fecha.localeCompare(a.fecha));
+
+  // Calcular totales
+  const totalGeneral = inventariosFiltrados.reduce((sum, inv) => sum + inv.costo, 0);
+  const totalItems = inventariosFiltrados.length;
+  
+  // Totales por farmacia
+  const totalesPorFarmacia = inventariosFiltrados.reduce((acc, inv) => {
+    const farmaciaNombre = farmacias.find(f => f.id === inv.farmacia)?.nombre || inv.farmacia;
+    if (!acc[farmaciaNombre]) {
+      acc[farmaciaNombre] = { total: 0, items: 0 };
+    }
+    acc[farmaciaNombre].total += inv.costo;
+    acc[farmaciaNombre].items += 1;
+    return acc;
+  }, {} as Record<string, { total: number; items: number }>);
 
   return (
     <div className="min-h-screen bg-slate-50 py-8">
@@ -299,31 +337,105 @@ const VisualizarInventariosPage: React.FC = () => {
             <p>{error}</p>
           </div>
         )}
+        {/* Tarjetas de Resumen */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg shadow-lg p-6 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-indigo-100 text-sm font-medium">Total General</p>
+                <p className="text-3xl font-bold mt-2">
+                  ${totalGeneral.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+              </div>
+              <div className="bg-white bg-opacity-20 rounded-full p-3">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg shadow-lg p-6 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-emerald-100 text-sm font-medium">Total Items</p>
+                <p className="text-3xl font-bold mt-2">{totalItems}</p>
+              </div>
+              <div className="bg-white bg-opacity-20 rounded-full p-3">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg p-6 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-purple-100 text-sm font-medium">Farmacias</p>
+                <p className="text-3xl font-bold mt-2">{Object.keys(totalesPorFarmacia).length}</p>
+              </div>
+              <div className="bg-white bg-opacity-20 rounded-full p-3">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Totales por Farmacia */}
+        {Object.keys(totalesPorFarmacia).length > 0 && (
+          <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 className="text-xl font-semibold text-slate-700 mb-4">Totales por Farmacia</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Object.entries(totalesPorFarmacia).map(([farmacia, datos]) => (
+                <div key={farmacia} className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                  <p className="text-sm font-medium text-slate-600 mb-1">{farmacia}</p>
+                  <p className="text-2xl font-bold text-slate-800">
+                    ${datos.total.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1">{datos.items} {datos.items === 1 ? 'item' : 'items'}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Filtros */}
         <div className="bg-white p-6 rounded-lg shadow-lg mb-8">
           <h2 className="text-xl font-semibold text-slate-700 mb-4">Filtros</h2>
-          {farmacias.length > 1 && (
-            <div className="mb-6">
-              <span className="font-medium text-slate-700 mr-3">Farmacias:</span>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {farmacias.map(f => (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {farmacias.length > 1 && (
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-2">Farmacia</label>
+                <div className="flex flex-wrap gap-2">
                   <button
-                    key={f.id}
+                    onClick={() => setSelectedFarmacia("")}
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-150 ease-in-out
-                                ${selectedFarmacia === f.id 
+                                ${!selectedFarmacia 
                                   ? 'bg-indigo-600 text-white shadow-md ring-2 ring-indigo-300' 
                                   : 'bg-slate-100 text-slate-700 hover:bg-indigo-100 hover:text-indigo-700 border border-slate-300'}`}
-                    onClick={() => setSelectedFarmacia(f.id === selectedFarmacia ? "" : f.id)}
                   >
-                    {f.nombre}
+                    Todas
                   </button>
-                ))}
+                  {farmacias.map(f => (
+                    <button
+                      key={f.id}
+                      onClick={() => setSelectedFarmacia(f.id)}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-150 ease-in-out
+                                  ${selectedFarmacia === f.id 
+                                    ? 'bg-indigo-600 text-white shadow-md ring-2 ring-indigo-300' 
+                                    : 'bg-slate-100 text-slate-700 hover:bg-indigo-100 hover:text-indigo-700 border border-slate-300'}`}
+                    >
+                      {f.nombre}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+            )}
             <div>
-              <label htmlFor="usuarioFiltro" className="block text-sm font-medium text-slate-600 mb-1">Usuario</label>
+              <label htmlFor="usuarioFiltro" className="block text-sm font-medium text-slate-600 mb-2">Buscar por Usuario</label>
               <input 
                 type="text" 
                 id="usuarioFiltro"
@@ -331,24 +443,6 @@ const VisualizarInventariosPage: React.FC = () => {
                 onChange={e => setUsuarioFiltro(e.target.value)} 
                 className="w-full border-slate-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 py-2 px-3 text-sm" 
                 placeholder="Buscar por correo..." />
-            </div>
-            <div>
-              <label htmlFor="fechaInicio" className="block text-sm font-medium text-slate-600 mb-1">Fecha desde</label>
-              <input 
-                type="date" 
-                id="fechaInicio"
-                value={fechaInicio} 
-                onChange={e => setFechaInicio(e.target.value)} 
-                className="w-full border-slate-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 py-2 px-3 text-sm" />
-            </div>
-            <div>
-              <label htmlFor="fechaFin" className="block text-sm font-medium text-slate-600 mb-1">Fecha hasta</label>
-              <input 
-                type="date" 
-                id="fechaFin"
-                value={fechaFin} 
-                onChange={e => setFechaFin(e.target.value)} 
-                className="w-full border-slate-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 py-2 px-3 text-sm" />
             </div>
           </div>
         </div>
@@ -374,7 +468,7 @@ const VisualizarInventariosPage: React.FC = () => {
               <table className="min-w-full divide-y divide-slate-200">
                 <thead className="bg-slate-100">
                   <tr>
-                    {['Fecha', 'Farmacia', 'Costo', 'Usuario', 'Estado'].map(header => (
+                    {['Fecha', 'Farmacia', 'Costo', 'Usuario', 'Estado', 'Acciones'].map(header => (
                       <th key={header} scope="col" className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">
                         {header}
                       </th>
@@ -399,6 +493,18 @@ const VisualizarInventariosPage: React.FC = () => {
                           ))}
                         </select>
                       </td>
+                      <td className="px-5 py-4 whitespace-nowrap text-sm">
+                        <button
+                          onClick={() => handleDeleteClick(i._id)}
+                          className="text-red-600 hover:text-red-800 hover:bg-red-50 px-3 py-1.5 rounded-md transition-colors duration-150 flex items-center gap-1"
+                          title="Eliminar inventario"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                          Eliminar
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -406,9 +512,9 @@ const VisualizarInventariosPage: React.FC = () => {
             </div>
           </div>
         )}
-        {/* Modal de confirmación */}
+        {/* Modal de confirmación de estado */}
         {showConfirmModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-white bg-opacity-30">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
             <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
               <h3 className="text-lg font-semibold mb-3 text-slate-800">Confirmar cambio de estado</h3>
               <p className="mb-5 text-slate-600 text-sm">
@@ -432,6 +538,35 @@ const VisualizarInventariosPage: React.FC = () => {
                   className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 font-medium"
                 >
                   Confirmar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de confirmación de eliminación */}
+        {showDeleteModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
+              <h3 className="text-lg font-semibold mb-3 text-red-600">Confirmar eliminación</h3>
+              <p className="mb-5 text-slate-600 text-sm">
+                ¿Está seguro que desea eliminar este inventario? Esta acción no se puede deshacer.
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setPendingDelete(null);
+                  }}
+                  className="px-4 py-2 rounded-md bg-slate-200 text-slate-700 hover:bg-slate-300 font-medium"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => pendingDelete && handleDeleteInventario(pendingDelete)}
+                  className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 font-medium"
+                >
+                  Eliminar
                 </button>
               </div>
             </div>
