@@ -178,9 +178,13 @@ const UsuariosAdminPage: React.FC = () => {
         return;
       }
 
+      // Filtrar permisos para solo incluir los válidos
+      const permisosValidos = nuevo.permisos.filter(p => PERMISOS.includes(p));
+
       // Preparar datos del usuario
       const usuarioData: Usuario = {
         ...nuevo,
+        permisos: permisosValidos, // Solo enviar permisos válidos
         farmacias: nuevo.esAdministrativo ? {} : (farmaciaSeleccionada ? { [farmaciaSeleccionada]: farmacias.find(f => f.id === farmaciaSeleccionada)?.nombre || "" } : {})
       };
 
@@ -225,12 +229,15 @@ const UsuariosAdminPage: React.FC = () => {
         return;
       }
 
+      // Filtrar permisos para solo incluir los válidos
+      const permisosValidos = editando.permisos.filter(p => PERMISOS.includes(p));
+
       // Preparar datos para actualizar (sin contraseña si está vacía)
       const datosActualizacion: any = {
         correo: editando.correo,
         nombre: editando.nombre,
         farmacias: editando.farmacias,
-        permisos: editando.permisos,
+        permisos: permisosValidos, // Solo enviar permisos válidos
         esAdministrativo: editando.esAdministrativo
       };
 
@@ -255,6 +262,21 @@ const UsuariosAdminPage: React.FC = () => {
         }
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.detail || `Error ${res.status}: ${res.statusText}`);
+      }
+
+      // Si el usuario actualizado es el mismo que está logueado, actualizar localStorage
+      const usuarioActual = JSON.parse(localStorage.getItem("usuario") || "null");
+      if (usuarioActual && usuarioActual.correo === editando.correo) {
+        const usuarioActualizado = {
+          ...usuarioActual,
+          permisos: permisosValidos,
+          nombre: editando.nombre,
+          farmacias: editando.farmacias,
+          esAdministrativo: editando.esAdministrativo
+        };
+        localStorage.setItem("usuario", JSON.stringify(usuarioActualizado));
+        // Disparar evento personalizado para que el Navbar se actualice
+        window.dispatchEvent(new Event("localStorageChange"));
       }
 
       setEditando(null);
