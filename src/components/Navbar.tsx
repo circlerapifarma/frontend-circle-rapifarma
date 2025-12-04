@@ -9,13 +9,25 @@ import {
   BarChart,
   DollarSign,
   Users,
-  Building2,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useProveedores } from "@/hooks/useProveedores";
 
+interface LinkItem {
+  to: string;
+  label: string;
+  permiso?: string;
+  showCount?: boolean;
+}
+
+interface LinkCategory {
+  category: string;
+  icon: any;
+  items: LinkItem[];
+}
+
 // Permisos y enlaces agrupados para una mejor organización visual
-const allLinks = [
+const allLinks: LinkCategory[] = [
   {
     category: "Resumen",
     icon: BarChart,
