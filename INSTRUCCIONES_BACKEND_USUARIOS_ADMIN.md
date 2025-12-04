@@ -41,6 +41,8 @@ El frontend ha sido actualizado para mejorar la administración de usuarios:
 - El campo `esAdministrativo` indica si el usuario es administrativo (true) o de farmacia (false)
 - Si `esAdministrativo` es true, el campo `farmacias` puede estar vacío o contener todas las farmacias
 - Si `esAdministrativo` es false, el campo `farmacias` debe contener al menos una farmacia
+- El campo `permisos` debe ser siempre un array (puede estar vacío `[]`)
+- **CRÍTICO**: La respuesta debe ser un array, no un objeto. Si hay un error 401, devolver un objeto de error, pero si es exitoso, SIEMPRE devolver un array
 
 ### 2. POST `/usuarios`
 
@@ -428,6 +430,37 @@ async def actualizar_usuario(
     del usuario_actualizado["contraseña"]
     
     return usuario_actualizado
+
+@router.delete("/usuarios/{id}")
+async def eliminar_usuario(
+    id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Elimina un usuario.
+    """
+    from bson import ObjectId
+    
+    if not ObjectId.is_valid(id):
+        raise HTTPException(status_code=400, detail="ID inválido")
+    
+    usuario = await db.usuarios.find_one({"_id": ObjectId(id)})
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    # Opcional: Verificar permisos
+    # if "usuarios" not in current_user.get("permisos", []) and "acceso_admin" not in current_user.get("permisos", []):
+    #     raise HTTPException(status_code=403, detail="No tiene permisos para eliminar usuarios")
+    
+    result = await db.usuarios.delete_one({"_id": ObjectId(id)})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    return {
+        "message": "Usuario eliminado correctamente",
+        "id": id
+    }
 ```
 
 ## Ejemplo de Implementación (Node.js/Express)
@@ -639,13 +672,78 @@ router.patch('/usuarios/:id', async (req, res) => {
   }
 });
 
+// DELETE /usuarios/:id
+router.delete('/usuarios/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ detail: 'ID inválido' });
+    }
+    
+    const usuario = await Usuario.findById(id);
+    if (!usuario) {
+      return res.status(404).json({ detail: 'Usuario no encontrado' });
+    }
+    
+    // Opcional: Verificar permisos
+    // if (!req.user.permisos.includes('usuarios') && !req.user.permisos.includes('acceso_admin')) {
+    //   return res.status(403).json({ detail: 'No tiene permisos para eliminar usuarios' });
+    // }
+    
+    await Usuario.findByIdAndDelete(id);
+    
+    res.json({
+      message: 'Usuario eliminado correctamente',
+      id: id
+    });
+  } catch (error) {
+    res.status(500).json({ detail: 'Error al eliminar usuario: ' + error.message });
+  }
+});
+
 module.exports = router;
 ```
+
+### 4. DELETE `/usuarios/{id}`
+
+**Descripción**: Eliminar un usuario de la base de datos.
+
+**Parámetros**:
+- `id` (string, requerido): ID del usuario a eliminar
+
+**Response esperado** (200 OK):
+```json
+{
+  "message": "Usuario eliminado correctamente",
+  "id": "string"
+}
+```
+
+**Response de Error (404 Not Found)**:
+```json
+{
+  "detail": "Usuario no encontrado"
+}
+```
+
+**Response de Error (401 Unauthorized)**:
+```json
+{
+  "detail": "No autorizado"
+}
+```
+
+**Notas importantes**:
+- Debe validar que el usuario existe antes de eliminar
+- Debe requerir autenticación (token JWT)
+- Se recomienda verificar permisos (solo usuarios con permiso "usuarios" o "acceso_admin")
 
 ## Checklist para el Backend
 
 - [ ] Verificar que GET `/adminusuarios` devuelve el campo `nombre`
 - [ ] Verificar que GET `/adminusuarios` NO devuelve el campo `contraseña`
+- [ ] **CRÍTICO**: Verificar que GET `/adminusuarios` devuelve SIEMPRE un array (incluso si está vacío)
 - [ ] Agregar el permiso `"ver_inventarios"` a la lista de permisos válidos
 - [ ] Implementar el campo `esAdministrativo` en el modelo de usuario
 - [ ] Validar que usuarios no administrativos tengan al menos una farmacia
@@ -654,10 +752,12 @@ module.exports = router;
 - [ ] Validar que el correo sea único al crear y actualizar
 - [ ] Validar que los permisos sean válidos antes de guardar
 - [ ] Actualizar el endpoint PATCH para manejar cambios de `esAdministrativo`
+- [ ] Implementar DELETE `/usuarios/{id}` para eliminar usuarios
 - [ ] Probar creación de usuario administrativo
 - [ ] Probar creación de usuario de farmacia
 - [ ] Probar actualización de permisos
 - [ ] Probar cambio de tipo de usuario (administrativo ↔ farmacia)
+- [ ] Probar eliminación de usuario
 
 ## Notas Importantes
 

@@ -104,7 +104,17 @@ const UsuariosAdminPage: React.FC = () => {
       
       // Verificar que sea un array antes de usar .map()
       if (Array.isArray(data)) {
-        setUsuarios(data);
+        console.log("Usuarios recibidos:", data);
+        // Asegurar que todos los usuarios tengan los campos necesarios
+        const usuariosNormalizados = data.map((u: any) => ({
+          _id: u._id || u.id,
+          correo: u.correo || "",
+          nombre: u.nombre || "",
+          farmacias: u.farmacias || {},
+          permisos: Array.isArray(u.permisos) ? u.permisos : [],
+          esAdministrativo: u.esAdministrativo !== undefined ? u.esAdministrativo : false
+        }));
+        setUsuarios(usuariosNormalizados);
       } else {
         console.error("La respuesta no es un array:", data);
         setError("Error: La respuesta del servidor no es válida");
@@ -222,13 +232,27 @@ const UsuariosAdminPage: React.FC = () => {
         return;
       }
 
+      // Preparar datos para actualizar (sin contraseña si está vacía)
+      const datosActualizacion: any = {
+        correo: editando.correo,
+        nombre: editando.nombre,
+        farmacias: editando.farmacias,
+        permisos: editando.permisos,
+        esAdministrativo: editando.esAdministrativo
+      };
+
+      // Solo incluir contraseña si tiene valor
+      if (editando.contraseña && editando.contraseña.trim() !== "") {
+        datosActualizacion.contraseña = editando.contraseña;
+      }
+
       const res = await fetch(`${API_BASE_URL}/usuarios/${editando._id}`, {
         method: "PATCH",
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify(editando)
+        body: JSON.stringify(datosActualizacion)
       });
 
       if (!res.ok) {
@@ -245,6 +269,47 @@ const UsuariosAdminPage: React.FC = () => {
     } catch (err: any) {
       console.error("Error al actualizar usuario:", err);
       setError(err.message || "Error al actualizar usuario");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEliminar = async (id: string) => {
+    if (!window.confirm("¿Está seguro que desea eliminar este usuario? Esta acción no se puede deshacer.")) {
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem("token");
+      
+      if (!token || !isTokenValid()) {
+        redirectToLogin();
+        return;
+      }
+
+      const res = await fetch(`${API_BASE_URL}/usuarios/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (!res.ok) {
+        if (res.status === 401) {
+          redirectToLogin();
+          return;
+        }
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Error ${res.status}: ${res.statusText}`);
+      }
+
+      await fetchUsuarios();
+    } catch (err: any) {
+      console.error("Error al eliminar usuario:", err);
+      setError(err.message || "Error al eliminar usuario");
     } finally {
       setLoading(false);
     }
@@ -416,8 +481,24 @@ const UsuariosAdminPage: React.FC = () => {
                   ) : (
                     <div><b>Farmacia:</b> {Object.entries(u.farmacias).map(([id, nombre]) => `${nombre} (${id})`).join(", ") || "Sin farmacia asignada"}</div>
                   )}
-                  <div><b>Permisos:</b> {u.permisos.length > 0 ? u.permisos.join(", ") : "Sin permisos"}</div>
-                  <button className="bg-yellow-500 text-white px-3 py-1 rounded mt-2" onClick={() => setEditando(u)}>Editar</button>
+                  <div>
+                    <b>Permisos:</b>
+                    {u.permisos && u.permisos.length > 0 ? (
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {u.permisos.map((permiso: string) => (
+                          <span key={permiso} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                            {permiso}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-gray-500"> Sin permisos</span>
+                    )}
+                  </div>
+                  <div className="flex gap-2 mt-2">
+                    <button className="bg-yellow-500 text-white px-3 py-1 rounded" onClick={() => setEditando(u)}>Editar</button>
+                    <button className="bg-red-500 text-white px-3 py-1 rounded" onClick={() => u._id && handleEliminar(u._id)}>Eliminar</button>
+                  </div>
                 </>
               )}
             </div>
