@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useProveedores } from "@/hooks/useProveedores";
+import { useInventarios } from "@/hooks/useInventarios";
 
 interface LinkItem {
   to: string;
@@ -214,6 +215,7 @@ const Navbar = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const { totalProveedores, fetchTotalProveedores } = useProveedores();
+  const { totalCantidad, totalSKU, fetchMetricasInventario } = useInventarios();
 
   // Effect for handling user data and permissions from localStorage
   useEffect(() => {
@@ -253,6 +255,13 @@ const Navbar = () => {
   useEffect(() => {
     if (permisosUsuario.includes("proveedores")) {
       fetchTotalProveedores();
+    }
+  }, [permisosUsuario]);
+
+  // Effect para obtener métricas de inventario
+  useEffect(() => {
+    if (permisosUsuario.includes("acceso_admin")) {
+      fetchMetricasInventario();
     }
   }, [permisosUsuario]);
 
@@ -314,19 +323,34 @@ const Navbar = () => {
     <nav className="bg-white text-black shadow-lg px-4 py-3 sticky top-0 z-50">
       <div className="flex justify-between items-center max-w-7xl mx-auto">
         {/* Logo / Brand Name */}
-        <Link
-          to="/admin"
-          className="text-2xl font-extrabold tracking-wide flex items-center gap-2 text-black"
-        >
-          {/* Consider placing your actual logo image here */}
-          <img
-            src="/path/to/your/logo.png"
-            alt="Rapifarma Logo"
-            className="h-8 w-auto"
-            onError={(e) => (e.currentTarget.style.display = "none")}
-          />
-          <span>Rapifarma</span>
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link
+            to="/admin"
+            className="text-2xl font-extrabold tracking-wide flex items-center gap-2 text-black"
+          >
+            {/* Consider placing your actual logo image here */}
+            <img
+              src="/path/to/your/logo.png"
+              alt="Rapifarma Logo"
+              className="h-8 w-auto"
+              onError={(e) => (e.currentTarget.style.display = "none")}
+            />
+            <span>Rapifarma</span>
+          </Link>
+          {/* Métricas de Inventario */}
+          {permisosUsuario.includes("acceso_admin") && (
+            <div className="hidden md:flex items-center gap-3 text-sm">
+              <div className="bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg font-semibold">
+                <span className="text-xs text-indigo-600">Total Cantidad:</span>{" "}
+                <span className="text-indigo-800">{totalCantidad.toLocaleString()}</span>
+              </div>
+              <div className="bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg font-semibold">
+                <span className="text-xs text-emerald-600">SKU:</span>{" "}
+                <span className="text-emerald-800">{totalSKU.toLocaleString()}</span>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Desktop Menu (Dropdown) */}
         <div

@@ -1,14 +1,6 @@
 import React, { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
-
-interface Inventario {
-  _id: string;
-  fecha: string;
-  farmacia: string;
-  costo: number;
-  usuarioCorreo: string;
-  estado: string; // Nuevo campo
-}
+import { useInventarios } from "@/hooks/useInventarios";
 
 interface FarmaciaChip {
   id: string;
@@ -16,6 +8,20 @@ interface FarmaciaChip {
 }
 
 interface InventarioItem {
+  _id: string;
+  codigo: string;
+  descripcion: string;
+  laboratorio: string;
+  costo: number;
+  utilidad: number;
+  precio: number;
+  existencia: number;
+  farmacia: string;
+  usuarioCorreo?: string;
+  fecha?: string;
+}
+
+interface InventarioItemExcel {
   codigo: string;
   descripcion: string;
   laboratorio: string;
@@ -26,25 +32,23 @@ interface InventarioItem {
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-const ESTADO_OPCIONES = ["activo", "inactivo"];
 
 const VisualizarInventariosPage: React.FC = () => {
-  const [inventarios, setInventarios] = useState<Inventario[]>([]);
+  const [items, setItems] = useState<InventarioItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [farmacias, setFarmacias] = useState<FarmaciaChip[]>([]);
   const [selectedFarmacia, setSelectedFarmacia] = useState<string>("");
-  const [usuarioFiltro, setUsuarioFiltro] = useState<string>("");
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [pendingEstado, setPendingEstado] = useState<{ id: string; nuevoEstado: string } | null>(null);
+  const [articuloFiltro, setArticuloFiltro] = useState<string>("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const [pendingDeleteFarmacia, setPendingDeleteFarmacia] = useState<string | null>(null);
   const [showExcelModal, setShowExcelModal] = useState(false);
   const [excelFarmacia, setExcelFarmacia] = useState<string>("");
   const [excelFile, setExcelFile] = useState<File | null>(null);
-  const [excelData, setExcelData] = useState<InventarioItem[]>([]);
+  const [excelData, setExcelData] = useState<InventarioItemExcel[]>([]);
   const [excelLoading, setExcelLoading] = useState(false);
   const [excelError, setExcelError] = useState<string | null>(null);
+  const { fetchMetricasInventario } = useInventarios();
 
   const fetchInventarios = async () => {
     setLoading(true);
@@ -57,7 +61,9 @@ const VisualizarInventariosPage: React.FC = () => {
       });
       if (!res.ok) throw new Error("Error al obtener inventarios");
       const data = await res.json();
-      setInventarios(data);
+      setItems(data);
+      // Actualizar métricas en el navbar
+      fetchMetricasInventario();
     } catch (err: any) {
       setError(err.message || "Error al obtener inventarios");
     } finally {
@@ -80,47 +86,6 @@ const VisualizarInventariosPage: React.FC = () => {
         if (lista.length === 1) setSelectedFarmacia(lista[0].id);
       });
   }, []);
-
-  const handleEstadoChange = async (id: string, nuevoEstado: string) => {
-    setError(null);
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("No se encontró el token de autenticación");
-      const res = await fetch(`${API_BASE_URL}/inventarios/${id}/estado`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({ estado: nuevoEstado })
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail || "Error al actualizar estado");
-      }
-      setInventarios(prev => prev.map(i => i._id === id ? { ...i, estado: nuevoEstado } : i));
-    } catch (err: any) {
-      setError(err.message || "Error al actualizar estado");
-    }
-  };
-
-  const handleEstadoSelect = (id: string, nuevoEstado: string) => {
-    setPendingEstado({ id, nuevoEstado });
-    setShowConfirmModal(true);
-  };
-
-  const handleConfirmEstadoChange = async () => {
-    if (pendingEstado) {
-      await handleEstadoChange(pendingEstado.id, pendingEstado.nuevoEstado);
-      setShowConfirmModal(false);
-      setPendingEstado(null);
-    }
-  };
-
-  const handleCancelEstadoChange = () => {
-    setShowConfirmModal(false);
-    setPendingEstado(null);
-  };
 
   const handleExcelFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -163,7 +128,7 @@ const VisualizarInventariosPage: React.FC = () => {
         }
 
         // Procesar datos (desde la segunda fila)
-        const items: InventarioItem[] = [];
+        const items: InventarioItemExcel[] = [];
         for (let i = 1; i < jsonData.length; i++) {
           const row = jsonData[i];
           if (!row || row.length === 0) continue;
@@ -266,55 +231,83 @@ const VisualizarInventariosPage: React.FC = () => {
     setExcelError(null);
   };
 
-  const handleDeleteInventario = async (id: string) => {
+  const handleDeleteInventarioCompleto = async (farmaciaId: string) => {
     setError(null);
     try {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("No se encontró el token de autenticación");
-      const res = await fetch(`${API_BASE_URL}/inventarios/${id}`, {
-        method: "DELETE",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail || "Error al eliminar inventario");
+      
+      // Obtener todos los items de esa farmacia
+      const itemsFarmacia = items.filter(item => item.farmacia === farmaciaId);
+      
+      if (itemsFarmacia.length === 0) {
+        setError("No hay items para eliminar en esta farmacia");
+        return;
       }
-      setInventarios(prev => prev.filter(i => i._id !== id));
+
+      // Eliminar cada item
+      const deletePromises = itemsFarmacia.map(item =>
+        fetch(`${API_BASE_URL}/inventarios/${item._id}`, {
+          method: "DELETE",
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        })
+      );
+
+      const results = await Promise.all(deletePromises);
+      const failed = results.filter(r => !r.ok);
+      
+      if (failed.length > 0) {
+        throw new Error(`Error al eliminar algunos items`);
+      }
+
+      // Recargar inventarios
+      await fetchInventarios();
       setShowDeleteModal(false);
-      setPendingDelete(null);
+      setPendingDeleteFarmacia(null);
     } catch (err: any) {
       setError(err.message || "Error al eliminar inventario");
       setShowDeleteModal(false);
-      setPendingDelete(null);
+      setPendingDeleteFarmacia(null);
     }
   };
 
-  const handleDeleteClick = (id: string) => {
-    setPendingDelete(id);
+  const handleDeleteClick = (farmaciaId: string) => {
+    setPendingDeleteFarmacia(farmaciaId);
     setShowDeleteModal(true);
   };
 
-  const inventariosFiltrados = inventarios
-    .filter(i => !selectedFarmacia || i.farmacia === selectedFarmacia)
-    .filter(i => !usuarioFiltro || i.usuarioCorreo.toLowerCase().includes(usuarioFiltro.toLowerCase()))
-    .sort((a, b) => b.fecha.localeCompare(a.fecha));
+  // Filtrar items
+  const itemsFiltrados = items
+    .filter(item => !selectedFarmacia || item.farmacia === selectedFarmacia)
+    .filter(item => {
+      if (!articuloFiltro) return true;
+      const filtro = articuloFiltro.toLowerCase();
+      return (
+        item.codigo?.toLowerCase().includes(filtro) ||
+        item.descripcion?.toLowerCase().includes(filtro) ||
+        item.laboratorio?.toLowerCase().includes(filtro)
+      );
+    });
 
   // Calcular totales
-  const totalGeneral = inventariosFiltrados.reduce((sum, inv) => sum + inv.costo, 0);
-  const totalItems = inventariosFiltrados.length;
+  const totalGeneral = itemsFiltrados.reduce((sum, item) => {
+    return sum + (item.existencia * item.costo);
+  }, 0);
+  
+  const totalItems = itemsFiltrados.length;
   
   // Totales por farmacia
-  const totalesPorFarmacia = inventariosFiltrados.reduce((acc, inv) => {
-    const farmaciaNombre = farmacias.find(f => f.id === inv.farmacia)?.nombre || inv.farmacia;
+  const totalesPorFarmacia = itemsFiltrados.reduce((acc, item) => {
+    const farmaciaNombre = farmacias.find(f => f.id === item.farmacia)?.nombre || item.farmacia;
     if (!acc[farmaciaNombre]) {
-      acc[farmaciaNombre] = { total: 0, items: 0 };
+      acc[farmaciaNombre] = { total: 0, items: 0, farmaciaId: item.farmacia };
     }
-    acc[farmaciaNombre].total += inv.costo;
+    acc[farmaciaNombre].total += (item.existencia * item.costo);
     acc[farmaciaNombre].items += 1;
     return acc;
-  }, {} as Record<string, { total: number; items: number }>);
+  }, {} as Record<string, { total: number; items: number; farmaciaId: string }>);
 
   return (
     <div className="min-h-screen bg-slate-50 py-8">
@@ -391,7 +384,18 @@ const VisualizarInventariosPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {Object.entries(totalesPorFarmacia).map(([farmacia, datos]) => (
                 <div key={farmacia} className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                  <p className="text-sm font-medium text-slate-600 mb-1">{farmacia}</p>
+                  <div className="flex justify-between items-start mb-2">
+                    <p className="text-sm font-medium text-slate-600">{farmacia}</p>
+                    <button
+                      onClick={() => handleDeleteClick(datos.farmaciaId)}
+                      className="text-red-600 hover:text-red-800 hover:bg-red-50 px-2 py-1 rounded-md transition-colors duration-150 text-xs"
+                      title="Eliminar inventario completo"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
                   <p className="text-2xl font-bold text-slate-800">
                     ${datos.total.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
@@ -435,14 +439,14 @@ const VisualizarInventariosPage: React.FC = () => {
               </div>
             )}
             <div>
-              <label htmlFor="usuarioFiltro" className="block text-sm font-medium text-slate-600 mb-2">Buscar por Usuario</label>
+              <label htmlFor="articuloFiltro" className="block text-sm font-medium text-slate-600 mb-2">Buscar por Artículo</label>
               <input 
                 type="text" 
-                id="usuarioFiltro"
-                value={usuarioFiltro} 
-                onChange={e => setUsuarioFiltro(e.target.value)} 
+                id="articuloFiltro"
+                value={articuloFiltro} 
+                onChange={e => setArticuloFiltro(e.target.value)} 
                 className="w-full border-slate-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 py-2 px-3 text-sm" 
-                placeholder="Buscar por correo..." />
+                placeholder="Buscar por código, descripción o laboratorio..." />
             </div>
           </div>
         </div>
@@ -454,13 +458,13 @@ const VisualizarInventariosPage: React.FC = () => {
             </svg>
             Cargando inventarios...
           </div>
-        ) : inventariosFiltrados.length === 0 ? (
+        ) : itemsFiltrados.length === 0 ? (
           <div className="text-center text-slate-500 py-10 bg-white p-6 rounded-lg shadow-lg">
             <svg className="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
             </svg>
             <h3 className="mt-2 text-lg font-medium text-slate-800">No hay inventarios registrados</h3>
-            <p className="mt-1 text-sm text-slate-500">No se encontraron inventarios que coincidan con los filtros aplicados.</p>
+            <p className="mt-1 text-sm text-slate-500">No se encontraron items que coincidan con los filtros aplicados.</p>
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow-xl overflow-hidden">
@@ -468,7 +472,7 @@ const VisualizarInventariosPage: React.FC = () => {
               <table className="min-w-full divide-y divide-slate-200">
                 <thead className="bg-slate-100">
                   <tr>
-                    {['Fecha', 'Farmacia', 'Costo', 'Usuario', 'Estado', 'Acciones'].map(header => (
+                    {['Código', 'Descripción', 'Laboratorio', 'Costo', 'Utilidad', 'Precio', 'Existencia', 'Farmacia'].map(header => (
                       <th key={header} scope="col" className="px-5 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">
                         {header}
                       </th>
@@ -476,94 +480,55 @@ const VisualizarInventariosPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-slate-200">
-                  {inventariosFiltrados.map(i => (
-                    <tr key={i._id} className="hover:bg-slate-50 transition-colors duration-150 ease-in-out">
-                      <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{i.fecha?.slice(0,10)}</td>
-                      <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{i.farmacia}</td>
-                      <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{i.costo.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}</td>
-                      <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-500">{i.usuarioCorreo}</td>
-                      <td className="px-5 py-4 whitespace-nowrap text-sm">
-                        <select
-                          value={i.estado}
-                          onChange={e => handleEstadoSelect(i._id, e.target.value)}
-                          className="border-slate-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 py-1.5 px-2 text-xs"
-                        >
-                          {ESTADO_OPCIONES.map(opt => (
-                            <option key={opt} value={opt}>{opt.charAt(0).toUpperCase() + opt.slice(1)}</option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="px-5 py-4 whitespace-nowrap text-sm">
-                        <button
-                          onClick={() => handleDeleteClick(i._id)}
-                          className="text-red-600 hover:text-red-800 hover:bg-red-50 px-3 py-1.5 rounded-md transition-colors duration-150 flex items-center gap-1"
-                          title="Eliminar inventario"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                          Eliminar
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {itemsFiltrados.map(item => {
+                    const farmaciaNombre = farmacias.find(f => f.id === item.farmacia)?.nombre || item.farmacia;
+                    return (
+                      <tr key={item._id} className="hover:bg-slate-50 transition-colors duration-150 ease-in-out">
+                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{item.codigo}</td>
+                        <td className="px-5 py-4 text-sm text-slate-700">{item.descripcion}</td>
+                        <td className="px-5 py-4 text-sm text-slate-700">{item.laboratorio}</td>
+                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">
+                          ${item.costo.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">
+                          {item.utilidad.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+                        </td>
+                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">
+                          ${item.precio.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 text-right">
+                          {item.existencia.toLocaleString('es-VE')}
+                        </td>
+                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700">{farmaciaNombre}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           </div>
         )}
-        {/* Modal de confirmación de estado */}
-        {showConfirmModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
-              <h3 className="text-lg font-semibold mb-3 text-slate-800">Confirmar cambio de estado</h3>
-              <p className="mb-5 text-slate-600 text-sm">
-                ¿Está seguro que desea cambiar el estado del inventario a
-                <span className="font-bold text-indigo-700">
-                  {pendingEstado && pendingEstado.nuevoEstado
-                    ? pendingEstado.nuevoEstado.charAt(0).toUpperCase() + pendingEstado.nuevoEstado.slice(1)
-                    : ""}
-                </span>
-                ? Esta acción no se puede deshacer fácilmente.
-              </p>
-              <div className="flex justify-end gap-3">
-                <button
-                  onClick={handleCancelEstadoChange}
-                  className="px-4 py-2 rounded-md bg-slate-200 text-slate-700 hover:bg-slate-300 font-medium"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleConfirmEstadoChange}
-                  className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 font-medium"
-                >
-                  Confirmar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Modal de confirmación de eliminación */}
-        {showDeleteModal && (
+        {showDeleteModal && pendingDeleteFarmacia && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
             <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
               <h3 className="text-lg font-semibold mb-3 text-red-600">Confirmar eliminación</h3>
               <p className="mb-5 text-slate-600 text-sm">
-                ¿Está seguro que desea eliminar este inventario? Esta acción no se puede deshacer.
+                ¿Está seguro que desea eliminar el inventario completo de esta farmacia? Esta acción eliminará todos los items y no se puede deshacer.
               </p>
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => {
                     setShowDeleteModal(false);
-                    setPendingDelete(null);
+                    setPendingDeleteFarmacia(null);
                   }}
                   className="px-4 py-2 rounded-md bg-slate-200 text-slate-700 hover:bg-slate-300 font-medium"
                 >
                   Cancelar
                 </button>
                 <button
-                  onClick={() => pendingDelete && handleDeleteInventario(pendingDelete)}
+                  onClick={() => pendingDeleteFarmacia && handleDeleteInventarioCompleto(pendingDeleteFarmacia)}
                   className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 font-medium"
                 >
                   Eliminar
