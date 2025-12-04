@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { useProveedores, Proveedor } from "@/hooks/useProveedores";
+import { useProveedores } from "@/hooks/useProveedores";
+import type { Proveedor } from "@/hooks/useProveedores";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
