@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
-import { useInventarios } from "@/hooks/useInventarios";
 
 interface FarmaciaChip {
   id: string;
@@ -48,7 +47,6 @@ const VisualizarInventariosPage: React.FC = () => {
   const [excelData, setExcelData] = useState<InventarioItemExcel[]>([]);
   const [excelLoading, setExcelLoading] = useState(false);
   const [excelError, setExcelError] = useState<string | null>(null);
-  const { fetchMetricasInventario } = useInventarios();
 
   const fetchInventarios = async () => {
     setLoading(true);
@@ -62,8 +60,6 @@ const VisualizarInventariosPage: React.FC = () => {
       if (!res.ok) throw new Error("Error al obtener inventarios");
       const data = await res.json();
       setItems(data);
-      // Actualizar métricas en el navbar
-      fetchMetricasInventario();
     } catch (err: any) {
       setError(err.message || "Error al obtener inventarios");
     } finally {
@@ -298,16 +294,47 @@ const VisualizarInventariosPage: React.FC = () => {
   
   const totalItems = itemsFiltrados.length;
   
-  // Totales por farmacia
+  // Totales por farmacia (con Total Cantidad y SKU)
   const totalesPorFarmacia = itemsFiltrados.reduce((acc, item) => {
     const farmaciaNombre = farmacias.find(f => f.id === item.farmacia)?.nombre || item.farmacia;
     if (!acc[farmaciaNombre]) {
-      acc[farmaciaNombre] = { total: 0, items: 0, farmaciaId: item.farmacia };
+      acc[farmaciaNombre] = { 
+        total: 0, 
+        items: 0, 
+        farmaciaId: item.farmacia,
+        totalCantidad: 0,
+        codigos: new Set<string>()
+      };
     }
     acc[farmaciaNombre].total += (item.existencia * item.costo);
     acc[farmaciaNombre].items += 1;
+    acc[farmaciaNombre].totalCantidad += (item.existencia || 0);
+    if (item.codigo) {
+      acc[farmaciaNombre].codigos.add(item.codigo.toLowerCase().trim());
+    }
     return acc;
-  }, {} as Record<string, { total: number; items: number; farmaciaId: string }>);
+  }, {} as Record<string, { 
+    total: number; 
+    items: number; 
+    farmaciaId: string;
+    totalCantidad: number;
+    codigos: Set<string>;
+  }>);
+
+  // Convertir Sets a números para SKU
+  const totalesPorFarmaciaFinal = Object.entries(totalesPorFarmacia).reduce((acc, [farmacia, datos]) => {
+    acc[farmacia] = {
+      ...datos,
+      sku: datos.codigos.size
+    };
+    return acc;
+  }, {} as Record<string, { 
+    total: number; 
+    items: number; 
+    farmaciaId: string;
+    totalCantidad: number;
+    sku: number;
+  }>);
 
   return (
     <div className="min-h-screen bg-slate-50 py-8">
@@ -348,10 +375,10 @@ const VisualizarInventariosPage: React.FC = () => {
             </div>
           </div>
           
-          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg shadow-lg p-6 text-white">
+          <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg shadow-lg p-6 text-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-emerald-100 text-sm font-medium">Total Items</p>
+                <p className="text-amber-100 text-sm font-medium">Total Items</p>
                 <p className="text-3xl font-bold mt-2">{totalItems}</p>
               </div>
               <div className="bg-white bg-opacity-20 rounded-full p-3">
@@ -366,7 +393,7 @@ const VisualizarInventariosPage: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-purple-100 text-sm font-medium">Farmacias</p>
-                <p className="text-3xl font-bold mt-2">{Object.keys(totalesPorFarmacia).length}</p>
+                <p className="text-3xl font-bold mt-2">{Object.keys(totalesPorFarmaciaFinal).length}</p>
               </div>
               <div className="bg-white bg-opacity-20 rounded-full p-3">
                 <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -378,13 +405,13 @@ const VisualizarInventariosPage: React.FC = () => {
         </div>
 
         {/* Totales por Farmacia */}
-        {Object.keys(totalesPorFarmacia).length > 0 && (
+        {Object.keys(totalesPorFarmaciaFinal).length > 0 && (
           <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
             <h2 className="text-xl font-semibold text-slate-700 mb-4">Totales por Farmacia</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {Object.entries(totalesPorFarmacia).map(([farmacia, datos]) => (
+              {Object.entries(totalesPorFarmaciaFinal).map(([farmacia, datos]) => (
                 <div key={farmacia} className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                  <div className="flex justify-between items-start mb-2">
+                  <div className="flex justify-between items-start mb-3">
                     <p className="text-sm font-medium text-slate-600">{farmacia}</p>
                     <button
                       onClick={() => handleDeleteClick(datos.farmaciaId)}
@@ -396,10 +423,29 @@ const VisualizarInventariosPage: React.FC = () => {
                       </svg>
                     </button>
                   </div>
-                  <p className="text-2xl font-bold text-slate-800">
-                    ${datos.total.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
-                  <p className="text-xs text-slate-500 mt-1">{datos.items} {datos.items === 1 ? 'item' : 'items'}</p>
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">Total General</p>
+                      <p className="text-2xl font-bold text-slate-800">
+                        ${datos.total.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-200">
+                      <div>
+                        <p className="text-xs text-slate-500 mb-1">Total Cantidad</p>
+                        <p className="text-lg font-semibold text-blue-600">
+                          {datos.totalCantidad.toLocaleString('es-VE')}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500 mb-1">SKU</p>
+                        <p className="text-lg font-semibold text-emerald-600">
+                          {datos.sku.toLocaleString('es-VE')}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-500 pt-2 border-t border-slate-200">{datos.items} {datos.items === 1 ? 'item' : 'items'}</p>
+                  </div>
                 </div>
               ))}
             </div>
