@@ -170,14 +170,9 @@ const allLinks: LinkCategory[] = [
         permiso: "ver_cuadres_dia",
       },
       {
-        to: "/agregarinventariocosto",
-        label: "Agregar Costo Inv",
-        permiso: "acceso_admin",
-      },
-      {
         to: "/verinventarios",
         label: "Ver Inventarios",
-        permiso: "acceso_admin",
+        permiso: "ver_inventarios",
       },
     ],
   },

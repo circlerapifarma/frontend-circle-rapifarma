@@ -3,9 +3,16 @@ import React, { useEffect, useState } from "react";
 interface Usuario {
   _id?: string;
   correo: string;
-  contraseña: string;
+  nombre?: string;
+  contraseña?: string;
   farmacias: Record<string, string>;
   permisos: string[];
+  esAdministrativo?: boolean;
+}
+
+interface Farmacia {
+  id: string;
+  nombre: string;
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -27,13 +34,16 @@ const PERMISOS = [
   "metas",
   "modificar_cuadre",
   "proveedores",
-  "usuarios"
+  "usuarios",
+  "ver_inventarios"
 ];
 
 const UsuariosAdminPage: React.FC = () => {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [editando, setEditando] = useState<Usuario | null>(null);
-  const [nuevo, setNuevo] = useState<Usuario>({ correo: "", contraseña: "", farmacias: {}, permisos: [] });
+  const [nuevo, setNuevo] = useState<Usuario>({ correo: "", nombre: "", contraseña: "", farmacias: {}, permisos: [], esAdministrativo: false });
+  const [farmacias, setFarmacias] = useState<Farmacia[]>([]);
+  const [farmaciaSeleccionada, setFarmaciaSeleccionada] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -111,7 +121,21 @@ const UsuariosAdminPage: React.FC = () => {
 
   useEffect(() => {
     fetchUsuarios();
+    fetchFarmacias();
   }, []);
+
+  const fetchFarmacias = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/farmacias`);
+      const data = await res.json();
+      const lista = data.farmacias
+        ? Object.entries(data.farmacias).map(([id, nombre]) => ({ id, nombre: String(nombre) }))
+        : Object.entries(data).map(([id, nombre]) => ({ id, nombre: String(nombre) }));
+      setFarmacias(lista);
+    } catch (err: any) {
+      console.error("Error al obtener farmacias:", err);
+    }
+  };
 
   const handleInput = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, key: keyof Usuario, isEdit = false) => {
     const value = e.target.value;
@@ -151,13 +175,19 @@ const UsuariosAdminPage: React.FC = () => {
         return;
       }
 
+      // Preparar datos del usuario
+      const usuarioData: Usuario = {
+        ...nuevo,
+        farmacias: nuevo.esAdministrativo ? {} : (farmaciaSeleccionada ? { [farmaciaSeleccionada]: farmacias.find(f => f.id === farmaciaSeleccionada)?.nombre || "" } : {})
+      };
+
       const res = await fetch(`${API_BASE_URL}/usuarios`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify(nuevo)
+        body: JSON.stringify(usuarioData)
       });
 
       if (!res.ok) {
@@ -169,7 +199,8 @@ const UsuariosAdminPage: React.FC = () => {
         throw new Error(errorData.detail || `Error ${res.status}: ${res.statusText}`);
       }
 
-      setNuevo({ correo: "", contraseña: "", farmacias: {}, permisos: [] });
+      setNuevo({ correo: "", nombre: "", contraseña: "", farmacias: {}, permisos: [], esAdministrativo: false });
+      setFarmaciaSeleccionada("");
       await fetchUsuarios();
     } catch (err: any) {
       console.error("Error al crear usuario:", err);
@@ -226,23 +257,67 @@ const UsuariosAdminPage: React.FC = () => {
       <div className="mb-8 border p-4 rounded-lg bg-blue-50">
         <h2 className="font-semibold mb-2">Crear nuevo usuario</h2>
         <div className="flex flex-col gap-2 mb-2">
+          <input type="text" placeholder="Nombre" value={nuevo.nombre || ""} onChange={e => handleInput(e, "nombre")}
+            className="border rounded px-2 py-1" />
           <input type="email" placeholder="Correo" value={nuevo.correo} onChange={e => handleInput(e, "correo")}
             className="border rounded px-2 py-1" />
-          <input type="password" placeholder="Contraseña" value={nuevo.contraseña} onChange={e => handleInput(e, "contraseña")}
+          <input type="password" placeholder="Contraseña" value={nuevo.contraseña || ""} onChange={e => handleInput(e, "contraseña")}
             className="border rounded px-2 py-1" />
+          
           <div>
-            <label className="block text-xs text-gray-600">Farmacias (id:nombre, separadas por coma)</label>
-            <input type="text" placeholder="01:Santa Elena,02:Sur America" value={Object.entries(nuevo.farmacias).map(([id, nombre]) => `${id}:${nombre}`).join(",")}
-              onChange={e => {
-                const obj: Record<string, string> = {};
-                e.target.value.split(",").forEach(pair => {
-                  const [id, nombre] = pair.split(":");
-                  if (id && nombre) obj[id.trim()] = nombre.trim();
-                });
-                setNuevo({ ...nuevo, farmacias: obj });
-              }}
-              className="border rounded px-2 py-1 w-full" />
+            <label className="block text-xs text-gray-600 mb-1">Tipo de Usuario</label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2">
+                <input 
+                  type="radio" 
+                  name="tipoUsuario" 
+                  checked={nuevo.esAdministrativo === true}
+                  onChange={() => {
+                    setNuevo({ ...nuevo, esAdministrativo: true, farmacias: {} });
+                    setFarmaciaSeleccionada("");
+                  }}
+                  className="cursor-pointer"
+                />
+                <span className="text-sm">Administrativo</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input 
+                  type="radio" 
+                  name="tipoUsuario" 
+                  checked={nuevo.esAdministrativo === false}
+                  onChange={() => {
+                    setNuevo({ ...nuevo, esAdministrativo: false });
+                    setFarmaciaSeleccionada("");
+                  }}
+                  className="cursor-pointer"
+                />
+                <span className="text-sm">Farmacia</span>
+              </label>
+            </div>
           </div>
+
+          {nuevo.esAdministrativo === false && (
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">Farmacia</label>
+              <select
+                value={farmaciaSeleccionada}
+                onChange={(e) => setFarmaciaSeleccionada(e.target.value)}
+                className="border rounded px-2 py-1 w-full"
+                required={nuevo.esAdministrativo === false}
+              >
+                <option value="">Seleccione una farmacia</option>
+                {farmacias.map(f => (
+                  <option key={f.id} value={f.id}>{f.nombre}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {nuevo.esAdministrativo === true && (
+            <div className="text-xs text-gray-500 bg-blue-50 p-2 rounded">
+              Usuario administrativo: Tendrá acceso a todas las farmacias según los permisos asignados.
+            </div>
+          )}
           <div>
             <label className="block text-xs text-gray-600">Permisos</label>
             <div className="flex flex-wrap gap-2">
@@ -264,18 +339,62 @@ const UsuariosAdminPage: React.FC = () => {
             <div key={u._id} className="border p-3 rounded-lg bg-white flex flex-col gap-1">
               {editando?._id === u._id ? (
                 <>
+                  <input type="text" placeholder="Nombre" value={editando?.nombre ?? ""} onChange={e => handleInput(e, "nombre", true)} className="border rounded px-2 py-1" />
                   <input type="email" value={editando?.correo ?? ""} onChange={e => handleInput(e, "correo", true)} className="border rounded px-2 py-1" />
-                  <input type="password" value={editando?.contraseña ?? ""} onChange={e => handleInput(e, "contraseña", true)} className="border rounded px-2 py-1" />
-                  <input type="text" value={Object.entries(editando?.farmacias ?? {}).map(([id, nombre]) => `${id}:${nombre}`).join(",")}
-                    onChange={e => {
-                      const obj: Record<string, string> = {};
-                      e.target.value.split(",").forEach(pair => {
-                        const [id, nombre] = pair.split(":");
-                        if (id && nombre) obj[id.trim()] = nombre.trim();
-                      });
-                      setEditando(editando ? { ...editando, farmacias: obj } : null);
-                    }}
-                    className="border rounded px-2 py-1 w-full" />
+                  <input type="password" placeholder="Nueva contraseña (dejar vacío para mantener)" value={editando?.contraseña ?? ""} onChange={e => handleInput(e, "contraseña", true)} className="border rounded px-2 py-1" />
+                  
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Tipo de Usuario</label>
+                    <div className="flex gap-4">
+                      <label className="flex items-center gap-2">
+                        <input 
+                          type="radio" 
+                          name={`tipoUsuarioEdit-${u._id}`}
+                          checked={editando?.esAdministrativo === true}
+                          onChange={() => {
+                            setEditando(editando ? { ...editando, esAdministrativo: true, farmacias: {} } : null);
+                          }}
+                          className="cursor-pointer"
+                        />
+                        <span className="text-sm">Administrativo</span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input 
+                          type="radio" 
+                          name={`tipoUsuarioEdit-${u._id}`}
+                          checked={editando?.esAdministrativo === false}
+                          onChange={() => {
+                            setEditando(editando ? { ...editando, esAdministrativo: false } : null);
+                          }}
+                          className="cursor-pointer"
+                        />
+                        <span className="text-sm">Farmacia</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {editando?.esAdministrativo === false && (
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Farmacia</label>
+                      <select
+                        value={Object.keys(editando?.farmacias || {})[0] || ""}
+                        onChange={(e) => {
+                          const farmaciaId = e.target.value;
+                          const farmaciaNombre = farmacias.find(f => f.id === farmaciaId)?.nombre || "";
+                          setEditando(editando ? { 
+                            ...editando, 
+                            farmacias: farmaciaId ? { [farmaciaId]: farmaciaNombre } : {} 
+                          } : null);
+                        }}
+                        className="border rounded px-2 py-1 w-full"
+                      >
+                        <option value="">Seleccione una farmacia</option>
+                        {farmacias.map(f => (
+                          <option key={f.id} value={f.id}>{f.nombre}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   <div className="flex flex-wrap gap-2">
                     {PERMISOS.map(p => (
                       <label key={p} className="flex items-center gap-1">
@@ -289,9 +408,15 @@ const UsuariosAdminPage: React.FC = () => {
                 </>
               ) : (
                 <>
+                  <div><b>Nombre:</b> {u.nombre || "Sin nombre"}</div>
                   <div><b>Correo:</b> {u.correo}</div>
-                  <div><b>Farmacias:</b> {Object.entries(u.farmacias).map(([id, nombre]) => `${id}:${nombre}`).join(", ")}</div>
-                  <div><b>Permisos:</b> {u.permisos.join(", ")}</div>
+                  <div><b>Tipo:</b> {u.esAdministrativo ? "Administrativo" : "Farmacia"}</div>
+                  {u.esAdministrativo ? (
+                    <div><b>Farmacias:</b> Todas (Administrativo)</div>
+                  ) : (
+                    <div><b>Farmacia:</b> {Object.entries(u.farmacias).map(([id, nombre]) => `${nombre} (${id})`).join(", ") || "Sin farmacia asignada"}</div>
+                  )}
+                  <div><b>Permisos:</b> {u.permisos.length > 0 ? u.permisos.join(", ") : "Sin permisos"}</div>
                   <button className="bg-yellow-500 text-white px-3 py-1 rounded mt-2" onClick={() => setEditando(u)}>Editar</button>
                 </>
               )}

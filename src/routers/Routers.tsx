@@ -247,7 +247,7 @@ const AppRouter = () => (
     <Route
       path="/verinventarios"
       element={
-        <PermissionRoute permiso="acceso_admin">
+        <PermissionRoute permiso="ver_inventarios">
           <VisualizarInventariosPage />
         </PermissionRoute>
       }
