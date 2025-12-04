@@ -34,6 +34,8 @@ import ModificarEstadoMeta from "@/pages/metas/ModificarEstadoMeta";
 
 import ModificacionCuadrePage from "@/pages/cuadres/modificarCuadre/ModificacionCuadrePage";
 import RegistroUsuario from "@/pages/auth/RegistroUsuario";
+import ProveedoresPage from "@/pages/ProveedoresPage";
+import UsuariosAdminPage from "@/pages/UsuariosAdminPage";
 
 const AppRouter = () => (
   <Routes>
@@ -178,7 +180,6 @@ const AppRouter = () => (
         </PermissionRoute>
       }
     />
-    <Route path="*" element={<NotFoundPage />} />
     <Route
       path="/cajeros"
       element={
@@ -288,6 +289,22 @@ const AppRouter = () => (
       element={
         <PermissionRoute permiso="usuarios">
           <RegistroUsuario />
+        </PermissionRoute>
+      }
+    />
+    <Route
+      path="/adminusuarios"
+      element={
+        <PrivateRoute>
+          <UsuariosAdminPage />
+        </PrivateRoute>
+      }
+    />
+    <Route
+      path="/proveedores"
+      element={
+        <PermissionRoute permiso="proveedores">
+          <ProveedoresPage />
         </PermissionRoute>
       }
     />
