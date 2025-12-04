@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import * as XLSX from "xlsx";
 
 interface Inventario {
   _id: string;
@@ -12,6 +13,16 @@ interface Inventario {
 interface FarmaciaChip {
   id: string;
   nombre: string;
+}
+
+interface InventarioItem {
+  codigo: string;
+  descripcion: string;
+  laboratorio: string;
+  costo: number;
+  utilidad: number;
+  precio: number;
+  existencia: number;
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -28,6 +39,12 @@ const VisualizarInventariosPage: React.FC = () => {
   const [fechaFin, setFechaFin] = useState<string>("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingEstado, setPendingEstado] = useState<{ id: string; nuevoEstado: string } | null>(null);
+  const [showExcelModal, setShowExcelModal] = useState(false);
+  const [excelFarmacia, setExcelFarmacia] = useState<string>("");
+  const [excelFile, setExcelFile] = useState<File | null>(null);
+  const [excelData, setExcelData] = useState<InventarioItem[]>([]);
+  const [excelLoading, setExcelLoading] = useState(false);
+  const [excelError, setExcelError] = useState<string | null>(null);
 
   const fetchInventarios = async () => {
     setLoading(true);
@@ -105,6 +122,150 @@ const VisualizarInventariosPage: React.FC = () => {
     setPendingEstado(null);
   };
 
+  const handleExcelFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setExcelFile(file);
+    setExcelError(null);
+    setExcelData([]);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = event.target?.result;
+        const workbook = XLSX.read(data, { type: "binary" });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+
+        if (jsonData.length < 2) {
+          setExcelError("El archivo Excel debe tener al menos una fila de datos (después del encabezado)");
+          return;
+        }
+
+        // Obtener encabezados (primera fila)
+        const headers = jsonData[0].map((h: any) => String(h).toLowerCase().trim());
+        
+        // Buscar índices de columnas
+        const codigoIdx = headers.findIndex(h => h.includes("codigo") || h.includes("código"));
+        const descripcionIdx = headers.findIndex(h => h.includes("descripcion") || h.includes("descripción"));
+        const laboratorioIdx = headers.findIndex(h => h.includes("laboratorio"));
+        const costoIdx = headers.findIndex(h => h.includes("costo"));
+        const utilidadIdx = headers.findIndex(h => h.includes("utilidad"));
+        const precioIdx = headers.findIndex(h => h.includes("precio"));
+        const existenciaIdx = headers.findIndex(h => h.includes("existencia"));
+
+        if (codigoIdx === -1 || descripcionIdx === -1 || laboratorioIdx === -1 || 
+            costoIdx === -1 || utilidadIdx === -1 || precioIdx === -1 || existenciaIdx === -1) {
+          setExcelError("El archivo Excel debe tener las columnas: codigo, descripcion, laboratorio, costo, utilidad, precio, existencia");
+          return;
+        }
+
+        // Procesar datos (desde la segunda fila)
+        const items: InventarioItem[] = [];
+        for (let i = 1; i < jsonData.length; i++) {
+          const row = jsonData[i];
+          if (!row || row.length === 0) continue;
+
+          const codigo = String(row[codigoIdx] || "").trim();
+          const descripcion = String(row[descripcionIdx] || "").trim();
+          const laboratorio = String(row[laboratorioIdx] || "").trim();
+          const costo = parseFloat(String(row[costoIdx] || 0));
+          const utilidad = parseFloat(String(row[utilidadIdx] || 0));
+          const precio = parseFloat(String(row[precioIdx] || 0));
+          const existencia = parseFloat(String(row[existenciaIdx] || 0));
+
+          if (!codigo || !descripcion) continue; // Saltar filas vacías
+
+          items.push({
+            codigo,
+            descripcion,
+            laboratorio,
+            costo: isNaN(costo) ? 0 : costo,
+            utilidad: isNaN(utilidad) ? 0 : utilidad,
+            precio: isNaN(precio) ? 0 : precio,
+            existencia: isNaN(existencia) ? 0 : existencia,
+          });
+        }
+
+        if (items.length === 0) {
+          setExcelError("No se encontraron datos válidos en el archivo Excel");
+          return;
+        }
+
+        setExcelData(items);
+      } catch (error: any) {
+        setExcelError(`Error al leer el archivo Excel: ${error.message}`);
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  const handleExcelSubmit = async () => {
+    if (!excelFarmacia) {
+      setExcelError("Por favor, selecciona una farmacia");
+      return;
+    }
+
+    if (excelData.length === 0) {
+      setExcelError("No hay datos para enviar");
+      return;
+    }
+
+    setExcelLoading(true);
+    setExcelError(null);
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("No se encontró el token de autenticación");
+
+      const usuario = JSON.parse(localStorage.getItem("usuario") || "null");
+      const correoUsuario = usuario?.correo || "";
+
+      const res = await fetch(`${API_BASE_URL}/inventarios/excel`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          farmacia: excelFarmacia,
+          items: excelData,
+          usuarioCorreo: correoUsuario
+        })
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || errorData.message || "Error al guardar inventario");
+      }
+
+      // Limpiar formulario
+      setExcelFarmacia("");
+      setExcelFile(null);
+      setExcelData([]);
+      setShowExcelModal(false);
+      
+      // Recargar inventarios
+      await fetchInventarios();
+      
+      alert(`Inventario guardado correctamente. Se procesaron ${excelData.length} items.`);
+    } catch (err: any) {
+      setExcelError(err.message || "Error al guardar inventario");
+    } finally {
+      setExcelLoading(false);
+    }
+  };
+
+  const handleCloseExcelModal = () => {
+    setShowExcelModal(false);
+    setExcelFarmacia("");
+    setExcelFile(null);
+    setExcelData([]);
+    setExcelError(null);
+  };
+
   const inventariosFiltrados = inventarios
     .filter(i => !selectedFarmacia || i.farmacia === selectedFarmacia)
     .filter(i => !usuarioFiltro || i.usuarioCorreo.toLowerCase().includes(usuarioFiltro.toLowerCase()))
@@ -120,7 +281,18 @@ const VisualizarInventariosPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 py-8">
       <div className="w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold text-slate-800 mb-8 text-center">Inventarios Registrados</h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold text-slate-800">Inventarios Registrados</h1>
+          <button
+            onClick={() => setShowExcelModal(true)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-colors duration-150 flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Agregar desde Excel
+          </button>
+        </div>
         {error && (
           <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md shadow" role="alert">
             <p className="font-bold">Error</p>
@@ -261,6 +433,125 @@ const VisualizarInventariosPage: React.FC = () => {
                 >
                   Confirmar
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal para cargar Excel */}
+        {showExcelModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-2xl font-semibold text-slate-800">Agregar Inventario desde Excel</h3>
+                <button
+                  onClick={handleCloseExcelModal}
+                  className="text-slate-500 hover:text-slate-700 text-2xl font-bold"
+                >
+                  ×
+                </button>
+              </div>
+
+              {excelError && (
+                <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded-md">
+                  <p className="font-bold">Error</p>
+                  <p>{excelError}</p>
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Seleccionar Farmacia <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={excelFarmacia}
+                    onChange={(e) => setExcelFarmacia(e.target.value)}
+                    className="w-full border-slate-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 py-2 px-3"
+                    required
+                  >
+                    <option value="">Selecciona una farmacia</option>
+                    {farmacias.map(f => (
+                      <option key={f.id} value={f.id}>{f.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Archivo Excel <span className="text-red-500">*</span>
+                  </label>
+                  <p className="text-xs text-slate-500 mb-2">
+                    Formato requerido: codigo, descripcion, laboratorio, costo, utilidad, precio, existencia
+                  </p>
+                  <input
+                    type="file"
+                    accept=".xlsx,.xls"
+                    onChange={handleExcelFileChange}
+                    className="w-full border-slate-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 py-2 px-3"
+                  />
+                  {excelFile && (
+                    <p className="text-sm text-slate-600 mt-2">Archivo seleccionado: {excelFile.name}</p>
+                  )}
+                </div>
+
+                {excelData.length > 0 && (
+                  <div>
+                    <h4 className="text-lg font-semibold text-slate-700 mb-2">
+                      Vista previa ({excelData.length} items)
+                    </h4>
+                    <div className="border border-slate-200 rounded-lg overflow-x-auto max-h-64">
+                      <table className="min-w-full divide-y divide-slate-200 text-sm">
+                        <thead className="bg-slate-100">
+                          <tr>
+                            <th className="px-3 py-2 text-left">Código</th>
+                            <th className="px-3 py-2 text-left">Descripción</th>
+                            <th className="px-3 py-2 text-left">Laboratorio</th>
+                            <th className="px-3 py-2 text-right">Costo</th>
+                            <th className="px-3 py-2 text-right">Utilidad</th>
+                            <th className="px-3 py-2 text-right">Precio</th>
+                            <th className="px-3 py-2 text-right">Existencia</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-slate-200">
+                          {excelData.slice(0, 10).map((item, idx) => (
+                            <tr key={idx} className="hover:bg-slate-50">
+                              <td className="px-3 py-2">{item.codigo}</td>
+                              <td className="px-3 py-2">{item.descripcion}</td>
+                              <td className="px-3 py-2">{item.laboratorio}</td>
+                              <td className="px-3 py-2 text-right">{item.costo.toFixed(2)}</td>
+                              <td className="px-3 py-2 text-right">{item.utilidad.toFixed(2)}</td>
+                              <td className="px-3 py-2 text-right">{item.precio.toFixed(2)}</td>
+                              <td className="px-3 py-2 text-right">{item.existencia}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      {excelData.length > 10 && (
+                        <p className="text-xs text-slate-500 p-2 text-center">
+                          Mostrando 10 de {excelData.length} items
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-3 pt-4">
+                  <button
+                    onClick={handleCloseExcelModal}
+                    className="px-4 py-2 rounded-md bg-slate-200 text-slate-700 hover:bg-slate-300 font-medium"
+                    disabled={excelLoading}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleExcelSubmit}
+                    className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 font-medium"
+                    disabled={excelLoading || !excelFarmacia || excelData.length === 0}
+                  >
+                    {excelLoading ? "Guardando..." : "Guardar Inventario"}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
