@@ -7,7 +7,8 @@ interface FarmaciaChip {
 }
 
 interface InventarioItem {
-  _id: string;
+  _id?: string;
+  id?: string;
   codigo: string;
   descripcion: string;
   laboratorio: string;
@@ -246,10 +247,17 @@ const VisualizarInventariosPage: React.FC = () => {
       console.log("Iniciando eliminación para farmacia:", farmaciaId);
       console.log("Items totales:", items.length);
       
-      // Obtener todos los items de esa farmacia que tengan _id válido
+      // Obtener el ID del item (puede ser _id o id)
+      const getItemId = (item: InventarioItem): string | null => {
+        return item._id || item.id || null;
+      };
+
+      // Obtener todos los items de esa farmacia que tengan ID válido
       const itemsFarmacia = items.filter(item => {
-        const match = item.farmacia === farmaciaId && item._id && item._id !== "undefined";
-        if (!match && item.farmacia === farmaciaId) {
+        if (item.farmacia !== farmaciaId) return false;
+        const itemId = getItemId(item);
+        const match = itemId && itemId !== "undefined";
+        if (!match) {
           console.warn("Item sin ID válido:", item);
         }
         return match;
@@ -265,14 +273,16 @@ const VisualizarInventariosPage: React.FC = () => {
 
       // Eliminar cada item con validación
       const deletePromises = itemsFarmacia.map(async (item) => {
-        if (!item._id || item._id === "undefined") {
+        const itemId = getItemId(item);
+        
+        if (!itemId || itemId === "undefined") {
           console.warn(`Item sin ID válido:`, item);
           return { ok: false, item };
         }
         
         try {
-          const url = `${API_BASE_URL}/inventarios/${item._id}`;
-          console.log("Eliminando item:", url);
+          const url = `${API_BASE_URL}/inventarios/${itemId}`;
+          console.log("Eliminando item:", url, "Item:", item);
           
           const res = await fetch(url, {
             method: "DELETE",
@@ -284,12 +294,12 @@ const VisualizarInventariosPage: React.FC = () => {
           
           if (!res.ok) {
             const errorData = await res.json().catch(() => ({}));
-            console.error(`Error al eliminar item ${item._id}:`, res.status, errorData);
+            console.error(`Error al eliminar item ${itemId}:`, res.status, errorData);
           }
           
           return { ok: res.ok, item, status: res.status };
         } catch (error) {
-          console.error(`Error al eliminar item ${item._id}:`, error);
+          console.error(`Error al eliminar item ${itemId}:`, error);
           return { ok: false, item, error };
         }
       });
