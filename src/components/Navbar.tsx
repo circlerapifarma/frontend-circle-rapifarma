@@ -9,8 +9,10 @@ import {
   BarChart,
   DollarSign,
   Users,
+  Building2,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useProveedores } from "@/hooks/useProveedores";
 
 // Permisos y enlaces agrupados para una mejor organización visual
 const allLinks = [
@@ -145,6 +147,12 @@ const allLinks = [
     icon: Users,
     items: [
       {
+        to: "/proveedores",
+        label: "Proveedores",
+        permiso: "proveedores",
+        showCount: true,
+      },
+      {
         to: "/valesporfarmacia",
         label: "Vales por Farmacia",
         permiso: "ver_cuadres_dia",
@@ -170,6 +178,11 @@ const allLinks = [
         label: "Registrar Usuario",
         permiso: "usuarios",
       },
+      {
+        to: "/adminusuarios",
+        label: "Gestionar Usuarios",
+        // Sin propiedad permiso - visible para todos
+      },
     ],
   },
 
@@ -188,24 +201,48 @@ const Navbar = () => {
   const location = useLocation();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const { totalProveedores, fetchTotalProveedores } = useProveedores();
 
   // Effect for handling user data and permissions from localStorage
   useEffect(() => {
-    const storedUsuario = JSON.parse(localStorage.getItem("usuario") || "null");
-    setUsuario(storedUsuario);
-    setPermisosUsuario(storedUsuario?.permisos || []);
+    const loadUsuario = () => {
+      try {
+        const storedUsuario = JSON.parse(localStorage.getItem("usuario") || "null");
+        setUsuario(storedUsuario);
+        setPermisosUsuario(storedUsuario?.permisos || []);
+      } catch (error) {
+        console.error("Error al cargar usuario:", error);
+      }
+    };
 
+    // Cargar usuario al montar
+    loadUsuario();
+
+    // Listener para cambios en otras pestañas
     const handleStorageChange = () => {
-      const updatedUsuario = JSON.parse(
-        localStorage.getItem("usuario") || "null"
-      );
-      setUsuario(updatedUsuario);
-      setPermisosUsuario(updatedUsuario?.permisos || []);
+      loadUsuario();
+    };
+
+    // Listener para cambios en la misma pestaña (usando evento personalizado)
+    const handleCustomStorageChange = () => {
+      loadUsuario();
     };
 
     window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+    window.addEventListener("localStorageChange", handleCustomStorageChange);
+    
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("localStorageChange", handleCustomStorageChange);
+    };
   }, []);
+
+  // Effect para obtener el total de proveedores
+  useEffect(() => {
+    if (permisosUsuario.includes("proveedores")) {
+      fetchTotalProveedores();
+    }
+  }, [permisosUsuario]);
 
   // Effect for handling clicks outside dropdown/mobile menu to close them
   useEffect(() => {
@@ -240,9 +277,18 @@ const Navbar = () => {
   const accessibleLinks = allLinks
     .map((category) => ({
       ...category,
-      items: category.items.filter(
-        (link) => !link.permiso || permisosUsuario.includes(link.permiso)
-      ),
+      items: category.items.filter((link) => {
+        // Si no tiene propiedad permiso, es visible para todos
+        if (!("permiso" in link) || link.permiso === undefined || link.permiso === null || link.permiso === "") {
+          return true;
+        }
+        // Si tiene acceso_admin, puede ver todo (incluyendo módulos de usuarios)
+        if (permisosUsuario.includes("acceso_admin")) {
+          return true;
+        }
+        // Si tiene el permiso específico, puede verlo
+        return permisosUsuario.includes(link.permiso);
+      }),
     }))
     .filter((category) => category.items.length > 0);
 
@@ -320,13 +366,43 @@ const Navbar = () => {
                                                                 : "text-gray-800 hover:text-black hover:bg-gray-50" // Hover link black on very light gray
                                                             }`}
                           >
-                            {link.label}
+                            <span className="flex items-center justify-between">
+                              <span>{link.label}</span>
+                              {link.showCount && link.to === "/proveedores" && (
+                                <span className="ml-2 bg-blue-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                                  {totalProveedores}
+                                </span>
+                              )}
+                            </span>
                           </Link>
                         </li>
                       ))}
                     </ul>
                   </div>
                 ))}
+                {/* Categoría Configuracion - siempre visible con Gestionar Usuarios */}
+                <div className="mb-2">
+                  <h3 className="px-4 pt-3 pb-2 text-xs font-bold uppercase text-gray-700 flex items-center gap-2 border-b border-gray-100">
+                    <Users className="w-4 h-4 text-gray-700" />
+                    Configuracion
+                  </h3>
+                  <ul className="pb-1">
+                    <li>
+                      <Link
+                        to="/adminusuarios"
+                        onClick={() => setIsDropdownOpen(false)}
+                        className={`block px-4 py-2 text-sm whitespace-nowrap transition-all duration-150 rounded mx-2 my-1
+                          ${
+                            location.pathname === "/adminusuarios"
+                              ? "text-black font-semibold bg-gray-100 hover:bg-gray-200"
+                              : "text-gray-800 hover:text-black hover:bg-gray-50"
+                          }`}
+                      >
+                        Gestionar Usuarios
+                      </Link>
+                    </li>
+                  </ul>
+                </div>
                 {usuario && (
                   <div className="border-t border-gray-200 pt-2 mt-2">
                     <button
@@ -387,13 +463,43 @@ const Navbar = () => {
                                                     : "text-gray-800 hover:text-black hover:bg-gray-50" // Default text gray, hover black on very light gray
                                                 }`}
                     >
-                      {link.label}
+                      <span className="flex items-center justify-between">
+                        <span>{link.label}</span>
+                        {link.showCount && link.to === "/proveedores" && (
+                          <span className="ml-2 bg-blue-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                            {totalProveedores}
+                          </span>
+                        )}
+                      </span>
                     </Link>
                   </li>
                 ))}
               </ul>
             </div>
           ))}
+          {/* Categoría Configuracion - siempre visible con Gestionar Usuarios (Mobile) */}
+          <div className="mb-4 last:mb-0">
+            <h3 className="text-sm font-bold uppercase text-gray-600 mb-2 flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Configuracion
+            </h3>
+            <ul className="space-y-1">
+              <li>
+                <Link
+                  to="/adminusuarios"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`block px-3 py-2 text-sm transition-all duration-150 rounded
+                    ${
+                      location.pathname === "/adminusuarios"
+                        ? "text-black font-semibold bg-gray-200"
+                        : "text-gray-800 hover:text-black hover:bg-gray-50"
+                    }`}
+                >
+                  Gestionar Usuarios
+                </Link>
+              </li>
+            </ul>
+          </div>
           {usuario && (
             <div className="border-t border-gray-200 pt-4 mt-4">
               <button
