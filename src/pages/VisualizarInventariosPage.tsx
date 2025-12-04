@@ -41,6 +41,7 @@ const VisualizarInventariosPage: React.FC = () => {
   const [articuloFiltro, setArticuloFiltro] = useState<string>("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [pendingDeleteFarmacia, setPendingDeleteFarmacia] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [showExcelModal, setShowExcelModal] = useState(false);
   const [excelFarmacia, setExcelFarmacia] = useState<string>("");
   const [excelFile, setExcelFile] = useState<File | null>(null);
@@ -228,18 +229,37 @@ const VisualizarInventariosPage: React.FC = () => {
   };
 
   const handleDeleteInventarioCompleto = async (farmaciaId: string) => {
+    if (!farmaciaId) {
+      setError("ID de farmacia no válido");
+      return;
+    }
+
+    setDeleting(true);
     setError(null);
+    
     try {
       const token = localStorage.getItem("token");
-      if (!token) throw new Error("No se encontró el token de autenticación");
+      if (!token) {
+        throw new Error("No se encontró el token de autenticación");
+      }
+      
+      console.log("Iniciando eliminación para farmacia:", farmaciaId);
+      console.log("Items totales:", items.length);
       
       // Obtener todos los items de esa farmacia que tengan _id válido
-      const itemsFarmacia = items.filter(item => 
-        item.farmacia === farmaciaId && item._id && item._id !== "undefined"
-      );
+      const itemsFarmacia = items.filter(item => {
+        const match = item.farmacia === farmaciaId && item._id && item._id !== "undefined";
+        if (!match && item.farmacia === farmaciaId) {
+          console.warn("Item sin ID válido:", item);
+        }
+        return match;
+      });
+      
+      console.log("Items a eliminar:", itemsFarmacia.length);
       
       if (itemsFarmacia.length === 0) {
         setError("No hay items válidos para eliminar en esta farmacia");
+        setDeleting(false);
         return;
       }
 
@@ -251,12 +271,22 @@ const VisualizarInventariosPage: React.FC = () => {
         }
         
         try {
-          const res = await fetch(`${API_BASE_URL}/inventarios/${item._id}`, {
+          const url = `${API_BASE_URL}/inventarios/${item._id}`;
+          console.log("Eliminando item:", url);
+          
+          const res = await fetch(url, {
             method: "DELETE",
             headers: {
-              "Authorization": `Bearer ${token}`
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json"
             }
           });
+          
+          if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            console.error(`Error al eliminar item ${item._id}:`, res.status, errorData);
+          }
+          
           return { ok: res.ok, item, status: res.status };
         } catch (error) {
           console.error(`Error al eliminar item ${item._id}:`, error);
@@ -267,6 +297,12 @@ const VisualizarInventariosPage: React.FC = () => {
       const results = await Promise.all(deletePromises);
       const failed = results.filter(r => !r.ok);
       
+      console.log("Resultados de eliminación:", {
+        total: results.length,
+        exitosos: results.length - failed.length,
+        fallidos: failed.length
+      });
+      
       if (failed.length > 0) {
         console.error("Items que fallaron al eliminar:", failed);
         throw new Error(`Error al eliminar ${failed.length} de ${itemsFarmacia.length} items`);
@@ -276,11 +312,13 @@ const VisualizarInventariosPage: React.FC = () => {
       await fetchInventarios();
       setShowDeleteModal(false);
       setPendingDeleteFarmacia(null);
+      
+      alert(`Inventario eliminado correctamente. Se eliminaron ${itemsFarmacia.length} items.`);
     } catch (err: any) {
       console.error("Error completo al eliminar inventario:", err);
       setError(err.message || "Error al eliminar inventario");
-      setShowDeleteModal(false);
-      setPendingDeleteFarmacia(null);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -578,21 +616,44 @@ const VisualizarInventariosPage: React.FC = () => {
               <p className="mb-5 text-slate-600 text-sm">
                 ¿Está seguro que desea eliminar el inventario completo de esta farmacia? Esta acción eliminará todos los items y no se puede deshacer.
               </p>
+              {error && (
+                <div className="mb-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-3 rounded-md text-sm">
+                  <p className="font-bold">Error</p>
+                  <p>{error}</p>
+                </div>
+              )}
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => {
                     setShowDeleteModal(false);
                     setPendingDeleteFarmacia(null);
+                    setError(null);
                   }}
                   className="px-4 py-2 rounded-md bg-slate-200 text-slate-700 hover:bg-slate-300 font-medium"
+                  disabled={deleting}
                 >
                   Cancelar
                 </button>
                 <button
-                  onClick={() => pendingDeleteFarmacia && handleDeleteInventarioCompleto(pendingDeleteFarmacia)}
-                  className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 font-medium"
+                  onClick={() => {
+                    if (pendingDeleteFarmacia) {
+                      handleDeleteInventarioCompleto(pendingDeleteFarmacia);
+                    }
+                  }}
+                  className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 font-medium disabled:bg-red-400 disabled:cursor-not-allowed flex items-center gap-2"
+                  disabled={deleting}
                 >
-                  Eliminar
+                  {deleting ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Eliminando...
+                    </>
+                  ) : (
+                    "Eliminar"
+                  )}
                 </button>
               </div>
             </div>
