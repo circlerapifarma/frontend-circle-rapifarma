@@ -180,7 +180,6 @@ const AppRouter = () => (
         </PermissionRoute>
       }
     />
-    <Route path="*" element={<NotFoundPage />} />
     <Route
       path="/cajeros"
       element={
