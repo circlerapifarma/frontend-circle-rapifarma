@@ -2,6 +2,17 @@
 
 Este documento contiene las instrucciones detalladas para implementar el módulo de Listas Comparativas en el backend. Este módulo permite comparar precios de proveedores con descuentos aplicados, costos propios y existencias por farmacia.
 
+## ⚡ OPTIMIZACIÓN CRÍTICA: Carga Rápida
+
+**IMPORTANTE**: La carga del Excel debe ser RÁPIDA. Para lograr esto:
+
+1. **NO obtener el inventario durante la carga del Excel** - El inventario se obtiene SOLO cuando se consultan las listas (GET), no durante la carga (POST)
+2. **Usar bulk operations** - Insertar/actualizar en lotes, no uno por uno
+3. **Minimizar consultas a la BD** - Obtener códigos existentes en una sola consulta
+4. **Procesar en memoria primero** - Preparar todos los datos antes de escribir a la BD
+
+La carga debe responder en menos de 5 segundos incluso con miles de productos.
+
 ## 📋 Estructura de Datos
 
 ### Modelo de Lista de Precios de Proveedor
@@ -609,10 +620,28 @@ async def subir_lista_excel(
                 detail="El archivo Excel debe tener las columnas: CODIGO, DESCRIPCION, PRECIO, DESCUENTO, EXISTENCIA"
             )
         
-        # Procesar filas
+        # ⚠️ IMPORTANTE: NO obtener inventario durante la carga - esto se hace después en el GET
+        # El inventario se obtiene solo cuando se consultan las listas, no durante la carga
+        
+        # Procesar filas en lotes para mayor velocidad (bulk operations)
         items_guardados = 0
         errores = []
+        items_to_insert = []
+        items_to_update = []
         
+        # Primero, obtener todos los códigos existentes para este proveedor en una sola consulta
+        existing_codes = set()
+        async for item in db.listas_precios_proveedores.find(
+            {"proveedorId": ObjectId(proveedorId)},
+            {"codigo": 1}
+        ):
+            existing_codes.add(item.get("codigo", ""))
+        
+        # Obtener descuento comercial del proveedor una sola vez
+        descuento_comercial = proveedor.get("descuentosComerciales", 0) or 0
+        fecha_actual = datetime.utcnow()
+        
+        # Procesar todas las filas primero
         for row_num, row in enumerate(sheet.iter_rows(min_row=2, values_only=False), start=2):
             try:
                 codigo = str(row[codigo_idx].value or "").strip() if codigo_idx < len(row) else ""
@@ -647,9 +676,6 @@ async def subir_lista_excel(
                     errores.append(f"Fila {row_num}: La existencia no puede ser negativa")
                     continue
                 
-                # Obtener descuento comercial del proveedor
-                descuento_comercial = proveedor.get("descuentosComerciales", 0) or 0
-                
                 # Calcular precio neto (aplica descuento del Excel y luego descuento comercial del proveedor)
                 precio_neto = calcular_precio_neto(precio_float, descuento_float, descuento_comercial)
                 
@@ -657,12 +683,6 @@ async def subir_lista_excel(
                 fecha_venc_parsed = None
                 if fecha_venc:
                     fecha_venc_parsed = parsear_fecha(str(fecha_venc))
-                
-                # Verificar si ya existe (mismo código y proveedor)
-                existing = await db.listas_precios_proveedores.find_one({
-                    "codigo": codigo,
-                    "proveedorId": ObjectId(proveedorId)
-                })
                 
                 item_data = {
                     "proveedorId": ObjectId(proveedorId),
@@ -674,29 +694,37 @@ async def subir_lista_excel(
                     "precioNeto": round(precio_neto, 2),
                     "fechaVencimiento": fecha_venc_parsed,
                     "existencia": existencia_int,
-                    "fechaCreacion": datetime.utcnow(),
-                    "fechaActualizacion": datetime.utcnow(),
+                    "fechaActualizacion": fecha_actual,
                     "usuarioCorreo": usuarioCorreo
                 }
                 
-                if existing:
-                    # Actualizar existente
-                    await db.listas_precios_proveedores.update_one(
-                        {"_id": existing["_id"]},
-                        {"$set": {
-                            **item_data,
-                            "fechaCreacion": existing.get("fechaCreacion", datetime.utcnow())
-                        }}
-                    )
+                # Separar en insertar o actualizar
+                if codigo in existing_codes:
+                    items_to_update.append({
+                        "filter": {"codigo": codigo, "proveedorId": ObjectId(proveedorId)},
+                        "update": {"$set": item_data}
+                    })
                 else:
-                    # Crear nuevo
-                    await db.listas_precios_proveedores.insert_one(item_data)
-                
-                items_guardados += 1
+                    item_data["fechaCreacion"] = fecha_actual
+                    items_to_insert.append(item_data)
                 
             except Exception as e:
                 errores.append(f"Fila {row_num}: {str(e)}")
                 continue
+        
+        # Ejecutar bulk insert (mucho más rápido que insertar uno por uno)
+        if items_to_insert:
+            await db.listas_precios_proveedores.insert_many(items_to_insert, ordered=False)
+            items_guardados += len(items_to_insert)
+        
+        # Ejecutar bulk update (mucho más rápido que actualizar uno por uno)
+        if items_to_update:
+            # Usar bulk_write para updates
+            from pymongo import UpdateOne
+            bulk_ops = [UpdateOne(item["filter"], item["update"]) for item in items_to_update]
+            if bulk_ops:
+                result = await db.listas_precios_proveedores.bulk_write(bulk_ops, ordered=False)
+                items_guardados += result.modified_count
         
         # Cerrar el workbook para liberar memoria
         workbook.close()
