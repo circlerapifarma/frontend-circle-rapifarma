@@ -21,6 +21,8 @@ const PERMISOS = [
   "ver_inicio",
   "ver_about",
   "agregar_cuadre",
+  "ver_resumen_mensual",
+  "ver_ventas_totales",
   "verificar_cuadres",
   "ver_cuadres_dia",
   "verificar_gastos",
