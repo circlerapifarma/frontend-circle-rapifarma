@@ -36,6 +36,7 @@ import ModificacionCuadrePage from "@/pages/cuadres/modificarCuadre/Modificacion
 import RegistroUsuario from "@/pages/auth/RegistroUsuario";
 import ProveedoresPage from "@/pages/ProveedoresPage";
 import UsuariosAdminPage from "@/pages/UsuariosAdminPage";
+import ListasComparativasPage from "@/pages/ListasComparativasPage";
 
 const AppRouter = () => (
   <Routes>
@@ -305,6 +306,14 @@ const AppRouter = () => (
       element={
         <PermissionRoute permiso="proveedores">
           <ProveedoresPage />
+        </PermissionRoute>
+      }
+    />
+    <Route
+      path="/listas-comparativas"
+      element={
+        <PermissionRoute permiso="listas_comparativas">
+          <ListasComparativasPage />
         </PermissionRoute>
       }
     />

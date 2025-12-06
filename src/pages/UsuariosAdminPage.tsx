@@ -25,6 +25,7 @@ const PERMISOS = [
   "ver_cuadres_dia",
   "verificar_gastos",
   "proveedores",
+  "listas_comparativas",
   "acceso_admin",
   "gestionar_usuarios",
   "ver_inventarios",

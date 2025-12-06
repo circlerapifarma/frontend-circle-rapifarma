@@ -165,6 +165,11 @@ const allLinks: LinkCategory[] = [
         showCount: true,
       },
       {
+        to: "/listas-comparativas",
+        label: "Listas Comparativas",
+        permiso: "listas_comparativas",
+      },
+      {
         to: "/valesporfarmacia",
         label: "Vales por Farmacia",
         permiso: "ver_cuadres_dia",
