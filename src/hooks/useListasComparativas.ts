@@ -14,6 +14,7 @@ export interface ListaComparativa {
   proveedor: {
     _id: string;
     nombreJuridico: string;
+    descuentosComerciales: number;
   };
   codigo: string;
   descripcion: string;

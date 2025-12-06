@@ -26,10 +26,21 @@ El modelo debe tener los siguientes campos:
 }
 ```
 
-**Nota importante**: El precio neto se calcula automáticamente usando:
+**Nota importante**: El precio neto se calcula automáticamente aplicando PRIMERO el descuento del Excel y LUEGO el descuento comercial del proveedor:
 ```
-precioNeto = precio * (1 - descuento / 100)
+precioConDescuentoExcel = precio * (1 - descuento / 100)
+precioNeto = precioConDescuentoExcel * (1 - descuentosComerciales / 100)
 ```
+
+O en una sola fórmula:
+```
+precioNeto = precio * (1 - descuento / 100) * (1 - descuentosComerciales / 100)
+```
+
+Donde:
+- `precio`: Precio del proveedor sin descuentos
+- `descuento`: Porcentaje de descuento del Excel (0-100)
+- `descuentosComerciales`: Porcentaje de descuento comercial del proveedor (0-100)
 
 ### Índices Recomendados
 
@@ -85,10 +96,18 @@ PROD002 | Ibuprofeno 400mg | Lab ABC | 3.00 | 10.0 | 15/01/2025 | 75
 - La `fechaVencimiento` debe ser una fecha válida si se proporciona
 
 **Cálculo del Precio Neto:**
-El precio neto se calcula automáticamente para cada item:
+El precio neto se calcula automáticamente para cada item aplicando PRIMERO el descuento del Excel y LUEGO el descuento comercial del proveedor:
 ```
-precioNeto = precio * (1 - descuento / 100)
+precioConDescuentoExcel = precio * (1 - descuento / 100)
+precioNeto = precioConDescuentoExcel * (1 - descuentosComerciales / 100)
 ```
+
+O en una sola fórmula:
+```
+precioNeto = precio * (1 - descuento / 100) * (1 - descuentosComerciales / 100)
+```
+
+**IMPORTANTE**: El descuento comercial del proveedor se obtiene de la colección `proveedores` usando el campo `descuentosComerciales`.
 
 **Respuesta exitosa (200):**
 ```json
@@ -168,7 +187,7 @@ precioNeto = precio * (1 - descuento / 100)
 ```
 
 **Lógica de cálculo:**
-- `precioNeto`: Se calcula como `precio * (1 - descuento / 100)`
+- `precioNeto`: Se calcula como `precio * (1 - descuento / 100) * (1 - descuentosComerciales / 100)` donde `descuentosComerciales` es el descuento comercial del proveedor
 - `miCosto`: Se obtiene del inventario (promedio de costos si hay múltiples farmacias, o el costo de la primera farmacia encontrada)
 - `existencias`: Array con existencias por cada farmacia donde existe el producto (obtenido del inventario)
 
@@ -459,8 +478,13 @@ def parsear_fecha(fecha_str: str) -> Optional[datetime]:
     return None
 
 # Helper para calcular precio neto
-def calcular_precio_neto(precio: float, descuento: float) -> float:
-    return precio * (1 - descuento / 100)
+def calcular_precio_neto(precio: float, descuento: float, descuento_comercial: float = 0) -> float:
+    """
+    Calcula el precio neto aplicando primero el descuento del Excel y luego el descuento comercial del proveedor
+    """
+    precio_con_descuento_excel = precio * (1 - descuento / 100)
+    precio_neto = precio_con_descuento_excel * (1 - descuento_comercial / 100)
+    return precio_neto
 
 # Helper para obtener costos y existencias del inventario
 async def obtener_info_inventario(db, codigo: str):
@@ -508,7 +532,11 @@ def lista_precio_helper(lista_precio, proveedor=None, costo=None, existencias=No
         "laboratorio": lista_precio.get("laboratorio", ""),
         "precio": lista_precio["precio"],
         "descuento": lista_precio["descuento"],
-        "precioNeto": round(lista_precio.get("precioNeto", calcular_precio_neto(lista_precio["precio"], lista_precio["descuento"])), 2),
+        "precioNeto": round(lista_precio.get("precioNeto", calcular_precio_neto(
+            lista_precio["precio"], 
+            lista_precio["descuento"],
+            proveedor.get("descuentosComerciales", 0) if proveedor else 0
+        )), 2),
         "fechaVencimiento": lista_precio.get("fechaVencimiento").isoformat() if lista_precio.get("fechaVencimiento") else None,
         "existencia": lista_precio.get("existencia", 0),
         "miCosto": round(costo, 2) if costo is not None else None,
@@ -619,8 +647,11 @@ async def subir_lista_excel(
                     errores.append(f"Fila {row_num}: La existencia no puede ser negativa")
                     continue
                 
-                # Calcular precio neto
-                precio_neto = calcular_precio_neto(precio_float, descuento_float)
+                # Obtener descuento comercial del proveedor
+                descuento_comercial = proveedor.get("descuentosComerciales", 0) or 0
+                
+                # Calcular precio neto (aplica descuento del Excel y luego descuento comercial del proveedor)
+                precio_neto = calcular_precio_neto(precio_float, descuento_float, descuento_comercial)
                 
                 # Parsear fecha de vencimiento
                 fecha_venc_parsed = None

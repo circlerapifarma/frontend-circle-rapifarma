@@ -245,6 +245,9 @@ const ListasComparativasPage: React.FC = () => {
                     <TableCell>{lista.laboratorio || "N/A"}</TableCell>
                     <TableCell>
                       <div className="font-medium">{lista.proveedor.nombreJuridico}</div>
+                      <div className="text-xs text-gray-500">
+                        Desc. Comercial: {lista.proveedor.descuentosComerciales}%
+                      </div>
                     </TableCell>
                     <TableCell>{formatCurrency(lista.precio)}</TableCell>
                     <TableCell>{lista.descuento}%</TableCell>
