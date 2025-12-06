@@ -227,10 +227,13 @@ const ListasComparativasPage: React.FC = () => {
                   <TableHead>Descripción</TableHead>
                   <TableHead>Laboratorio</TableHead>
                   <TableHead>Proveedor</TableHead>
-                  <TableHead>Precio Proveedor</TableHead>
-                  <TableHead>Precio con Desc.</TableHead>
+                  <TableHead>Precio</TableHead>
+                  <TableHead>Descuento (%)</TableHead>
+                  <TableHead>Precio Neto</TableHead>
+                  <TableHead>Fecha Vencimiento</TableHead>
+                  <TableHead>Existencia</TableHead>
                   <TableHead>Mi Costo</TableHead>
-                  <TableHead>Existencias</TableHead>
+                  <TableHead>Existencias por Farmacia</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -241,17 +244,19 @@ const ListasComparativasPage: React.FC = () => {
                     <TableCell>{lista.descripcion}</TableCell>
                     <TableCell>{lista.laboratorio || "N/A"}</TableCell>
                     <TableCell>
-                      <div>
-                        <div className="font-medium">{lista.proveedor.nombreJuridico}</div>
-                        <div className="text-xs text-gray-500">
-                          Desc. Comercial: {lista.proveedor.descuentosComerciales}%
-                        </div>
-                      </div>
+                      <div className="font-medium">{lista.proveedor.nombreJuridico}</div>
                     </TableCell>
-                    <TableCell>{formatCurrency(lista.precioProveedor)}</TableCell>
+                    <TableCell>{formatCurrency(lista.precio)}</TableCell>
+                    <TableCell>{lista.descuento}%</TableCell>
                     <TableCell className="font-semibold text-green-600">
-                      {formatCurrency(lista.precioConDescuento)}
+                      {formatCurrency(lista.precioNeto)}
                     </TableCell>
+                    <TableCell>
+                      {lista.fechaVencimiento 
+                        ? new Date(lista.fechaVencimiento).toLocaleDateString('es-VE')
+                        : "N/A"}
+                    </TableCell>
+                    <TableCell>{lista.existencia}</TableCell>
                     <TableCell className={lista.miCosto ? "font-semibold" : ""}>
                       {formatCurrency(lista.miCosto)}
                     </TableCell>
@@ -335,7 +340,7 @@ const ListasComparativasPage: React.FC = () => {
                   Formatos aceptados: .xlsx, .xls
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  Columnas requeridas: codigo, descripcion, precio (laboratorio opcional)
+                  Columnas requeridas: CODIGO, DESCRIPCION, LABORATORIO, PRECIO, DESCUENTO (%), FECHA DE VENCIMIENTO, EXISTENCIA
                 </p>
               </div>
             </div>

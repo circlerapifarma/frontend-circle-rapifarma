@@ -14,15 +14,17 @@ export interface ListaComparativa {
   proveedor: {
     _id: string;
     nombreJuridico: string;
-    descuentosComerciales: number;
   };
   codigo: string;
   descripcion: string;
   laboratorio: string;
-  precioProveedor: number;
-  precioConDescuento: number;
+  precio: number;
+  descuento: number; // Porcentaje de descuento
+  precioNeto: number; // Precio con descuento aplicado
+  fechaVencimiento: string | null;
+  existencia: number;
   miCosto: number | null;
-  existencias: ExistenciaPorFarmacia[];
+  existencias: ExistenciaPorFarmacia[]; // Existencias por farmacia (del inventario)
   fechaCreacion: string;
   fechaActualizacion: string;
 }

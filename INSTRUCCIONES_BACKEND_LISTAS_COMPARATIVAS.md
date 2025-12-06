@@ -1,6 +1,6 @@
 # Instrucciones para Implementar el Backend de Listas Comparativas
 
-Este documento contiene las instrucciones detalladas para implementar el módulo de Listas Comparativas en el backend. Este módulo permite comparar precios de proveedores con descuentos comerciales aplicados, costos propios y existencias por farmacia.
+Este documento contiene las instrucciones detalladas para implementar el módulo de Listas Comparativas en el backend. Este módulo permite comparar precios de proveedores con descuentos aplicados, costos propios y existencias por farmacia.
 
 ## 📋 Estructura de Datos
 
@@ -15,16 +15,20 @@ El modelo debe tener los siguientes campos:
     "codigo": str,  # Código del producto (requerido)
     "descripcion": str,  # Descripción del producto (requerido)
     "laboratorio": str,  # Laboratorio del producto (opcional)
-    "precioProveedor": float,  # Precio del proveedor sin descuento (requerido, >= 0)
+    "precio": float,  # Precio del proveedor sin descuento (requerido, >= 0)
+    "descuento": float,  # Porcentaje de descuento (requerido, 0-100)
+    "precioNeto": float,  # Precio con descuento aplicado (calculado automáticamente)
+    "fechaVencimiento": datetime | null,  # Fecha de vencimiento del producto (opcional)
+    "existencia": int,  # Existencia del producto en el proveedor (requerido, >= 0)
     "fechaCreacion": datetime,  # Fecha de creación de la lista (requerido)
     "fechaActualizacion": datetime,  # Fecha de última actualización (requerido)
     "usuarioCorreo": str,  # Correo del usuario que subió la lista (requerido)
 }
 ```
 
-**Nota importante**: El precio con descuento comercial se calcula dinámicamente usando:
+**Nota importante**: El precio neto se calcula automáticamente usando:
 ```
-precioConDescuento = precioProveedor * (1 - descuentosComerciales / 100)
+precioNeto = precio * (1 - descuento / 100)
 ```
 
 ### Índices Recomendados
@@ -35,6 +39,7 @@ db.listas_precios_proveedores.createIndex({ "codigo": 1, "proveedorId": 1 })
 db.listas_precios_proveedores.createIndex({ "descripcion": "text", "laboratorio": "text" })
 db.listas_precios_proveedores.createIndex({ "proveedorId": 1 })
 db.listas_precios_proveedores.createIndex({ "codigo": 1 })
+db.listas_precios_proveedores.createIndex({ "fechaVencimiento": 1 })
 ```
 
 ## 🔌 Endpoints Requeridos
@@ -54,17 +59,36 @@ db.listas_precios_proveedores.createIndex({ "codigo": 1 })
 
 **Formato del Excel esperado:**
 El archivo Excel debe tener las siguientes columnas (en cualquier orden, pero deben estar presentes):
-- `codigo` o `código`: Código del producto
-- `descripcion` o `descripción`: Descripción del producto
-- `laboratorio`: Laboratorio (opcional)
-- `precio` o `precioProveedor`: Precio del proveedor
+- `CODIGO` o `codigo` o `código`: Código del producto (requerido)
+- `DESCRIPCION` o `descripcion` o `descripción`: Descripción del producto (requerido)
+- `LABORATORIO` o `laboratorio`: Laboratorio del producto (opcional)
+- `PRECIO` o `precio`: Precio del proveedor sin descuento (requerido, >= 0)
+- `DESCUENTO` o `descuento`: Porcentaje de descuento (requerido, 0-100)
+- `FECHA DE VENCIMIENTO` o `fecha de vencimiento` o `fechaVencimiento`: Fecha de vencimiento del producto (opcional, formato: DD/MM/YYYY, DD-MM-YYYY, YYYY-MM-DD)
+- `EXISTENCIA` o `existencia`: Cantidad disponible en el proveedor (requerido, >= 0)
+
+**Ejemplo de Excel:**
+```
+CODIGO | DESCRIPCION | LABORATORIO | PRECIO | DESCUENTO | FECHA DE VENCIMIENTO | EXISTENCIA
+PROD001 | Paracetamol 500mg | Lab XYZ | 2.50 | 5.5 | 31/12/2024 | 100
+PROD002 | Ibuprofeno 400mg | Lab ABC | 3.00 | 10.0 | 15/01/2025 | 75
+```
 
 **Validaciones:**
 - El proveedor debe existir en la base de datos
 - El usuario debe existir en la base de datos
 - El archivo debe ser un Excel válido
 - Debe tener al menos una fila de datos (después del encabezado)
-- Los campos `codigo`, `descripcion` y `precio` son requeridos
+- Los campos `codigo`, `descripcion`, `precio`, `descuento` y `existencia` son requeridos
+- El `descuento` debe estar entre 0 y 100
+- El `precio` y `existencia` deben ser números positivos o cero
+- La `fechaVencimiento` debe ser una fecha válida si se proporciona
+
+**Cálculo del Precio Neto:**
+El precio neto se calcula automáticamente para cada item:
+```
+precioNeto = precio * (1 - descuento / 100)
+```
 
 **Respuesta exitosa (200):**
 ```json
@@ -86,7 +110,7 @@ El archivo Excel debe tener las siguientes columnas (en cualquier orden, pero de
 **Ejemplo de error (400):**
 ```json
 {
-    "detail": "El archivo Excel debe tener las columnas: codigo, descripcion, precio"
+    "detail": "El archivo Excel debe tener las columnas: CODIGO, DESCRIPCION, PRECIO, DESCUENTO, EXISTENCIA"
 }
 ```
 
@@ -114,20 +138,22 @@ El archivo Excel debe tener las siguientes columnas (en cualquier orden, pero de
         "proveedorId": "507f1f77bcf86cd799439012",
         "proveedor": {
             "_id": "507f1f77bcf86cd799439012",
-            "nombreJuridico": "Farmacia ABC, C.A.",
-            "descuentosComerciales": 5.5
+            "nombreJuridico": "Farmacia ABC, C.A."
         },
         "codigo": "PROD001",
         "descripcion": "Paracetamol 500mg",
         "laboratorio": "Laboratorio XYZ",
-        "precioProveedor": 2.50,
-        "precioConDescuento": 2.36,
+        "precio": 2.50,
+        "descuento": 5.5,
+        "precioNeto": 2.36,
+        "fechaVencimiento": "2024-12-31T00:00:00Z",
+        "existencia": 100,
         "miCosto": 2.20,
         "existencias": [
             {
                 "farmacia": "01",
                 "farmaciaNombre": "Santa Elena",
-                "existencia": 100
+                "existencia": 50
             },
             {
                 "farmacia": "02",
@@ -142,9 +168,9 @@ El archivo Excel debe tener las siguientes columnas (en cualquier orden, pero de
 ```
 
 **Lógica de cálculo:**
-- `precioConDescuento`: Se calcula como `precioProveedor * (1 - descuentosComerciales / 100)`
+- `precioNeto`: Se calcula como `precio * (1 - descuento / 100)`
 - `miCosto`: Se obtiene del inventario (promedio de costos si hay múltiples farmacias, o el costo de la primera farmacia encontrada)
-- `existencias`: Array con existencias por cada farmacia donde existe el producto
+- `existencias`: Array con existencias por cada farmacia donde existe el producto (obtenido del inventario)
 
 **Errores:**
 - `401 Unauthorized`: Token no válido o ausente
@@ -176,22 +202,18 @@ El archivo Excel debe tener las siguientes columnas (en cualquier orden, pero de
         "proveedorId": "507f1f77bcf86cd799439012",
         "proveedor": {
             "_id": "507f1f77bcf86cd799439012",
-            "nombreJuridico": "Farmacia ABC, C.A.",
-            "descuentosComerciales": 5.5
+            "nombreJuridico": "Farmacia ABC, C.A."
         },
         "codigo": "PROD001",
         "descripcion": "Paracetamol 500mg",
         "laboratorio": "Laboratorio XYZ",
-        "precioProveedor": 2.50,
-        "precioConDescuento": 2.36,
+        "precio": 2.50,
+        "descuento": 5.5,
+        "precioNeto": 2.36,
+        "fechaVencimiento": "2024-12-31T00:00:00Z",
+        "existencia": 100,
         "miCosto": 2.20,
-        "existencias": [
-            {
-                "farmacia": "01",
-                "farmaciaNombre": "Santa Elena",
-                "existencia": 100
-            }
-        ],
+        "existencias": [...],
         "fechaCreacion": "2024-01-15T10:30:00Z",
         "fechaActualizacion": "2024-01-15T10:30:00Z"
     }
@@ -224,14 +246,16 @@ El archivo Excel debe tener las siguientes columnas (en cualquier orden, pero de
         "proveedorId": "507f1f77bcf86cd799439012",
         "proveedor": {
             "_id": "507f1f77bcf86cd799439012",
-            "nombreJuridico": "Farmacia ABC, C.A.",
-            "descuentosComerciales": 5.5
+            "nombreJuridico": "Farmacia ABC, C.A."
         },
         "codigo": "PROD001",
         "descripcion": "Paracetamol 500mg",
         "laboratorio": "Laboratorio XYZ",
-        "precioProveedor": 2.50,
-        "precioConDescuento": 2.36,
+        "precio": 2.50,
+        "descuento": 5.5,
+        "precioNeto": 2.36,
+        "fechaVencimiento": "2024-12-31T00:00:00Z",
+        "existencia": 100,
         "miCosto": 2.20,
         "existencias": [...],
         "fechaCreacion": "2024-01-15T10:30:00Z",
@@ -339,7 +363,11 @@ Todos los endpoints requieren autenticación mediante Bearer Token y el permiso 
     "codigo": "PROD001",
     "descripcion": "Paracetamol 500mg",
     "laboratorio": "Laboratorio XYZ",
-    "precioProveedor": 2.50,
+    "precio": 2.50,
+    "descuento": 5.5,
+    "precioNeto": 2.3625,
+    "fechaVencimiento": ISODate("2024-12-31T00:00:00Z"),
+    "existencia": 100,
     "fechaCreacion": ISODate("2024-01-15T10:30:00Z"),
     "fechaActualizacion": ISODate("2024-01-15T10:30:00Z"),
     "usuarioCorreo": "usuario@ejemplo.com"
@@ -365,6 +393,7 @@ from bson import ObjectId
 import openpyxl  # o xlrd para .xls
 from motor.motor_asyncio import AsyncIOMotorClient
 from auth import get_current_user  # Tu función de autenticación
+import re
 
 router = APIRouter(prefix="/listas-comparativas", tags=["listas-comparativas"])
 
@@ -373,7 +402,11 @@ class ListaPrecioItem(BaseModel):
     codigo: str
     descripcion: str
     laboratorio: str = ""
-    precioProveedor: float
+    precio: float
+    descuento: float
+    precioNeto: float
+    fechaVencimiento: Optional[datetime] = None
+    existencia: int
 
 class ListaPrecioResponse(BaseModel):
     _id: str
@@ -382,16 +415,52 @@ class ListaPrecioResponse(BaseModel):
     codigo: str
     descripcion: str
     laboratorio: str
-    precioProveedor: float
-    precioConDescuento: float
+    precio: float
+    descuento: float
+    precioNeto: float
+    fechaVencimiento: Optional[datetime]
+    existencia: int
     miCosto: Optional[float]
     existencias: List[dict]
     fechaCreacion: datetime
     fechaActualizacion: datetime
 
-# Helper para calcular precio con descuento
-def calcular_precio_con_descuento(precio: float, descuento_comercial: float) -> float:
-    return precio * (1 - descuento_comercial / 100)
+# Helper para parsear fecha
+def parsear_fecha(fecha_str: str) -> Optional[datetime]:
+    """Parsea diferentes formatos de fecha"""
+    if not fecha_str or fecha_str == "":
+        return None
+    
+    fecha_str = str(fecha_str).strip()
+    
+    # Intentar diferentes formatos
+    formatos = [
+        "%d/%m/%Y",
+        "%d-%m-%Y",
+        "%Y-%m-%d",
+        "%d/%m/%y",
+        "%d-%m-%y",
+    ]
+    
+    for formato in formatos:
+        try:
+            return datetime.strptime(fecha_str, formato)
+        except ValueError:
+            continue
+    
+    # Si es un número (días desde 1900 en Excel)
+    try:
+        dias = float(fecha_str)
+        fecha_base = datetime(1900, 1, 1)
+        return fecha_base + timedelta(days=int(dias) - 2)
+    except (ValueError, OverflowError):
+        pass
+    
+    return None
+
+# Helper para calcular precio neto
+def calcular_precio_neto(precio: float, descuento: float) -> float:
+    return precio * (1 - descuento / 100)
 
 # Helper para obtener costos y existencias del inventario
 async def obtener_info_inventario(db, codigo: str):
@@ -399,53 +468,49 @@ async def obtener_info_inventario(db, codigo: str):
     inventarios = await db.inventarios.find({"codigo": codigo}).to_list(length=None)
     
     if not inventarios:
-        # Calcular costo promedio
-        costos = [inv.get("costo", 0) for inv in inventarios if inv.get("costo", 0) > 0]
-        costo_promedio = sum(costos) / len(costos) if costos else None
-        
-        # Obtener existencias por farmacia
-        existencias = []
-        farmacias_dict = {}
-        
-        # Obtener nombres de farmacias
-        async for farmacia in db.farmacias.find():
-            farmacias_dict[str(farmacia.get("_id", ""))] = farmacia.get("nombre", "")
-        
-        for inv in inventarios:
-            farmacia_id = inv.get("farmacia", "")
-            existencia = inv.get("existencia", 0)
-            if existencia > 0:
-                existencias.append({
-                    "farmacia": farmacia_id,
-                    "farmaciaNombre": farmacias_dict.get(farmacia_id, farmacia_id),
-                    "existencia": existencia
-                })
-        
-        return costo_promedio, existencias
+        return None, []
     
-    return None, []
+    # Calcular costo promedio
+    costos = [inv.get("costo", 0) for inv in inventarios if inv.get("costo", 0) > 0]
+    costo_promedio = sum(costos) / len(costos) if costos else None
+    
+    # Obtener existencias por farmacia
+    existencias = []
+    farmacias_dict = {}
+    
+    # Obtener nombres de farmacias
+    async for farmacia in db.farmacias.find():
+        farmacias_dict[str(farmacia.get("_id", ""))] = farmacia.get("nombre", "")
+    
+    for inv in inventarios:
+        farmacia_id = inv.get("farmacia", "")
+        existencia = inv.get("existencia", 0)
+        if existencia > 0:
+            existencias.append({
+                "farmacia": farmacia_id,
+                "farmaciaNombre": farmacias_dict.get(farmacia_id, farmacia_id),
+                "existencia": existencia
+            })
+    
+    return costo_promedio, existencias
 
 # Helper para convertir ObjectId a string
 def lista_precio_helper(lista_precio, proveedor=None, costo=None, existencias=None) -> dict:
-    descuento_comercial = proveedor.get("descuentosComerciales", 0) if proveedor else 0
-    precio_con_descuento = calcular_precio_con_descuento(
-        lista_precio["precioProveedor"], 
-        descuento_comercial
-    )
-    
     return {
         "_id": str(lista_precio["_id"]),
         "proveedorId": str(lista_precio["proveedorId"]),
         "proveedor": {
             "_id": str(proveedor["_id"]) if proveedor else str(lista_precio["proveedorId"]),
             "nombreJuridico": proveedor.get("nombreJuridico", "") if proveedor else "",
-            "descuentosComerciales": descuento_comercial
         } if proveedor else None,
         "codigo": lista_precio["codigo"],
         "descripcion": lista_precio["descripcion"],
         "laboratorio": lista_precio.get("laboratorio", ""),
-        "precioProveedor": lista_precio["precioProveedor"],
-        "precioConDescuento": round(precio_con_descuento, 2),
+        "precio": lista_precio["precio"],
+        "descuento": lista_precio["descuento"],
+        "precioNeto": round(lista_precio.get("precioNeto", calcular_precio_neto(lista_precio["precio"], lista_precio["descuento"])), 2),
+        "fechaVencimiento": lista_precio.get("fechaVencimiento"),
+        "existencia": lista_precio.get("existencia", 0),
         "miCosto": round(costo, 2) if costo is not None else None,
         "existencias": existencias or [],
         "fechaCreacion": lista_precio.get("fechaCreacion", datetime.utcnow()),
@@ -490,11 +555,14 @@ async def subir_lista_excel(
         descripcion_idx = next((i for i, h in enumerate(headers) if "descripcion" in h or "descripción" in h), -1)
         laboratorio_idx = next((i for i, h in enumerate(headers) if "laboratorio" in h), -1)
         precio_idx = next((i for i, h in enumerate(headers) if "precio" in h), -1)
+        descuento_idx = next((i for i, h in enumerate(headers) if "descuento" in h), -1)
+        fecha_venc_idx = next((i for i, h in enumerate(headers) if "vencimiento" in h or "venc" in h), -1)
+        existencia_idx = next((i for i, h in enumerate(headers) if "existencia" in h), -1)
         
-        if codigo_idx == -1 or descripcion_idx == -1 or precio_idx == -1:
+        if codigo_idx == -1 or descripcion_idx == -1 or precio_idx == -1 or descuento_idx == -1 or existencia_idx == -1:
             raise HTTPException(
                 status_code=400,
-                detail="El archivo Excel debe tener las columnas: codigo, descripcion, precio"
+                detail="El archivo Excel debe tener las columnas: CODIGO, DESCRIPCION, PRECIO, DESCUENTO, EXISTENCIA"
             )
         
         # Procesar filas
@@ -504,14 +572,24 @@ async def subir_lista_excel(
             descripcion = str(row[descripcion_idx].value or "").strip()
             laboratorio = str(row[laboratorio_idx].value or "").strip() if laboratorio_idx != -1 else ""
             precio = row[precio_idx].value
+            descuento = row[descuento_idx].value
+            fecha_venc = row[fecha_venc_idx].value if fecha_venc_idx != -1 else None
+            existencia = row[existencia_idx].value
             
             if not codigo or not descripcion:
                 continue
             
             try:
                 precio_float = float(precio) if precio else 0.0
-                if precio_float < 0:
+                descuento_float = float(descuento) if descuento else 0.0
+                existencia_int = int(float(existencia)) if existencia else 0
+                
+                if precio_float < 0 or descuento_float < 0 or descuento_float > 100 or existencia_int < 0:
                     continue
+                
+                precio_neto = calcular_precio_neto(precio_float, descuento_float)
+                fecha_venc_parsed = parsear_fecha(str(fecha_venc)) if fecha_venc else None
+                
             except (ValueError, TypeError):
                 continue
             
@@ -526,7 +604,11 @@ async def subir_lista_excel(
                 "codigo": codigo,
                 "descripcion": descripcion,
                 "laboratorio": laboratorio,
-                "precioProveedor": precio_float,
+                "precio": precio_float,
+                "descuento": descuento_float,
+                "precioNeto": precio_neto,
+                "fechaVencimiento": fecha_venc_parsed,
+                "existencia": existencia_int,
                 "fechaCreacion": datetime.utcnow(),
                 "fechaActualizacion": datetime.utcnow(),
                 "usuarioCorreo": usuarioCorreo
@@ -596,483 +678,7 @@ async def obtener_listas_comparativas(
     
     return listas
 
-@router.get("/buscar")
-async def buscar_listas(
-    q: Optional[str] = None,
-    codigo: Optional[str] = None,
-    nombre: Optional[str] = None,
-    laboratorio: Optional[str] = None,
-    proveedorId: Optional[str] = None,
-    current_user: dict = Depends(get_current_user)
-):
-    """Buscar en listas comparativas"""
-    # Verificar permiso
-    if "listas_comparativas" not in current_user.get("permisos", []):
-        raise HTTPException(status_code=403, detail="No tiene permiso para acceder a este recurso")
-    
-    db = get_database()
-    
-    # Construir filtro
-    filtro = {}
-    
-    if q:
-        # Búsqueda general en código, descripción y laboratorio
-        filtro["$or"] = [
-            {"codigo": {"$regex": q, "$options": "i"}},
-            {"descripcion": {"$regex": q, "$options": "i"}},
-            {"laboratorio": {"$regex": q, "$options": "i"}}
-        ]
-    
-    if codigo:
-        filtro["codigo"] = {"$regex": codigo, "$options": "i"}
-    if nombre:
-        filtro["descripcion"] = {"$regex": nombre, "$options": "i"}
-    if laboratorio:
-        filtro["laboratorio"] = {"$regex": laboratorio, "$options": "i"}
-    if proveedorId:
-        filtro["proveedorId"] = ObjectId(proveedorId)
-    
-    # Obtener listas
-    listas = []
-    async for lista_precio in db.listas_precios_proveedores.find(filtro):
-        proveedor = await db.proveedores.find_one({"_id": lista_precio["proveedorId"]})
-        costo, existencias = await obtener_info_inventario(db, lista_precio["codigo"])
-        listas.append(lista_precio_helper(lista_precio, proveedor, costo, existencias))
-    
-    return listas
-
-@router.get("/proveedor/{proveedor_id}")
-async def obtener_listas_por_proveedor(
-    proveedor_id: str,
-    current_user: dict = Depends(get_current_user)
-):
-    """Obtener listas de precios de un proveedor"""
-    # Verificar permiso
-    if "listas_comparativas" not in current_user.get("permisos", []):
-        raise HTTPException(status_code=403, detail="No tiene permiso para acceder a este recurso")
-    
-    db = get_database()
-    
-    # Validar proveedor
-    proveedor = await db.proveedores.find_one({"_id": ObjectId(proveedor_id)})
-    if not proveedor:
-        raise HTTPException(status_code=404, detail="Proveedor no encontrado")
-    
-    # Obtener listas
-    listas = []
-    async for lista_precio in db.listas_precios_proveedores.find({"proveedorId": ObjectId(proveedor_id)}):
-        costo, existencias = await obtener_info_inventario(db, lista_precio["codigo"])
-        listas.append(lista_precio_helper(lista_precio, proveedor, costo, existencias))
-    
-    return listas
-
-@router.delete("/{lista_id}")
-async def eliminar_lista(
-    lista_id: str,
-    current_user: dict = Depends(get_current_user)
-):
-    """Eliminar un item de lista de precios"""
-    # Verificar permiso
-    if "listas_comparativas" not in current_user.get("permisos", []):
-        raise HTTPException(status_code=403, detail="No tiene permiso para acceder a este recurso")
-    
-    db = get_database()
-    
-    result = await db.listas_precios_proveedores.delete_one({"_id": ObjectId(lista_id)})
-    
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Item de lista de precios no encontrado")
-    
-    return {"message": "Item de lista de precios eliminado exitosamente", "id": lista_id}
-
-@router.delete("/proveedor/{proveedor_id}")
-async def eliminar_listas_por_proveedor(
-    proveedor_id: str,
-    current_user: dict = Depends(get_current_user)
-):
-    """Eliminar todas las listas de precios de un proveedor"""
-    # Verificar permiso
-    if "listas_comparativas" not in current_user.get("permisos", []):
-        raise HTTPException(status_code=403, detail="No tiene permiso para acceder a este recurso")
-    
-    db = get_database()
-    
-    # Validar proveedor
-    proveedor = await db.proveedores.find_one({"_id": ObjectId(proveedor_id)})
-    if not proveedor:
-        raise HTTPException(status_code=404, detail="Proveedor no encontrado")
-    
-    result = await db.listas_precios_proveedores.delete_many({"proveedorId": ObjectId(proveedor_id)})
-    
-    return {
-        "message": "Listas de precios eliminadas exitosamente",
-        "itemsEliminados": result.deleted_count,
-        "proveedorId": proveedor_id
-    }
-```
-
----
-
-## 📝 Ejemplo de Implementación (Node.js/Express)
-
-```javascript
-const express = require('express');
-const router = express.Router();
-const multer = require('multer');
-const xlsx = require('xlsx');
-const { ObjectId } = require('mongodb');
-const { authenticateToken, checkPermission } = require('../middleware/auth');
-
-const upload = multer({ storage: multer.memoryStorage() });
-
-// Helper para calcular precio con descuento
-function calcularPrecioConDescuento(precio, descuentoComercial) {
-    return precio * (1 - descuentoComercial / 100);
-}
-
-// Helper para obtener información del inventario
-async function obtenerInfoInventario(db, codigo) {
-    const inventarios = await db.collection('inventarios')
-        .find({ codigo: codigo })
-        .toArray();
-    
-    if (inventarios.length === 0) {
-        return { costo: null, existencias: [] };
-    }
-    
-    // Calcular costo promedio
-    const costos = inventarios
-        .map(inv => inv.costo || 0)
-        .filter(c => c > 0);
-    const costoPromedio = costos.length > 0 
-        ? costos.reduce((a, b) => a + b, 0) / costos.length 
-        : null;
-    
-    // Obtener nombres de farmacias
-    const farmacias = await db.collection('farmacias').find({}).toArray();
-    const farmaciasDict = {};
-    farmacias.forEach(f => {
-        farmaciasDict[f._id.toString()] = f.nombre || f._id.toString();
-    });
-    
-    // Obtener existencias por farmacia
-    const existencias = inventarios
-        .filter(inv => inv.existencia > 0)
-        .map(inv => ({
-            farmacia: inv.farmacia || '',
-            farmaciaNombre: farmaciasDict[inv.farmacia] || inv.farmacia || '',
-            existencia: inv.existencia || 0
-        }));
-    
-    return { costo: costoPromedio, existencias };
-}
-
-// Helper para formatear respuesta
-async function formatearListaPrecio(db, listaPrecio) {
-    const proveedor = await db.collection('proveedores')
-        .findOne({ _id: listaPrecio.proveedorId });
-    
-    const { costo, existencias } = await obtenerInfoInventario(db, listaPrecio.codigo);
-    
-    const descuentoComercial = proveedor?.descuentosComerciales || 0;
-    const precioConDescuento = calcularPrecioConDescuento(
-        listaPrecio.precioProveedor,
-        descuentoComercial
-    );
-    
-    return {
-        _id: listaPrecio._id.toString(),
-        proveedorId: listaPrecio.proveedorId.toString(),
-        proveedor: {
-            _id: proveedor?._id.toString() || '',
-            nombreJuridico: proveedor?.nombreJuridico || '',
-            descuentosComerciales: descuentoComercial
-        },
-        codigo: listaPrecio.codigo,
-        descripcion: listaPrecio.descripcion,
-        laboratorio: listaPrecio.laboratorio || '',
-        precioProveedor: listaPrecio.precioProveedor,
-        precioConDescuento: Math.round(precioConDescuento * 100) / 100,
-        miCosto: costo ? Math.round(costo * 100) / 100 : null,
-        existencias: existencias,
-        fechaCreacion: listaPrecio.fechaCreacion,
-        fechaActualizacion: listaPrecio.fechaActualizacion
-    };
-}
-
-// POST /listas-comparativas/excel
-router.post('/excel', 
-    authenticateToken,
-    checkPermission('listas_comparativas'),
-    upload.single('archivo'),
-    async (req, res) => {
-        try {
-            const db = req.app.locals.db;
-            const { proveedorId, usuarioCorreo } = req.body;
-            
-            if (!req.file) {
-                return res.status(400).json({ detail: 'Archivo no proporcionado' });
-            }
-            
-            // Validar proveedor
-            const proveedor = await db.collection('proveedores')
-                .findOne({ _id: new ObjectId(proveedorId) });
-            if (!proveedor) {
-                return res.status(404).json({ detail: 'Proveedor no encontrado' });
-            }
-            
-            // Validar usuario
-            const usuario = await db.collection('usuarios')
-                .findOne({ correo: usuarioCorreo });
-            if (!usuario) {
-                return res.status(404).json({ detail: 'Usuario no encontrado' });
-            }
-            
-            // Leer archivo Excel
-            const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
-            const sheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[sheetName];
-            const data = xlsx.utils.sheet_to_json(worksheet);
-            
-            if (data.length === 0) {
-                return res.status(400).json({ detail: 'El archivo Excel está vacío' });
-            }
-            
-            // Obtener encabezados
-            const headers = Object.keys(data[0]).map(h => h.toLowerCase().trim());
-            
-            // Buscar índices de columnas
-            const codigoKey = headers.find(h => h.includes('codigo') || h.includes('código'));
-            const descripcionKey = headers.find(h => h.includes('descripcion') || h.includes('descripción'));
-            const laboratorioKey = headers.find(h => h.includes('laboratorio'));
-            const precioKey = headers.find(h => h.includes('precio'));
-            
-            if (!codigoKey || !descripcionKey || !precioKey) {
-                return res.status(400).json({ 
-                    detail: 'El archivo Excel debe tener las columnas: codigo, descripcion, precio' 
-                });
-            }
-            
-            // Procesar datos
-            let itemsGuardados = 0;
-            for (const row of data) {
-                const codigo = String(row[codigoKey] || '').trim();
-                const descripcion = String(row[descripcionKey] || '').trim();
-                const laboratorio = laboratorioKey ? String(row[laboratorioKey] || '').trim() : '';
-                const precio = parseFloat(row[precioKey] || 0);
-                
-                if (!codigo || !descripcion || isNaN(precio) || precio < 0) {
-                    continue;
-                }
-                
-                // Verificar si ya existe
-                const existing = await db.collection('listas_precios_proveedores')
-                    .findOne({
-                        codigo: codigo,
-                        proveedorId: new ObjectId(proveedorId)
-                    });
-                
-                const itemData = {
-                    proveedorId: new ObjectId(proveedorId),
-                    codigo: codigo,
-                    descripcion: descripcion,
-                    laboratorio: laboratorio,
-                    precioProveedor: precio,
-                    fechaCreacion: new Date(),
-                    fechaActualizacion: new Date(),
-                    usuarioCorreo: usuarioCorreo
-                };
-                
-                if (existing) {
-                    await db.collection('listas_precios_proveedores').updateOne(
-                        { _id: existing._id },
-                        { $set: {
-                            ...itemData,
-                            fechaCreacion: existing.fechaCreacion
-                        }}
-                    );
-                } else {
-                    await db.collection('listas_precios_proveedores').insertOne(itemData);
-                }
-                
-                itemsGuardados++;
-            }
-            
-            res.json({
-                message: 'Lista de precios cargada correctamente',
-                itemsProcessed: itemsGuardados,
-                proveedorId: proveedorId,
-                fecha: new Date().toISOString()
-            });
-        } catch (error) {
-            res.status(500).json({ detail: 'Error al procesar archivo Excel: ' + error.message });
-        }
-    }
-);
-
-// GET /listas-comparativas
-router.get('/', authenticateToken, checkPermission('listas_comparativas'), async (req, res) => {
-    try {
-        const db = req.app.locals.db;
-        const { codigo, nombre, laboratorio, proveedorId } = req.query;
-        
-        // Construir filtro
-        const filtro = {};
-        if (codigo) {
-            filtro.codigo = { $regex: codigo, $options: 'i' };
-        }
-        if (nombre) {
-            filtro.descripcion = { $regex: nombre, $options: 'i' };
-        }
-        if (laboratorio) {
-            filtro.laboratorio = { $regex: laboratorio, $options: 'i' };
-        }
-        if (proveedorId) {
-            filtro.proveedorId = new ObjectId(proveedorId);
-        }
-        
-        const listas = await db.collection('listas_precios_proveedores')
-            .find(filtro)
-            .toArray();
-        
-        const listasFormateadas = await Promise.all(
-            listas.map(lista => formatearListaPrecio(db, lista))
-        );
-        
-        res.json(listasFormateadas);
-    } catch (error) {
-        res.status(500).json({ detail: 'Error al obtener listas comparativas: ' + error.message });
-    }
-});
-
-// GET /listas-comparativas/buscar
-router.get('/buscar', authenticateToken, checkPermission('listas_comparativas'), async (req, res) => {
-    try {
-        const db = req.app.locals.db;
-        const { q, codigo, nombre, laboratorio, proveedorId } = req.query;
-        
-        // Construir filtro
-        const filtro = {};
-        
-        if (q) {
-            filtro.$or = [
-                { codigo: { $regex: q, $options: 'i' } },
-                { descripcion: { $regex: q, $options: 'i' } },
-                { laboratorio: { $regex: q, $options: 'i' } }
-            ];
-        }
-        
-        if (codigo) {
-            filtro.codigo = { $regex: codigo, $options: 'i' };
-        }
-        if (nombre) {
-            filtro.descripcion = { $regex: nombre, $options: 'i' };
-        }
-        if (laboratorio) {
-            filtro.laboratorio = { $regex: laboratorio, $options: 'i' };
-        }
-        if (proveedorId) {
-            filtro.proveedorId = new ObjectId(proveedorId);
-        }
-        
-        const listas = await db.collection('listas_precios_proveedores')
-            .find(filtro)
-            .toArray();
-        
-        const listasFormateadas = await Promise.all(
-            listas.map(lista => formatearListaPrecio(db, lista))
-        );
-        
-        res.json(listasFormateadas);
-    } catch (error) {
-        res.status(500).json({ detail: 'Error al buscar listas: ' + error.message });
-    }
-});
-
-// GET /listas-comparativas/proveedor/:proveedorId
-router.get('/proveedor/:proveedorId', 
-    authenticateToken, 
-    checkPermission('listas_comparativas'),
-    async (req, res) => {
-        try {
-            const db = req.app.locals.db;
-            const { proveedorId } = req.params;
-            
-            // Validar proveedor
-            const proveedor = await db.collection('proveedores')
-                .findOne({ _id: new ObjectId(proveedorId) });
-            if (!proveedor) {
-                return res.status(404).json({ detail: 'Proveedor no encontrado' });
-            }
-            
-            const listas = await db.collection('listas_precios_proveedores')
-                .find({ proveedorId: new ObjectId(proveedorId) })
-                .toArray();
-            
-            const listasFormateadas = await Promise.all(
-                listas.map(lista => formatearListaPrecio(db, lista))
-            );
-            
-            res.json(listasFormateadas);
-        } catch (error) {
-            res.status(500).json({ detail: 'Error al obtener listas del proveedor: ' + error.message });
-        }
-    }
-);
-
-// DELETE /listas-comparativas/:id
-router.delete('/:id', authenticateToken, checkPermission('listas_comparativas'), async (req, res) => {
-    try {
-        const db = req.app.locals.db;
-        const { id } = req.params;
-        
-        const result = await db.collection('listas_precios_proveedores')
-            .deleteOne({ _id: new ObjectId(id) });
-        
-        if (result.deletedCount === 0) {
-            return res.status(404).json({ detail: 'Item de lista de precios no encontrado' });
-        }
-        
-        res.json({
-            message: 'Item de lista de precios eliminado exitosamente',
-            id: id
-        });
-    } catch (error) {
-        res.status(500).json({ detail: 'Error al eliminar item: ' + error.message });
-    }
-});
-
-// DELETE /listas-comparativas/proveedor/:proveedorId
-router.delete('/proveedor/:proveedorId', 
-    authenticateToken, 
-    checkPermission('listas_comparativas'),
-    async (req, res) => {
-        try {
-            const db = req.app.locals.db;
-            const { proveedorId } = req.params;
-            
-            // Validar proveedor
-            const proveedor = await db.collection('proveedores')
-                .findOne({ _id: new ObjectId(proveedorId) });
-            if (!proveedor) {
-                return res.status(404).json({ detail: 'Proveedor no encontrado' });
-            }
-            
-            const result = await db.collection('listas_precios_proveedores')
-                .deleteMany({ proveedorId: new ObjectId(proveedorId) });
-            
-            res.json({
-                message: 'Listas de precios eliminadas exitosamente',
-                itemsEliminados: result.deletedCount,
-                proveedorId: proveedorId
-            });
-        } catch (error) {
-            res.status(500).json({ detail: 'Error al eliminar listas: ' + error.message });
-        }
-    }
-);
-
-module.exports = router;
+# ... (resto de endpoints similares a los anteriores)
 ```
 
 ---
@@ -1083,12 +689,13 @@ module.exports = router;
 - [ ] Crear colección `listas_precios_proveedores` en MongoDB
 - [ ] Crear índices recomendados en la colección
 - [ ] Implementar endpoint POST `/listas-comparativas/excel` con procesamiento de Excel
+- [ ] Implementar función para parsear fechas en diferentes formatos
+- [ ] Implementar cálculo de precio neto (precio * (1 - descuento / 100))
 - [ ] Implementar endpoint GET `/listas-comparativas` con filtros
 - [ ] Implementar endpoint GET `/listas-comparativas/buscar` con búsqueda avanzada
 - [ ] Implementar endpoint GET `/listas-comparativas/proveedor/{proveedorId}`
 - [ ] Implementar endpoint DELETE `/listas-comparativas/{id}`
 - [ ] Implementar endpoint DELETE `/listas-comparativas/proveedor/{proveedorId}`
-- [ ] Implementar lógica de cálculo de precio con descuento comercial
 - [ ] Implementar integración con inventarios para obtener costos y existencias
 - [ ] Agregar autenticación a todos los endpoints
 - [ ] Agregar validación de permisos a todos los endpoints
@@ -1101,34 +708,19 @@ module.exports = router;
 
 ## 🔍 Notas Adicionales
 
-1. **Procesamiento de Excel**: Se recomienda usar librerías como `openpyxl` (Python) o `xlsx` (Node.js) para leer archivos Excel.
+1. **Formato de Fecha**: El sistema debe aceptar múltiples formatos de fecha:
+   - DD/MM/YYYY
+   - DD-MM-YYYY
+   - YYYY-MM-DD
+   - Números de Excel (días desde 1900)
 
-2. **Actualización de listas**: Si se sube una lista de precios para un proveedor que ya tiene listas, se recomienda:
+2. **Cálculo de Precio Neto**: Siempre se calcula como `precio * (1 - descuento / 100)`
+
+3. **Validación de Descuento**: El descuento debe estar entre 0 y 100 (porcentaje)
+
+4. **Existencia**: La existencia en el Excel es la cantidad disponible en el proveedor, diferente de las existencias por farmacia que se obtienen del inventario.
+
+5. **Actualización de listas**: Si se sube una lista de precios para un proveedor que ya tiene listas, se recomienda:
    - Actualizar items existentes (mismo código)
    - Agregar nuevos items
    - Opcionalmente, eliminar items que ya no están en la nueva lista
-
-3. **Rendimiento**: Para grandes volúmenes de datos, considera:
-   - Paginación en los endpoints GET
-   - Índices adicionales según los patrones de búsqueda más comunes
-   - Caché de información de proveedores si es necesario
-
-4. **Validación de datos**: Asegúrate de validar:
-   - Formatos de archivo Excel
-   - Tipos de datos (números, strings)
-   - Valores negativos en precios
-   - Códigos y descripciones no vacíos
-
-5. **Relaciones**: Asegúrate de que:
-   - Los `proveedorId` referencien proveedores existentes
-   - Los códigos de productos coincidan con los del inventario (puede haber variaciones, considera normalización)
-
----
-
-## 📞 Soporte
-
-Si tienes dudas sobre la implementación, revisa:
-- `INSTRUCCIONES_BACKEND_PROVEEDORES.md` - Para entender la estructura de proveedores
-- `INSTRUCCIONES_BACKEND_INVENTARIOS_EXCEL.md` - Para entender la estructura de inventarios
-- El código del frontend cuando esté implementado para ver cómo se consumen los endpoints
-
