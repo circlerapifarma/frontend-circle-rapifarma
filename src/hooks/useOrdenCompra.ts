@@ -78,7 +78,7 @@ export function useOrdenCompra() {
       fechaVencimiento: lista.fechaVencimiento,
       existencia: lista.existencia,
       proveedorId: lista.proveedorId,
-      proveedorNombre: lista.proveedor.nombreJuridico,
+      proveedorNombre: lista.proveedor?.nombreJuridico || "N/A",
       farmacia: farmaciaId,
       farmaciaNombre: farmaciaNombre,
       cantidad: cantidad,

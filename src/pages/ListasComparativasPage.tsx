@@ -383,7 +383,7 @@ const ListasComparativasPage: React.FC = () => {
                           )}
                         </TableCell>
                         <TableCell>
-                          <div className="font-medium">{mejorPrecio.proveedor.nombreJuridico}</div>
+                          <div className="font-medium">{mejorPrecio.proveedor?.nombreJuridico || "N/A"}</div>
                           <div className="text-xs text-gray-500">
                             Precio: {formatCurrency(mejorPrecio.precio)} | Desc: {mejorPrecio.descuento}%
                           </div>
@@ -429,9 +429,9 @@ const ListasComparativasPage: React.FC = () => {
                           </TableCell>
                           <TableCell>
                             <div className="text-sm">
-                              <div className="font-medium">{lista.proveedor.nombreJuridico}</div>
+                              <div className="font-medium">{lista.proveedor?.nombreJuridico || "N/A"}</div>
                               <div className="text-xs text-gray-500">
-                                Desc. Comercial: {lista.proveedor.descuentosComerciales}%
+                                Desc. Comercial: {lista.proveedor?.descuentosComerciales || 0}%
                               </div>
                               {lista.fechaVencimiento && (
                                 <div className="text-xs text-gray-500 mt-1">
@@ -695,7 +695,7 @@ const ListasComparativasPage: React.FC = () => {
                 <p className="font-semibold">{productoParaAgregar.descripcion}</p>
                 <p className="text-sm text-gray-600">Código: {productoParaAgregar.codigo || "N/A"}</p>
                 <p className="text-sm text-gray-600">Laboratorio: {productoParaAgregar.laboratorio || "N/A"}</p>
-                <p className="text-sm text-gray-600">Proveedor: {productoParaAgregar.proveedor.nombreJuridico}</p>
+                <p className="text-sm text-gray-600">Proveedor: {productoParaAgregar.proveedor?.nombreJuridico || "N/A"}</p>
                 <p className="text-sm font-semibold text-green-600">
                   Precio Neto: {formatCurrency(productoParaAgregar.precioNeto)}
                 </p>
