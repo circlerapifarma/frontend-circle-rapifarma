@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useListasComparativas, type ListaComparativa, type Proveedor } from "@/hooks/useListasComparativas";
+import { useListasComparativas } from "@/hooks/useListasComparativas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,8 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Upload, Trash2, X, FileSpreadsheet } from "lucide-react";
-import * as XLSX from "xlsx";
+import { Search, Upload, Trash2, FileSpreadsheet } from "lucide-react";
 
 const ListasComparativasPage: React.FC = () => {
   const {
@@ -119,10 +118,6 @@ const ListasComparativasPage: React.FC = () => {
 
   const handleDelete = (id: string) => {
     setDeleteConfirm({ open: true, id });
-  };
-
-  const handleDeleteProveedor = (proveedorId: string, proveedorNombre: string) => {
-    setDeleteConfirm({ open: true, proveedorId, proveedorNombre });
   };
 
   const confirmDelete = async () => {
