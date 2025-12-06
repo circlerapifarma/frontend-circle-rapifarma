@@ -388,12 +388,12 @@ Todos los endpoints requieren autenticación mediante Bearer Token y el permiso 
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from pydantic import BaseModel, EmailStr
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 from bson import ObjectId
 import openpyxl  # o xlrd para .xls
+import io
 from motor.motor_asyncio import AsyncIOMotorClient
 from auth import get_current_user  # Tu función de autenticación
-import re
 
 router = APIRouter(prefix="/listas-comparativas", tags=["listas-comparativas"])
 
@@ -509,12 +509,12 @@ def lista_precio_helper(lista_precio, proveedor=None, costo=None, existencias=No
         "precio": lista_precio["precio"],
         "descuento": lista_precio["descuento"],
         "precioNeto": round(lista_precio.get("precioNeto", calcular_precio_neto(lista_precio["precio"], lista_precio["descuento"])), 2),
-        "fechaVencimiento": lista_precio.get("fechaVencimiento"),
+        "fechaVencimiento": lista_precio.get("fechaVencimiento").isoformat() if lista_precio.get("fechaVencimiento") else None,
         "existencia": lista_precio.get("existencia", 0),
         "miCosto": round(costo, 2) if costo is not None else None,
         "existencias": existencias or [],
-        "fechaCreacion": lista_precio.get("fechaCreacion", datetime.utcnow()),
-        "fechaActualizacion": lista_precio.get("fechaActualizacion", datetime.utcnow()),
+        "fechaCreacion": lista_precio.get("fechaCreacion", datetime.utcnow()).isoformat() if isinstance(lista_precio.get("fechaCreacion"), datetime) else lista_precio.get("fechaCreacion"),
+        "fechaActualizacion": lista_precio.get("fechaActualizacion", datetime.utcnow()).isoformat() if isinstance(lista_precio.get("fechaActualizacion"), datetime) else lista_precio.get("fechaActualizacion"),
     }
 
 @router.post("/excel")
@@ -543,12 +543,28 @@ async def subir_lista_excel(
     
     # Leer archivo Excel
     try:
+        # Leer el contenido del archivo
         contents = await archivo.read()
-        workbook = openpyxl.load_workbook(io.BytesIO(contents))
+        
+        # Validar que el archivo no esté vacío
+        if not contents or len(contents) == 0:
+            raise HTTPException(status_code=400, detail="El archivo Excel está vacío")
+        
+        # Cargar el workbook desde bytes
+        workbook = openpyxl.load_workbook(io.BytesIO(contents), data_only=True)
         sheet = workbook.active
         
+        # Validar que la hoja tenga datos
+        if sheet.max_row < 2:
+            raise HTTPException(status_code=400, detail="El archivo Excel debe tener al menos una fila de datos (después del encabezado)")
+        
         # Obtener encabezados (primera fila)
-        headers = [str(cell.value).lower().strip() if cell.value else "" for cell in sheet[1]]
+        headers = []
+        for cell in sheet[1]:
+            if cell.value:
+                headers.append(str(cell.value).lower().strip())
+            else:
+                headers.append("")
         
         # Buscar índices de columnas
         codigo_idx = next((i for i, h in enumerate(headers) if "codigo" in h or "código" in h), -1)
@@ -567,77 +583,119 @@ async def subir_lista_excel(
         
         # Procesar filas
         items_guardados = 0
-        for row in sheet.iter_rows(min_row=2, values_only=False):
-            codigo = str(row[codigo_idx].value or "").strip()
-            descripcion = str(row[descripcion_idx].value or "").strip()
-            laboratorio = str(row[laboratorio_idx].value or "").strip() if laboratorio_idx != -1 else ""
-            precio = row[precio_idx].value
-            descuento = row[descuento_idx].value
-            fecha_venc = row[fecha_venc_idx].value if fecha_venc_idx != -1 else None
-            existencia = row[existencia_idx].value
-            
-            if not codigo or not descripcion:
-                continue
-            
+        errores = []
+        
+        for row_num, row in enumerate(sheet.iter_rows(min_row=2, values_only=False), start=2):
             try:
-                precio_float = float(precio) if precio else 0.0
-                descuento_float = float(descuento) if descuento else 0.0
-                existencia_int = int(float(existencia)) if existencia else 0
+                codigo = str(row[codigo_idx].value or "").strip() if codigo_idx < len(row) else ""
+                descripcion = str(row[descripcion_idx].value or "").strip() if descripcion_idx < len(row) else ""
+                laboratorio = str(row[laboratorio_idx].value or "").strip() if laboratorio_idx != -1 and laboratorio_idx < len(row) else ""
+                precio = row[precio_idx].value if precio_idx < len(row) else None
+                descuento = row[descuento_idx].value if descuento_idx < len(row) else None
+                fecha_venc = row[fecha_venc_idx].value if fecha_venc_idx != -1 and fecha_venc_idx < len(row) else None
+                existencia = row[existencia_idx].value if existencia_idx < len(row) else None
                 
-                if precio_float < 0 or descuento_float < 0 or descuento_float > 100 or existencia_int < 0:
+                # Validar campos requeridos
+                if not codigo or not descripcion:
                     continue
                 
-                precio_neto = calcular_precio_neto(precio_float, descuento_float)
-                fecha_venc_parsed = parsear_fecha(str(fecha_venc)) if fecha_venc else None
+                # Convertir y validar valores numéricos
+                try:
+                    precio_float = float(precio) if precio is not None else 0.0
+                    descuento_float = float(descuento) if descuento is not None else 0.0
+                    existencia_int = int(float(existencia)) if existencia is not None else 0
+                except (ValueError, TypeError) as e:
+                    errores.append(f"Fila {row_num}: Error al convertir valores numéricos - {str(e)}")
+                    continue
                 
-            except (ValueError, TypeError):
+                # Validar rangos
+                if precio_float < 0:
+                    errores.append(f"Fila {row_num}: El precio no puede ser negativo")
+                    continue
+                if descuento_float < 0 or descuento_float > 100:
+                    errores.append(f"Fila {row_num}: El descuento debe estar entre 0 y 100")
+                    continue
+                if existencia_int < 0:
+                    errores.append(f"Fila {row_num}: La existencia no puede ser negativa")
+                    continue
+                
+                # Calcular precio neto
+                precio_neto = calcular_precio_neto(precio_float, descuento_float)
+                
+                # Parsear fecha de vencimiento
+                fecha_venc_parsed = None
+                if fecha_venc:
+                    fecha_venc_parsed = parsear_fecha(str(fecha_venc))
+                
+                # Verificar si ya existe (mismo código y proveedor)
+                existing = await db.listas_precios_proveedores.find_one({
+                    "codigo": codigo,
+                    "proveedorId": ObjectId(proveedorId)
+                })
+                
+                item_data = {
+                    "proveedorId": ObjectId(proveedorId),
+                    "codigo": codigo,
+                    "descripcion": descripcion,
+                    "laboratorio": laboratorio,
+                    "precio": precio_float,
+                    "descuento": descuento_float,
+                    "precioNeto": round(precio_neto, 2),
+                    "fechaVencimiento": fecha_venc_parsed,
+                    "existencia": existencia_int,
+                    "fechaCreacion": datetime.utcnow(),
+                    "fechaActualizacion": datetime.utcnow(),
+                    "usuarioCorreo": usuarioCorreo
+                }
+                
+                if existing:
+                    # Actualizar existente
+                    await db.listas_precios_proveedores.update_one(
+                        {"_id": existing["_id"]},
+                        {"$set": {
+                            **item_data,
+                            "fechaCreacion": existing.get("fechaCreacion", datetime.utcnow())
+                        }}
+                    )
+                else:
+                    # Crear nuevo
+                    await db.listas_precios_proveedores.insert_one(item_data)
+                
+                items_guardados += 1
+                
+            except Exception as e:
+                errores.append(f"Fila {row_num}: {str(e)}")
                 continue
-            
-            # Verificar si ya existe (mismo código y proveedor)
-            existing = await db.listas_precios_proveedores.find_one({
-                "codigo": codigo,
-                "proveedorId": ObjectId(proveedorId)
-            })
-            
-            item_data = {
-                "proveedorId": ObjectId(proveedorId),
-                "codigo": codigo,
-                "descripcion": descripcion,
-                "laboratorio": laboratorio,
-                "precio": precio_float,
-                "descuento": descuento_float,
-                "precioNeto": precio_neto,
-                "fechaVencimiento": fecha_venc_parsed,
-                "existencia": existencia_int,
-                "fechaCreacion": datetime.utcnow(),
-                "fechaActualizacion": datetime.utcnow(),
-                "usuarioCorreo": usuarioCorreo
-            }
-            
-            if existing:
-                # Actualizar existente
-                await db.listas_precios_proveedores.update_one(
-                    {"_id": existing["_id"]},
-                    {"$set": {
-                        **item_data,
-                        "fechaCreacion": existing.get("fechaCreacion", datetime.utcnow())
-                    }}
-                )
-            else:
-                # Crear nuevo
-                await db.listas_precios_proveedores.insert_one(item_data)
-            
-            items_guardados += 1
         
-        return {
+        # Cerrar el workbook para liberar memoria
+        workbook.close()
+        
+        # Preparar respuesta
+        response = {
             "message": "Lista de precios cargada correctamente",
             "itemsProcessed": items_guardados,
             "proveedorId": proveedorId,
             "fecha": datetime.utcnow().isoformat()
         }
+        
+        # Agregar errores si los hay (solo como información, no bloquea la operación)
+        if errores:
+            response["warnings"] = errores[:10]  # Limitar a 10 errores para no hacer la respuesta muy grande
+        
+        return response
     
+    except HTTPException:
+        # Re-lanzar HTTPException tal cual
+        raise
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error al procesar archivo Excel: {str(e)}")
+        # Capturar cualquier otro error y devolver un mensaje seguro
+        error_message = str(e)
+        # Asegurarse de que el mensaje no contenga objetos bytes
+        if isinstance(e, (TypeError, ValueError)):
+            error_message = f"Error al procesar archivo Excel: {error_message}"
+        else:
+            error_message = "Error al procesar archivo Excel. Verifique que el archivo sea válido."
+        raise HTTPException(status_code=400, detail=error_message)
 
 @router.get("", response_model=List[dict])
 async def obtener_listas_comparativas(
@@ -705,6 +763,39 @@ async def obtener_listas_comparativas(
 - [ ] Verificar que la búsqueda funcione correctamente
 
 ---
+
+## ⚠️ Solución de Errores Comunes
+
+### Error: "Object of type bytes is not JSON serializable"
+
+Este error ocurre cuando se intenta serializar objetos `bytes` a JSON. Para solucionarlo:
+
+1. **Asegúrate de importar `io`**: 
+   ```python
+   import io
+   ```
+
+2. **Usa `data_only=True` al cargar el workbook**:
+   ```python
+   workbook = openpyxl.load_workbook(io.BytesIO(contents), data_only=True)
+   ```
+
+3. **Convierte todas las fechas a strings ISO antes de devolver**:
+   ```python
+   "fechaVencimiento": fecha_venc_parsed.isoformat() if fecha_venc_parsed else None
+   ```
+
+4. **Maneja los errores correctamente sin incluir objetos bytes**:
+   ```python
+   except Exception as e:
+       error_message = str(e)  # Convierte a string, no incluye bytes
+       raise HTTPException(status_code=400, detail=error_message)
+   ```
+
+5. **Cierra el workbook después de usarlo**:
+   ```python
+   workbook.close()  # Libera memoria y evita problemas de serialización
+   ```
 
 ## 🔍 Notas Adicionales
 
