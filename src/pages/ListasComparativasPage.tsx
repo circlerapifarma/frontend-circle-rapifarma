@@ -61,6 +61,7 @@ const ListasComparativasPage: React.FC = () => {
   const [excelFile, setExcelFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{
@@ -111,13 +112,20 @@ const ListasComparativasPage: React.FC = () => {
 
     setUploading(true);
     setUploadProgress(0);
+    setIsProcessing(false);
     setUploadError(null);
     setUploadSuccess(false);
 
     try {
       await subirListaExcel(excelFile, selectedProveedor, (progress) => {
         setUploadProgress(progress);
+        // Cuando el upload llegue al 100%, cambiar a modo "procesando"
+        if (progress >= 100) {
+          setIsProcessing(true);
+        }
       });
+      // El backend terminó de procesar
+      setIsProcessing(false);
       setUploadSuccess(true);
       setUploadProgress(100);
       setExcelFile(null);
@@ -126,9 +134,11 @@ const ListasComparativasPage: React.FC = () => {
         setShowUploadModal(false);
         setUploadSuccess(false);
         setUploadProgress(0);
+        setIsProcessing(false);
         fetchListas();
       }, 2000);
     } catch (err: any) {
+      setIsProcessing(false);
       setUploadError(err.message || "Error al subir el archivo");
       setUploadProgress(0);
     } finally {
@@ -523,18 +533,57 @@ const ListasComparativasPage: React.FC = () => {
                 </p>
               </div>
             </div>
-            {uploading && (
+            {(uploading || isProcessing) && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm text-gray-600">
-                  <span>Subiendo archivo...</span>
-                  <span className="font-medium">{uploadProgress}%</span>
+                  <span className="flex items-center gap-2">
+                    {isProcessing ? (
+                      <>
+                        <svg
+                          className="animate-spin h-4 w-4 text-blue-500"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        Procesando archivo en el servidor...
+                      </>
+                    ) : (
+                      <>Subiendo archivo...</>
+                    )}
+                  </span>
+                  {!isProcessing && (
+                    <span className="font-medium">{uploadProgress}%</span>
+                  )}
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  <div
-                    className="bg-blue-500 h-2.5 rounded-full transition-all duration-300 ease-in-out"
-                    style={{ width: `${uploadProgress}%` }}
-                  ></div>
+                  {isProcessing ? (
+                    <div className="bg-blue-500 h-2.5 rounded-full animate-pulse" style={{ width: '100%' }}></div>
+                  ) : (
+                    <div
+                      className="bg-blue-500 h-2.5 rounded-full transition-all duration-300 ease-in-out"
+                      style={{ width: `${uploadProgress}%` }}
+                    ></div>
+                  )}
                 </div>
+                {isProcessing && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    El archivo se ha subido correctamente. Por favor espere mientras se procesa...
+                  </p>
+                )}
               </div>
             )}
             {uploadError && (
@@ -556,15 +605,16 @@ const ListasComparativasPage: React.FC = () => {
               setUploadError(null);
               setUploadSuccess(false);
               setUploadProgress(0);
+              setIsProcessing(false);
             }}>
               Cancelar
             </Button>
             <Button
               onClick={handleUpload}
-              disabled={uploading || !excelFile || !selectedProveedor}
+              disabled={(uploading || isProcessing) || !excelFile || !selectedProveedor}
               className="bg-green-600 hover:bg-green-700"
             >
-              {uploading ? (
+              {(uploading || isProcessing) ? (
                 <span className="flex items-center">
                   <svg
                     className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
@@ -586,7 +636,7 @@ const ListasComparativasPage: React.FC = () => {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Subiendo... {uploadProgress}%
+                  {isProcessing ? "Procesando..." : `Subiendo... ${uploadProgress}%`}
                 </span>
               ) : (
                 "Subir Lista"
