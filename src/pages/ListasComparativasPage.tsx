@@ -17,7 +17,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Upload, Trash2, FileSpreadsheet, ChevronDown, ChevronRight } from "lucide-react";
+import { Search, Upload, Trash2, FileSpreadsheet, ChevronDown, ChevronRight, ShoppingCart, X, FileDown, FileText } from "lucide-react";
+import { useOrdenCompra } from "@/hooks/useOrdenCompra";
 
 const ListasComparativasPage: React.FC = () => {
   const {
@@ -36,6 +37,26 @@ const ListasComparativasPage: React.FC = () => {
   const [filtroProveedor, setFiltroProveedor] = useState("");
   const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showCarritoModal, setShowCarritoModal] = useState(false);
+  const [showAgregarCarritoModal, setShowAgregarCarritoModal] = useState(false);
+  const [productoParaAgregar, setProductoParaAgregar] = useState<typeof listas[0] | null>(null);
+  const [farmaciaSeleccionada, setFarmaciaSeleccionada] = useState("");
+  const [cantidadAgregar, setCantidadAgregar] = useState(1);
+
+  const {
+    ordenCompra,
+    ordenCompraPorFarmacia,
+    farmacias,
+    agregarProducto,
+    eliminarProducto,
+    actualizarCantidad,
+    limpiarCarrito,
+    exportarExcelPorFarmacia,
+    exportarPDFPorFarmacia,
+    exportarTodasFarmaciasExcel,
+    totalItems,
+    totalGeneral,
+  } = useOrdenCompra();
   const [selectedProveedor, setSelectedProveedor] = useState("");
   const [excelFile, setExcelFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -110,6 +131,28 @@ const ListasComparativasPage: React.FC = () => {
 
   const handleDelete = (id: string) => {
     setDeleteConfirm({ open: true, id });
+  };
+
+  const handleAgregarCarrito = (lista: typeof listas[0]) => {
+    setProductoParaAgregar(lista);
+    setFarmaciaSeleccionada("");
+    setCantidadAgregar(1);
+    setShowAgregarCarritoModal(true);
+  };
+
+  const confirmarAgregarCarrito = () => {
+    if (!productoParaAgregar || !farmaciaSeleccionada) {
+      return;
+    }
+    
+    const farmacia = farmacias.find(f => f.id === farmaciaSeleccionada);
+    if (farmacia) {
+      agregarProducto(productoParaAgregar, farmaciaSeleccionada, farmacia.nombre, cantidadAgregar);
+      setShowAgregarCarritoModal(false);
+      setProductoParaAgregar(null);
+      setFarmaciaSeleccionada("");
+      setCantidadAgregar(1);
+    }
   };
 
   const confirmDelete = async () => {
@@ -277,6 +320,7 @@ const ListasComparativasPage: React.FC = () => {
                   <TableHead>Mi Costo</TableHead>
                   <TableHead>Existencia Total</TableHead>
                   <TableHead>Opciones</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -330,6 +374,17 @@ const ListasComparativasPage: React.FC = () => {
                             {cantidadOpciones} {cantidadOpciones === 1 ? "opción" : "opciones"}
                           </span>
                         </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleAgregarCarrito(mejorPrecio)}
+                            className="text-blue-600 hover:text-blue-800"
+                          >
+                            <ShoppingCart className="w-4 h-4 mr-1" />
+                            Agregar
+                          </Button>
+                        </TableCell>
                       </TableRow>
                       
                       {/* Filas expandidas con todos los precios */}
@@ -378,14 +433,25 @@ const ListasComparativasPage: React.FC = () => {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDelete(lista._id)}
-                              className="text-red-600 hover:text-red-800"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                            <div className="flex gap-2 justify-end">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleAgregarCarrito(lista)}
+                                className="text-blue-600 hover:text-blue-800"
+                              >
+                                <ShoppingCart className="w-4 h-4 mr-1" />
+                                Agregar
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDelete(lista._id)}
+                                className="text-red-600 hover:text-red-800"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -506,6 +572,220 @@ const ListasComparativasPage: React.FC = () => {
             </Button>
             <Button onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
               Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal para agregar al carrito */}
+      <Dialog open={showAgregarCarritoModal} onOpenChange={setShowAgregarCarritoModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Agregar a Orden de Compra</DialogTitle>
+          </DialogHeader>
+          {productoParaAgregar && (
+            <div className="space-y-4">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="font-semibold">{productoParaAgregar.descripcion}</p>
+                <p className="text-sm text-gray-600">Código: {productoParaAgregar.codigo || "N/A"}</p>
+                <p className="text-sm text-gray-600">Laboratorio: {productoParaAgregar.laboratorio || "N/A"}</p>
+                <p className="text-sm text-gray-600">Proveedor: {productoParaAgregar.proveedor.nombreJuridico}</p>
+                <p className="text-sm font-semibold text-green-600">
+                  Precio Neto: {formatCurrency(productoParaAgregar.precioNeto)}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Seleccionar Farmacia *
+                </label>
+                <select
+                  className="w-full border rounded px-3 py-2"
+                  value={farmaciaSeleccionada}
+                  onChange={(e) => setFarmaciaSeleccionada(e.target.value)}
+                  required
+                >
+                  <option value="">Selecciona una farmacia</option>
+                  {farmacias.map((farmacia) => (
+                    <option key={farmacia.id} value={farmacia.id}>
+                      {farmacia.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Cantidad *
+                </label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={cantidadAgregar}
+                  onChange={(e) => setCantidadAgregar(Math.max(1, parseInt(e.target.value) || 1))}
+                  required
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAgregarCarritoModal(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={confirmarAgregarCarrito}
+              disabled={!farmaciaSeleccionada}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Agregar al Carrito
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Orden de Compra */}
+      <Dialog open={showCarritoModal} onOpenChange={setShowCarritoModal}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Orden de Compra</span>
+              {ordenCompra.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={limpiarCarrito}
+                  className="text-red-600 hover:text-red-800"
+                >
+                  <X className="w-4 h-4 mr-1" />
+                  Limpiar Todo
+                </Button>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {ordenCompra.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <ShoppingCart className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+              <p>No hay productos en la orden de compra</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Resumen general */}
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-sm text-gray-600">Total de Items</p>
+                    <p className="text-2xl font-bold">{totalItems}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Total General</p>
+                    <p className="text-2xl font-bold text-green-600">{formatCurrency(totalGeneral)}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Exportar todas las farmacias */}
+              <div className="flex gap-2">
+                <Button
+                  onClick={exportarTodasFarmaciasExcel}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <FileDown className="w-4 h-4 mr-2" />
+                  Exportar Todas a Excel
+                </Button>
+              </div>
+
+              {/* Orden por farmacia */}
+              {ordenCompraPorFarmacia.map((grupo) => (
+                <div key={grupo.farmacia} className="border rounded-lg p-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold">{grupo.farmaciaNombre}</h3>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => exportarExcelPorFarmacia(grupo.farmacia)}
+                        className="text-green-600 hover:text-green-800"
+                      >
+                        <FileDown className="w-4 h-4 mr-1" />
+                        Excel
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => exportarPDFPorFarmacia(grupo.farmacia)}
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        <FileText className="w-4 h-4 mr-1" />
+                        PDF
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Código</TableHead>
+                          <TableHead>Descripción</TableHead>
+                          <TableHead>Laboratorio</TableHead>
+                          <TableHead>Proveedor</TableHead>
+                          <TableHead>Precio Neto</TableHead>
+                          <TableHead>Cantidad</TableHead>
+                          <TableHead>Subtotal</TableHead>
+                          <TableHead className="text-right">Acciones</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {grupo.items.map((item) => (
+                          <TableRow key={`${item.listaId}-${item.farmacia}`}>
+                            <TableCell className="font-medium">{item.codigo || "N/A"}</TableCell>
+                            <TableCell>{item.descripcion}</TableCell>
+                            <TableCell>{item.laboratorio || "N/A"}</TableCell>
+                            <TableCell>{item.proveedorNombre}</TableCell>
+                            <TableCell>{formatCurrency(item.precioNeto)}</TableCell>
+                            <TableCell>
+                              <Input
+                                type="number"
+                                min="1"
+                                value={item.cantidad}
+                                onChange={(e) => actualizarCantidad(item.listaId, item.farmacia, Math.max(1, parseInt(e.target.value) || 1))}
+                                className="w-20"
+                              />
+                            </TableCell>
+                            <TableCell className="font-semibold">
+                              {formatCurrency(item.precioNeto * item.cantidad)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => eliminarProducto(item.listaId, item.farmacia)}
+                                className="text-red-600 hover:text-red-800"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        <TableRow className="bg-gray-100 font-bold">
+                          <TableCell colSpan={6} className="text-right">
+                            Total {grupo.farmaciaNombre}:
+                          </TableCell>
+                          <TableCell className="text-lg text-green-600">
+                            {formatCurrency(grupo.total)}
+                          </TableCell>
+                          <TableCell></TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCarritoModal(false)}>
+              Cerrar
             </Button>
           </DialogFooter>
         </DialogContent>
