@@ -70,6 +70,8 @@ const ListasComparativasPage: React.FC = () => {
     proveedorId?: string;
     proveedorNombre?: string;
   }>({ open: false });
+  const [showDeleteProveedorModal, setShowDeleteProveedorModal] = useState(false);
+  const [proveedorParaBorrar, setProveedorParaBorrar] = useState("");
 
   useEffect(() => {
     fetchListas();
@@ -297,7 +299,7 @@ const ListasComparativasPage: React.FC = () => {
 
       {/* Filtros de búsqueda */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <Input
@@ -308,18 +310,30 @@ const ListasComparativasPage: React.FC = () => {
               className="pl-10"
             />
           </div>
-          <select
-            className="border rounded px-3 py-2"
-            value={filtroProveedor}
-            onChange={(e) => setFiltroProveedor(e.target.value)}
-          >
-            <option value="">Todos los proveedores</option>
-            {proveedores.map((prov) => (
-              <option key={prov._id} value={prov._id}>
-                {prov.nombreJuridico}
-              </option>
-            ))}
-          </select>
+          <div>
+            <select
+              className="w-full border rounded px-3 py-2"
+              value={filtroProveedor}
+              onChange={(e) => setFiltroProveedor(e.target.value)}
+            >
+              <option value="">Todos los proveedores</option>
+              {proveedores.map((prov) => (
+                <option key={prov._id} value={prov._id}>
+                  {prov.nombreJuridico}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteProveedorModal(true)}
+              className="w-full text-red-600 hover:text-red-800 hover:bg-red-50 border-red-300"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Borrar Listas por Proveedor
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -649,6 +663,63 @@ const ListasComparativasPage: React.FC = () => {
               ) : (
                 "Subir Lista"
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal para seleccionar proveedor a borrar */}
+      <Dialog open={showDeleteProveedorModal} onOpenChange={setShowDeleteProveedorModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Borrar Listas de Precios por Proveedor</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Seleccionar Proveedor
+              </label>
+              <select
+                className="w-full border rounded px-3 py-2"
+                value={proveedorParaBorrar}
+                onChange={(e) => setProveedorParaBorrar(e.target.value)}
+              >
+                <option value="">Selecciona un proveedor</option>
+                {proveedores.map((prov) => (
+                  <option key={prov._id} value={prov._id}>
+                    {prov.nombreJuridico}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <p className="text-sm text-gray-600">
+              Esta acción eliminará todas las listas de precios del proveedor seleccionado. Esta acción no se puede deshacer.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowDeleteProveedorModal(false);
+              setProveedorParaBorrar("");
+            }}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => {
+                if (proveedorParaBorrar) {
+                  const proveedor = proveedores.find(p => p._id === proveedorParaBorrar);
+                  setDeleteConfirm({
+                    open: true,
+                    proveedorId: proveedorParaBorrar,
+                    proveedorNombre: proveedor?.nombreJuridico || "Proveedor"
+                  });
+                  setShowDeleteProveedorModal(false);
+                  setProveedorParaBorrar("");
+                }
+              }}
+              disabled={!proveedorParaBorrar}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Continuar
             </Button>
           </DialogFooter>
         </DialogContent>
