@@ -166,7 +166,18 @@ export function useOrdenCompra() {
     }
 
     // Preparar datos para Excel
-    const datos = grupo.items.map(item => ({
+    const datos: Array<{
+      'Código': string;
+      'Descripción': string;
+      'Laboratorio': string;
+      'Proveedor': string;
+      'Precio': number;
+      'Descuento (%)': number;
+      'Precio Neto': number;
+      'Cantidad': number | string;
+      'Subtotal': number;
+      'Fecha Vencimiento': string;
+    }> = grupo.items.map(item => ({
       'Código': item.codigo,
       'Descripción': item.descripcion,
       'Laboratorio': item.laboratorio || '',
@@ -187,9 +198,9 @@ export function useOrdenCompra() {
       'Descripción': '',
       'Laboratorio': '',
       'Proveedor': '',
-      'Precio': '',
-      'Descuento (%)': '',
-      'Precio Neto': '',
+      'Precio': 0,
+      'Descuento (%)': 0,
+      'Precio Neto': 0,
       'Cantidad': 'TOTAL',
       'Subtotal': grupo.total,
       'Fecha Vencimiento': '',
@@ -318,7 +329,18 @@ export function useOrdenCompra() {
     const wb = XLSX.utils.book_new();
 
     grupos.forEach(grupo => {
-      const datos = grupo.items.map(item => ({
+      const datos: Array<{
+        'Código': string;
+        'Descripción': string;
+        'Laboratorio': string;
+        'Proveedor': string;
+        'Precio': number;
+        'Descuento (%)': number;
+        'Precio Neto': number;
+        'Cantidad': number | string;
+        'Subtotal': number;
+        'Fecha Vencimiento': string;
+      }> = grupo.items.map(item => ({
         'Código': item.codigo,
         'Descripción': item.descripcion,
         'Laboratorio': item.laboratorio || '',
@@ -338,9 +360,9 @@ export function useOrdenCompra() {
         'Descripción': '',
         'Laboratorio': '',
         'Proveedor': '',
-        'Precio': '',
-        'Descuento (%)': '',
-        'Precio Neto': '',
+        'Precio': 0,
+        'Descuento (%)': 0,
+        'Precio Neto': 0,
         'Cantidad': 'TOTAL',
         'Subtotal': grupo.total,
         'Fecha Vencimiento': '',

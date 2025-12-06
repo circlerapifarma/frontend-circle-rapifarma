@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useListasComparativas } from "@/hooks/useListasComparativas";
+import { useListasComparativas, type ListaComparativa, type ExistenciaPorFarmacia } from "@/hooks/useListasComparativas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -39,7 +39,7 @@ const ListasComparativasPage: React.FC = () => {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showCarritoModal, setShowCarritoModal] = useState(false);
   const [showAgregarCarritoModal, setShowAgregarCarritoModal] = useState(false);
-  const [productoParaAgregar, setProductoParaAgregar] = useState<typeof listas[0] | null>(null);
+  const [productoParaAgregar, setProductoParaAgregar] = useState<ListaComparativa | null>(null);
   const [farmaciaSeleccionada, setFarmaciaSeleccionada] = useState("");
   const [cantidadAgregar, setCantidadAgregar] = useState(1);
 
@@ -60,6 +60,7 @@ const ListasComparativasPage: React.FC = () => {
   const [selectedProveedor, setSelectedProveedor] = useState("");
   const [excelFile, setExcelFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{
@@ -109,21 +110,27 @@ const ListasComparativasPage: React.FC = () => {
     }
 
     setUploading(true);
+    setUploadProgress(0);
     setUploadError(null);
     setUploadSuccess(false);
 
     try {
-      await subirListaExcel(excelFile, selectedProveedor);
+      await subirListaExcel(excelFile, selectedProveedor, (progress) => {
+        setUploadProgress(progress);
+      });
       setUploadSuccess(true);
+      setUploadProgress(100);
       setExcelFile(null);
       setSelectedProveedor("");
       setTimeout(() => {
         setShowUploadModal(false);
         setUploadSuccess(false);
+        setUploadProgress(0);
         fetchListas();
       }, 2000);
     } catch (err: any) {
       setUploadError(err.message || "Error al subir el archivo");
+      setUploadProgress(0);
     } finally {
       setUploading(false);
     }
@@ -133,7 +140,7 @@ const ListasComparativasPage: React.FC = () => {
     setDeleteConfirm({ open: true, id });
   };
 
-  const handleAgregarCarrito = (lista: typeof listas[0]) => {
+  const handleAgregarCarrito = (lista: ListaComparativa) => {
     setProductoParaAgregar(lista);
     setFarmaciaSeleccionada("");
     setCantidadAgregar(1);
@@ -179,10 +186,10 @@ const ListasComparativasPage: React.FC = () => {
   };
 
   // Función para agrupar productos
-  const agruparProductos = (listas: typeof listas) => {
-    const grupos = new Map<string, typeof listas>();
+  const agruparProductos = (listas: ListaComparativa[]) => {
+    const grupos = new Map<string, ListaComparativa[]>();
     
-    listas.forEach((lista) => {
+    listas.forEach((lista: ListaComparativa) => {
       // Prioridad 1: Agrupar por código (si existe y no está vacío)
       let clave = "";
       if (lista.codigo && lista.codigo.trim() !== "") {
@@ -210,7 +217,7 @@ const ListasComparativasPage: React.FC = () => {
       const existenciasPorFarmacia = new Map<string, number>();
       
       sorted.forEach((item) => {
-        item.existencias.forEach((exist) => {
+        item.existencias.forEach((exist: ExistenciaPorFarmacia) => {
           const farmaciaKey = exist.farmacia;
           const existenciaActual = existenciasPorFarmacia.get(farmaciaKey) || 0;
           existenciasPorFarmacia.set(farmaciaKey, existenciaActual + exist.existencia);
@@ -388,7 +395,7 @@ const ListasComparativasPage: React.FC = () => {
                       </TableRow>
                       
                       {/* Filas expandidas con todos los precios */}
-                      {isExpanded && todosLosPrecios.map((lista, idx) => (
+                      {isExpanded && todosLosPrecios.map((lista) => (
                         <TableRow key={lista._id} className="bg-gray-50">
                           <TableCell></TableCell>
                           <TableCell className="text-sm text-gray-600">{lista.codigo || "N/A"}</TableCell>
@@ -421,7 +428,7 @@ const ListasComparativasPage: React.FC = () => {
                           <TableCell className="text-sm">
                             <div className="space-y-1">
                               {lista.existencias.length > 0 ? (
-                                lista.existencias.map((exist, existIdx) => (
+                                lista.existencias.map((exist: ExistenciaPorFarmacia, existIdx: number) => (
                                   <div key={existIdx} className="text-xs">
                                     <span className="font-medium">{exist.farmaciaNombre}:</span>{" "}
                                     <span>{exist.existencia}</span>
@@ -516,6 +523,20 @@ const ListasComparativasPage: React.FC = () => {
                 </p>
               </div>
             </div>
+            {uploading && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm text-gray-600">
+                  <span>Subiendo archivo...</span>
+                  <span className="font-medium">{uploadProgress}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div
+                    className="bg-blue-500 h-2.5 rounded-full transition-all duration-300 ease-in-out"
+                    style={{ width: `${uploadProgress}%` }}
+                  ></div>
+                </div>
+              </div>
+            )}
             {uploadError && (
               <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
                 {uploadError}
@@ -534,6 +555,7 @@ const ListasComparativasPage: React.FC = () => {
               setSelectedProveedor("");
               setUploadError(null);
               setUploadSuccess(false);
+              setUploadProgress(0);
             }}>
               Cancelar
             </Button>
@@ -542,7 +564,33 @@ const ListasComparativasPage: React.FC = () => {
               disabled={uploading || !excelFile || !selectedProveedor}
               className="bg-green-600 hover:bg-green-700"
             >
-              {uploading ? "Subiendo..." : "Subir Lista"}
+              {uploading ? (
+                <span className="flex items-center">
+                  <svg
+                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Subiendo... {uploadProgress}%
+                </span>
+              ) : (
+                "Subir Lista"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

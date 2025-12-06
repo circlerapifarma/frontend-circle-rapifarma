@@ -131,8 +131,12 @@ export function useListasComparativas() {
     }
   };
 
-  // Subir lista de precios desde Excel
-  const subirListaExcel = async (archivo: File, proveedorId: string) => {
+  // Subir lista de precios desde Excel con progreso
+  const subirListaExcel = async (
+    archivo: File,
+    proveedorId: string,
+    onProgress?: (progress: number) => void
+  ) => {
     setLoading(true);
     setError(null);
     try {
@@ -148,26 +152,56 @@ export function useListasComparativas() {
       formData.append("proveedorId", proveedorId);
       formData.append("usuarioCorreo", usuarioCorreo);
 
-      const res = await fetch(`${API_BASE_URL}/listas-comparativas/excel`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        },
-        body: formData,
+      // Usar XMLHttpRequest para monitorear el progreso
+      return new Promise<any>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+
+        // Monitorear progreso de carga
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable && onProgress) {
+            const progress = Math.round((e.loaded / e.total) * 100);
+            onProgress(progress);
+          }
+        };
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const data = JSON.parse(xhr.responseText);
+              if (onProgress) onProgress(100);
+              resolve(data);
+            } catch (parseError) {
+              reject(new Error("Error al procesar la respuesta del servidor"));
+            }
+          } else {
+            try {
+              const errorData = JSON.parse(xhr.responseText);
+              reject(new Error(errorData.detail || "Error al subir lista de precios"));
+            } catch {
+              reject(new Error(`Error al subir archivo: ${xhr.status} ${xhr.statusText}`));
+            }
+          }
+          setLoading(false);
+        };
+
+        xhr.onerror = () => {
+          reject(new Error("Error de red al subir el archivo"));
+          setLoading(false);
+        };
+
+        xhr.onabort = () => {
+          reject(new Error("Carga cancelada"));
+          setLoading(false);
+        };
+
+        xhr.open("POST", `${API_BASE_URL}/listas-comparativas/excel`);
+        xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+        xhr.send(formData);
       });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ detail: "Error al subir archivo" }));
-        throw new Error(errorData.detail || "Error al subir lista de precios");
-      }
-
-      const data = await res.json();
-      return data;
     } catch (err: any) {
       setError(err.message || "Error al subir lista de precios");
-      throw err;
-    } finally {
       setLoading(false);
+      throw err;
     }
   };
 
