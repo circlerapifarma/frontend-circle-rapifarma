@@ -33,9 +33,6 @@ const ListasComparativasPage: React.FC = () => {
   } = useListasComparativas();
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [filtroCodigo, setFiltroCodigo] = useState("");
-  const [filtroNombre, setFiltroNombre] = useState("");
-  const [filtroLaboratorio, setFiltroLaboratorio] = useState("");
   const [filtroProveedor, setFiltroProveedor] = useState("");
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedProveedor, setSelectedProveedor] = useState("");
@@ -56,25 +53,19 @@ const ListasComparativasPage: React.FC = () => {
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      if (searchTerm || filtroCodigo || filtroNombre || filtroLaboratorio || filtroProveedor) {
+      if (searchTerm || filtroProveedor) {
         buscarListas(searchTerm, {
-          codigo: filtroCodigo || undefined,
-          nombre: filtroNombre || undefined,
-          laboratorio: filtroLaboratorio || undefined,
           proveedorId: filtroProveedor || undefined,
         });
       } else {
         fetchListas({
-          codigo: filtroCodigo || undefined,
-          nombre: filtroNombre || undefined,
-          laboratorio: filtroLaboratorio || undefined,
           proveedorId: filtroProveedor || undefined,
         });
       }
     }, 300); // Debounce de 300ms
 
     return () => clearTimeout(timeoutId);
-  }, [searchTerm, filtroCodigo, filtroNombre, filtroLaboratorio, filtroProveedor]);
+  }, [searchTerm, filtroProveedor]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -166,35 +157,17 @@ const ListasComparativasPage: React.FC = () => {
 
       {/* Filtros de búsqueda */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <Input
               type="text"
-              placeholder="Búsqueda general..."
+              placeholder="Buscar por código, nombre o laboratorio..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
             />
           </div>
-          <Input
-            type="text"
-            placeholder="Filtrar por código..."
-            value={filtroCodigo}
-            onChange={(e) => setFiltroCodigo(e.target.value)}
-          />
-          <Input
-            type="text"
-            placeholder="Filtrar por nombre..."
-            value={filtroNombre}
-            onChange={(e) => setFiltroNombre(e.target.value)}
-          />
-          <Input
-            type="text"
-            placeholder="Filtrar por laboratorio..."
-            value={filtroLaboratorio}
-            onChange={(e) => setFiltroLaboratorio(e.target.value)}
-          />
           <select
             className="border rounded px-3 py-2"
             value={filtroProveedor}
