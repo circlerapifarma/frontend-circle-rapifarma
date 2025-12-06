@@ -782,16 +782,30 @@ async def obtener_listas_comparativas(
     if proveedorId:
         filtro["proveedorId"] = ObjectId(proveedorId)
     
-    # Obtener listas
-    listas = []
+    # Obtener todas las listas primero (sin inventario - eso se agrega después)
+    listas_precios = []
+    proveedores_ids = set()
     async for lista_precio in db.listas_precios_proveedores.find(filtro):
-        # Obtener proveedor
-        proveedor = await db.proveedores.find_one({"_id": lista_precio["proveedorId"]})
-        
-        # Obtener información del inventario
+        listas_precios.append(lista_precio)
+        proveedores_ids.add(lista_precio["proveedorId"])
+    
+    # Obtener todos los proveedores en una sola consulta
+    proveedores_map = {}
+    async for proveedor in db.proveedores.find({"_id": {"$in": list(proveedores_ids)}}):
+        proveedores_map[str(proveedor["_id"])] = proveedor
+    
+    # Obtener información del inventario para cada lista (solo cuando se consultan, no durante la carga)
+    # Esto se hace en paralelo para mayor velocidad
+    import asyncio
+    
+    async def obtener_lista_con_inventario(lista_precio):
+        proveedor = proveedores_map.get(str(lista_precio["proveedorId"]))
         costo, existencias = await obtener_info_inventario(db, lista_precio["codigo"])
-        
-        listas.append(lista_precio_helper(lista_precio, proveedor, costo, existencias))
+        return lista_precio_helper(lista_precio, proveedor, costo, existencias)
+    
+    # Procesar en paralelo (hasta 50 a la vez para no sobrecargar)
+    tasks = [obtener_lista_con_inventario(lista_precio) for lista_precio in listas_precios]
+    listas = await asyncio.gather(*tasks)
     
     return listas
 
