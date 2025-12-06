@@ -197,6 +197,11 @@ const ListasComparativasPage: React.FC = () => {
 
   // Función para agrupar productos
   const agruparProductos = (listas: ListaComparativa[]) => {
+    // Validar que listas es un array
+    if (!listas || !Array.isArray(listas)) {
+      return [];
+    }
+    
     const grupos = new Map<string, ListaComparativa[]>();
     
     listas.forEach((lista: ListaComparativa) => {
@@ -227,11 +232,14 @@ const ListasComparativasPage: React.FC = () => {
       const existenciasPorFarmacia = new Map<string, number>();
       
       sorted.forEach((item) => {
-        item.existencias.forEach((exist: ExistenciaPorFarmacia) => {
-          const farmaciaKey = exist.farmacia;
-          const existenciaActual = existenciasPorFarmacia.get(farmaciaKey) || 0;
-          existenciasPorFarmacia.set(farmaciaKey, existenciaActual + exist.existencia);
-        });
+        // Validar que existencias existe y es un array
+        if (item.existencias && Array.isArray(item.existencias)) {
+          item.existencias.forEach((exist: ExistenciaPorFarmacia) => {
+            const farmaciaKey = exist.farmacia;
+            const existenciaActual = existenciasPorFarmacia.get(farmaciaKey) || 0;
+            existenciasPorFarmacia.set(farmaciaKey, existenciaActual + exist.existencia);
+          });
+        }
       });
       
       // Sumar todas las existencias
@@ -437,7 +445,7 @@ const ListasComparativasPage: React.FC = () => {
                           </TableCell>
                           <TableCell className="text-sm">
                             <div className="space-y-1">
-                              {lista.existencias.length > 0 ? (
+                              {lista.existencias && Array.isArray(lista.existencias) && lista.existencias.length > 0 ? (
                                 lista.existencias.map((exist: ExistenciaPorFarmacia, existIdx: number) => (
                                   <div key={existIdx} className="text-xs">
                                     <span className="font-medium">{exist.farmaciaNombre}:</span>{" "}
