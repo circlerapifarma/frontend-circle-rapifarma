@@ -17,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Upload, Trash2, FileSpreadsheet, ChevronDown, ChevronRight, ShoppingCart, X, FileDown, FileText } from "lucide-react";
+import { Search, Upload, Trash2, FileSpreadsheet, ChevronDown, ChevronRight, ShoppingCart, X, FileDown, FileText, Info } from "lucide-react";
 import { useOrdenCompra } from "@/hooks/useOrdenCompra";
 
 const ListasComparativasPage: React.FC = () => {
@@ -72,6 +72,13 @@ const ListasComparativasPage: React.FC = () => {
   }>({ open: false });
   const [showDeleteProveedorModal, setShowDeleteProveedorModal] = useState(false);
   const [proveedorParaBorrar, setProveedorParaBorrar] = useState("");
+  const [showDetallesModal, setShowDetallesModal] = useState(false);
+  const [productoDetalles, setProductoDetalles] = useState<{
+    descripcion: string;
+    codigo: string;
+    laboratorio: string;
+    todosLosPrecios: ListaComparativa[];
+  } | null>(null);
 
   useEffect(() => {
     fetchListas();
@@ -357,7 +364,7 @@ const ListasComparativasPage: React.FC = () => {
                   <TableHead>Mejor Precio</TableHead>
                   <TableHead>Proveedor (Mejor)</TableHead>
                   <TableHead>Mi Costo</TableHead>
-                  <TableHead>Existencia Total</TableHead>
+                  <TableHead>Existencia (Proveedor)</TableHead>
                   <TableHead>Opciones</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
@@ -365,7 +372,7 @@ const ListasComparativasPage: React.FC = () => {
               <TableBody>
                 {productosAgrupados.map((grupo) => {
                   const isExpanded = expandedProducts.has(grupo.clave);
-                  const { mejorPrecio, todosLosPrecios, cantidadOpciones, existenciaTotal, mejorCosto } = grupo;
+                  const { mejorPrecio, todosLosPrecios, cantidadOpciones, mejorCosto } = grupo;
                   
                   return (
                     <React.Fragment key={grupo.clave}>
@@ -406,7 +413,7 @@ const ListasComparativasPage: React.FC = () => {
                           {formatCurrency(mejorCosto)}
                         </TableCell>
                         <TableCell className="font-semibold text-blue-600">
-                          {existenciaTotal > 0 ? existenciaTotal : "0"}
+                          {mejorPrecio.existencia || 0}
                         </TableCell>
                         <TableCell>
                           <span className="text-xs text-gray-600">
@@ -414,15 +421,35 @@ const ListasComparativasPage: React.FC = () => {
                           </span>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleAgregarCarrito(mejorPrecio)}
-                            className="text-blue-600 hover:text-blue-800"
-                          >
-                            <ShoppingCart className="w-4 h-4 mr-1" />
-                            Agregar
-                          </Button>
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setProductoDetalles({
+                                  descripcion: mejorPrecio.descripcion,
+                                  codigo: mejorPrecio.codigo || "N/A",
+                                  laboratorio: mejorPrecio.laboratorio || "N/A",
+                                  todosLosPrecios: todosLosPrecios
+                                });
+                                setShowDetallesModal(true);
+                              }}
+                              className="text-purple-600 hover:text-purple-800"
+                              title="Ver existencias por farmacia"
+                            >
+                              <Info className="w-4 h-4 mr-1" />
+                              Más Detalles
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleAgregarCarrito(mejorPrecio)}
+                              className="text-blue-600 hover:text-blue-800"
+                            >
+                              <ShoppingCart className="w-4 h-4 mr-1" />
+                              Agregar
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                       
@@ -962,6 +989,76 @@ const ListasComparativasPage: React.FC = () => {
           
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCarritoModal(false)}>
+              Cerrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Detalles - Existencias por Farmacia */}
+      <Dialog open={showDetallesModal} onOpenChange={setShowDetallesModal}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Existencias por Sucursal</DialogTitle>
+          </DialogHeader>
+          {productoDetalles && (
+            <div className="space-y-4">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="font-semibold text-lg">{productoDetalles.descripcion}</p>
+                <div className="grid grid-cols-2 gap-2 mt-2 text-sm text-gray-600">
+                  <p><span className="font-medium">Código:</span> {productoDetalles.codigo}</p>
+                  <p><span className="font-medium">Laboratorio:</span> {productoDetalles.laboratorio}</p>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <h3 className="font-semibold text-gray-700">Existencias por Sucursal y Proveedor:</h3>
+                {productoDetalles.todosLosPrecios.map((lista, idx) => (
+                  <div key={lista._id || idx} className="border rounded-lg p-4">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <p className="font-semibold text-blue-600">{lista.proveedor?.nombreJuridico || "Proveedor N/A"}</p>
+                        <p className="text-sm text-gray-600">
+                          Precio: {formatCurrency(lista.precioNeto)} | Existencia en Proveedor: <span className="font-semibold">{lista.existencia || 0}</span>
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {lista.existencias && Array.isArray(lista.existencias) && lista.existencias.length > 0 ? (
+                      <div className="mt-3">
+                        <p className="text-sm font-medium text-gray-700 mb-2">Existencias en mis Farmacias:</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {lista.existencias.map((exist: ExistenciaPorFarmacia, existIdx: number) => (
+                            <div key={existIdx} className="bg-gray-50 p-2 rounded flex justify-between items-center">
+                              <span className="text-sm font-medium">{exist.farmaciaNombre}:</span>
+                              <span className="text-sm font-semibold text-green-600">{exist.existencia}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-2 pt-2 border-t">
+                          <p className="text-sm text-gray-600">
+                            <span className="font-medium">Total en mis Farmacias:</span>{" "}
+                            <span className="font-semibold text-green-600">
+                              {lista.existencias.reduce((sum, e) => sum + e.existencia, 0)}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-3 text-sm text-gray-500 italic">
+                        No hay existencias registradas en tus farmacias para este producto.
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowDetallesModal(false);
+              setProductoDetalles(null);
+            }}>
               Cerrar
             </Button>
           </DialogFooter>
