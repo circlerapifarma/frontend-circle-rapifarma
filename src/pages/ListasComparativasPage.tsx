@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useListasComparativas, type ListaComparativa, type ExistenciaPorFarmacia } from "@/hooks/useListasComparativas";
+import { useProveedores } from "@/hooks/useProveedores";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -23,7 +24,7 @@ import { useOrdenCompra } from "@/hooks/useOrdenCompra";
 const ListasComparativasPage: React.FC = () => {
   const {
     listas,
-    proveedores,
+    proveedores: proveedoresConListas,
     loading,
     error,
     fetchListas,
@@ -34,6 +35,12 @@ const ListasComparativasPage: React.FC = () => {
     eliminarLista,
     eliminarListasPorProveedor,
   } = useListasComparativas();
+
+  // Obtener todos los proveedores registrados
+  const { proveedores: todosLosProveedores } = useProveedores();
+  
+  // Usar proveedoresConListas como proveedores para el filtro
+  const proveedores = proveedoresConListas;
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filtroProveedor, setFiltroProveedor] = useState("");
@@ -223,15 +230,16 @@ const ListasComparativasPage: React.FC = () => {
   };
 
   // Función para calcular estadísticas
-  const calcularEstadisticas = (listas: ListaComparativa[]) => {
-    const proveedoresUnicos = new Set(listas.map(l => l.proveedorId));
+  const calcularEstadisticas = (listas: ListaComparativa[], totalProveedoresRegistrados: number) => {
+    // Proveedores que tienen listas cargadas (no el total de items)
+    const proveedoresConListas = new Set(listas.map(l => l.proveedorId));
     const skuNuevos = listas.filter(l => l.esNuevo === true).length;
     const productosOferta = listas.filter(l => l.cambioPrecio === 'bajo').length;
     const productosSubieron = listas.filter(l => l.cambioPrecio === 'subio').length;
     
     return {
-      numeroProveedores: proveedoresUnicos.size,
-      numeroListas: listas.length,
+      numeroProveedores: totalProveedoresRegistrados, // Total de proveedores registrados
+      numeroListas: proveedoresConListas.size, // Cantidad de proveedores con listas cargadas
       skuNuevos,
       productosOferta,
       productosSubieron,
@@ -355,7 +363,7 @@ const ListasComparativasPage: React.FC = () => {
 
   // Calcular productos agrupados y estadísticas
   const productosAgrupados = agruparProductos(listas);
-  const estadisticas = calcularEstadisticas(listas);
+  const estadisticas = calcularEstadisticas(listas, todosLosProveedores.length);
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-4">
