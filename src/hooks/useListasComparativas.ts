@@ -471,6 +471,11 @@ export function useListasComparativas() {
               
               console.log(`📊 Respuesta del backend: ${itemsInsertados} insertados, ${itemsActualizados} actualizados, ${itemsProcesados} procesados`);
               
+              // Si el backend guardó items correctamente, mostrar mensaje de éxito
+              if (totalProcesado > 0) {
+                console.log(`✅ Éxito: El backend guardó ${totalProcesado} items (${itemsInsertados} insertados, ${itemsActualizados} actualizados)`);
+              }
+              
               // Si el backend procesó items pero no guardó ninguno, lanzar error
               if (totalProcesado === 0 && itemsProcesados > 0) {
                 const errorMsg = `⚠️ ERROR CRÍTICO: El backend procesó ${itemsProcesados} items del Excel pero NO guardó ninguno en la base de datos (0 insertados, 0 actualizados). Esto indica un problema en el backend que debe ser corregido. Los datos procesados localmente se mostrarán temporalmente pero se perderán al refrescar.`;
