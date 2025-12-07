@@ -233,20 +233,50 @@ const ListasComparativasPage: React.FC = () => {
           });
         }
         
-        // 5. Subida exitosa - refrescar desde el servidor
+        // 5. Subida exitosa - esperar un momento para que el backend termine de procesar
         setUploadProgress(100);
         setUploadSuccess(true);
         setIsProcessing(false);
         
-        // Esperar un momento para mostrar el éxito
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // Guardar el número de items antes de refrescar
+        const itemsAntes = listas.length;
+        console.log(`📊 Items antes de subir: ${itemsAntes}`);
+        
+        // Esperar un momento para mostrar el éxito y dar tiempo al backend
+        await new Promise(resolve => setTimeout(resolve, 2000));
         
         // Limpiar filtros para mostrar todas las listas
         setSearchTerm("");
         setFiltroProveedor("");
         
-        // Refrescar lista desde el servidor (sin filtros)
-        await fetchListas();
+        // Refrescar lista desde el servidor (sin filtros) - hacer múltiples intentos
+        let intentos = 0;
+        const maxIntentos = 5;
+        
+        while (intentos < maxIntentos) {
+          await fetchListas();
+          
+          // Esperar un momento antes de verificar
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          
+          // Verificar si las listas se actualizaron
+          const itemsDespues = listas.length;
+          console.log(`📊 Intento ${intentos + 1}/${maxIntentos}: Items después de refrescar: ${itemsDespues}`);
+          
+          // Si hay más items que antes, asumimos que se guardaron correctamente
+          if (itemsDespues > itemsAntes) {
+            console.log(`✅ Listas actualizadas correctamente: ${itemsAntes} → ${itemsDespues} items`);
+            break;
+          }
+          
+          intentos++;
+          
+          // Si después de varios intentos no hay cambios, mostrar advertencia pero continuar
+          if (intentos >= maxIntentos) {
+            console.warn(`⚠️ Después de ${maxIntentos} intentos, las listas no se actualizaron (${itemsAntes} → ${itemsDespues} items). Esto puede indicar que el backend no guardó los items. Por favor, verifica los logs del backend o refresca la página manualmente.`);
+            setUploadError("⚠️ La lista se procesó pero puede que no se haya guardado completamente. Por favor, verifica en el servidor o refresca la página.");
+          }
+        }
         
         // Cerrar modal y limpiar
         setExcelFile(null);

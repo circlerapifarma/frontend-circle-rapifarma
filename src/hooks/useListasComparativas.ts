@@ -462,6 +462,18 @@ export function useListasComparativas() {
           if (xhr.status >= 200 && xhr.status < 300) {
             try {
               const data = JSON.parse(xhr.responseText);
+              
+              // Verificar si el backend guardó items correctamente
+              const itemsInsertados = data.items_insertados || data.itemsInsertados || 0;
+              const itemsActualizados = data.items_actualizados || data.itemsActualizados || 0;
+              const totalProcesado = itemsInsertados + itemsActualizados;
+              
+              console.log(`📊 Respuesta del backend: ${itemsInsertados} insertados, ${itemsActualizados} actualizados`);
+              
+              if (totalProcesado === 0 && data.items_procesados !== undefined && data.items_procesados > 0) {
+                console.warn(`⚠️ El backend procesó ${data.items_procesados} items pero no guardó ninguno. Esto puede indicar un problema en el backend.`);
+              }
+              
               if (onProgress) onProgress(100);
               setLoading(false);
               resolve(data);
