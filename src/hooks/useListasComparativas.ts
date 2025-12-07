@@ -51,8 +51,11 @@ export function useListasComparativas() {
     setListas(prevListas => [...nuevasListas, ...prevListas]);
   };
 
-  // Obtener todos los proveedores
+  // Obtener todos los proveedores (optimizado - solo si no están cargados)
   const fetchProveedores = async () => {
+    // Evitar cargar si ya hay proveedores
+    if (proveedores.length > 0) return;
+    
     try {
       const token = localStorage.getItem("token");
       const headers: HeadersInit = {
@@ -62,22 +65,37 @@ export function useListasComparativas() {
         headers.Authorization = `Bearer ${token}`;
       }
 
-      const res = await fetch(`${API_BASE_URL}/proveedores`, { headers });
+      // Agregar timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos
+      
+      const res = await fetch(`${API_BASE_URL}/proveedores`, { 
+        headers,
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
       if (!res.ok) throw new Error("Error al obtener proveedores");
       const data = await res.json();
       setProveedores(data);
     } catch (err: any) {
-      setError(err.message || "Error al obtener proveedores");
+      if (err.name !== 'AbortError') {
+        setError(err.message || "Error al obtener proveedores");
+      }
     }
   };
 
-  // Obtener todas las listas comparativas
+  // Obtener todas las listas comparativas (optimizado)
   const fetchListas = async (filtros?: {
     codigo?: string;
     nombre?: string;
     laboratorio?: string;
     proveedorId?: string;
   }) => {
+    // Evitar múltiples llamadas simultáneas
+    if (loading) return;
+    
     setLoading(true);
     setError(null);
     try {
@@ -91,27 +109,43 @@ export function useListasComparativas() {
       if (filtros?.proveedorId) params.append("proveedorId", filtros.proveedorId);
 
       const url = `${API_BASE_URL}/listas-comparativas${params.toString() ? `?${params.toString()}` : ''}`;
+      
+      // Agregar timeout para evitar esperas infinitas
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos
+      
       const res = await fetch(url, {
-        headers: { "Authorization": `Bearer ${token}` }
+        headers: { "Authorization": `Bearer ${token}` },
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
+      
       if (!res.ok) throw new Error("Error al obtener listas comparativas");
       const data = await res.json();
       setListas(data);
     } catch (err: any) {
-      setError(err.message || "Error al obtener listas comparativas");
+      if (err.name === 'AbortError') {
+        setError("La solicitud tardó demasiado. Por favor, intente nuevamente.");
+      } else {
+        setError(err.message || "Error al obtener listas comparativas");
+      }
       setListas([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Buscar listas
+  // Buscar listas (optimizado)
   const buscarListas = async (termino: string, filtros?: {
     codigo?: string;
     nombre?: string;
     laboratorio?: string;
     proveedorId?: string;
   }) => {
+    // Evitar múltiples llamadas simultáneas
+    if (loading) return;
+    
     setLoading(true);
     setError(null);
     try {
@@ -126,14 +160,27 @@ export function useListasComparativas() {
       if (filtros?.proveedorId) params.append("proveedorId", filtros.proveedorId);
 
       const url = `${API_BASE_URL}/listas-comparativas/buscar${params.toString() ? `?${params.toString()}` : ''}`;
+      
+      // Agregar timeout para evitar esperas infinitas
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos
+      
       const res = await fetch(url, {
-        headers: { "Authorization": `Bearer ${token}` }
+        headers: { "Authorization": `Bearer ${token}` },
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
+      
       if (!res.ok) throw new Error("Error al buscar listas comparativas");
       const data = await res.json();
       setListas(data);
     } catch (err: any) {
-      setError(err.message || "Error al buscar listas comparativas");
+      if (err.name === 'AbortError') {
+        setError("La búsqueda tardó demasiado. Por favor, intente nuevamente.");
+      } else {
+        setError(err.message || "Error al buscar listas comparativas");
+      }
       setListas([]);
     } finally {
       setLoading(false);
@@ -387,9 +434,11 @@ export function useListasComparativas() {
     }
   };
 
+  // Cargar proveedores solo una vez al montar
   useEffect(() => {
     fetchProveedores();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Solo se ejecuta una vez
 
   return {
     listas,

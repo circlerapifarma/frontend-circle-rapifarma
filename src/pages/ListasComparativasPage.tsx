@@ -89,10 +89,32 @@ const ListasComparativasPage: React.FC = () => {
     todosLosPrecios: ListaComparativa[];
   } | null>(null);
 
+  // Cargar datos iniciales solo una vez
   useEffect(() => {
-    fetchListas();
-  }, []);
+    let mounted = true;
+    
+    const cargarDatos = async () => {
+      try {
+        // Cargar listas y proveedores en paralelo
+        await Promise.all([
+          fetchListas(),
+          // fetchProveedores se llama automáticamente en useListasComparativas
+        ]);
+      } catch (err) {
+        console.error("Error al cargar datos iniciales:", err);
+      }
+    };
+    
+    if (mounted) {
+      cargarDatos();
+    }
+    
+    return () => {
+      mounted = false;
+    };
+  }, []); // Solo se ejecuta una vez al montar
 
+  // Búsqueda con debounce
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (searchTerm || filtroProveedor) {
@@ -104,7 +126,7 @@ const ListasComparativasPage: React.FC = () => {
           proveedorId: filtroProveedor || undefined,
         });
       }
-    }, 300); // Debounce de 300ms
+    }, 500); // Aumentar debounce a 500ms para reducir llamadas
 
     return () => clearTimeout(timeoutId);
   }, [searchTerm, filtroProveedor]);
@@ -148,29 +170,47 @@ const ListasComparativasPage: React.FC = () => {
       agregarListasTemporales(listasLocales);
       
       setUploadProgress(30);
-      setUploadSuccess(true);
+      setIsProcessing(true); // Cambiar a "Subiendo al servidor..."
       
-      // 3. Cerrar modal y mostrar datos
-      setExcelFile(null);
-      setSelectedProveedor("");
-      setShowUploadModal(false);
-      setUploadSuccess(false);
-      setUploadProgress(0);
-      setIsProcessing(false);
-      setUploading(false);
-      
-      // 4. Subir al backend en background (sin bloquear UI)
-      subirListaExcel(excelFile, selectedProveedor, (progress) => {
-        // El progreso del upload se puede mostrar en una notificación o badge
-        console.log(`Subiendo al servidor: ${progress}%`);
-      }).then(() => {
-        // Cuando termine, refrescar desde el servidor para obtener datos completos (con inventario)
-        fetchListas();
-      }).catch((err) => {
-        console.error("Error al subir al servidor (los datos ya están visibles localmente):", err);
-        // Mostrar notificación de que hubo error pero los datos están visibles
-        setUploadError("Los datos se procesaron localmente pero hubo un error al guardar en el servidor. Los datos seguirán visibles hasta que se recargue la página.");
-      });
+      // 3. Subir al backend (esperar a que termine antes de cerrar)
+      try {
+        await subirListaExcel(excelFile, selectedProveedor, (progress) => {
+          // Actualizar progreso: 30% (procesado) + 70% (subida)
+          const progresoTotal = 30 + Math.round((progress / 100) * 70);
+          setUploadProgress(progresoTotal);
+        });
+        
+        // 4. Subida exitosa - refrescar desde el servidor
+        setUploadProgress(100);
+        setUploadSuccess(true);
+        setIsProcessing(false);
+        
+        // Esperar un momento para mostrar el éxito
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Refrescar lista desde el servidor
+        await fetchListas();
+        
+        // Cerrar modal y limpiar
+        setExcelFile(null);
+        setSelectedProveedor("");
+        setShowUploadModal(false);
+        setUploadSuccess(false);
+        setUploadProgress(0);
+        setUploading(false);
+        
+      } catch (uploadError: any) {
+        // Error al subir al servidor
+        console.error("Error al subir al servidor:", uploadError);
+        setUploadError(
+          uploadError.message || 
+          "Error al guardar en el servidor. Los datos están visibles localmente pero no se guardaron. Por favor, intente nuevamente."
+        );
+        setIsProcessing(false);
+        setUploadProgress(0);
+        // NO cerrar el modal para que el usuario vea el error
+        setUploading(false);
+      }
       
     } catch (err: any) {
       setIsProcessing(false);
@@ -503,9 +543,9 @@ const ListasComparativasPage: React.FC = () => {
                         <TableCell className="font-semibold">{mejorPrecio.descripcion}</TableCell>
                         <TableCell>{mejorPrecio.laboratorio || "N/A"}</TableCell>
                         <TableCell className="font-bold text-green-700 text-lg">
-                          <div className="flex flex-col gap-1">
+                          <div className="flex flex-col gap-2">
                             <div className="flex items-center gap-2">
-                              <span>{formatCurrency(mejorPrecio.precioNeto)}</span>
+                              <span className="text-xl">{formatCurrency(mejorPrecio.precioNeto)}</span>
                               {mejorPrecio.precioAnterior && mejorPrecio.precioAnterior !== mejorPrecio.precioNeto && (
                                 <span className={`text-xs font-semibold ${mejorPrecio.precioNeto < mejorPrecio.precioAnterior ? 'text-green-600' : 'text-red-600'}`}>
                                   ({mejorPrecio.precioNeto < mejorPrecio.precioAnterior ? '↓' : '↑'} {formatCurrency(mejorPrecio.precioAnterior)})
@@ -514,7 +554,7 @@ const ListasComparativasPage: React.FC = () => {
                             </div>
                             {cantidadOpciones > 1 && (
                               <Button
-                                variant="ghost"
+                                variant="outline"
                                 size="sm"
                                 onClick={() => {
                                   setProductoDetalles({
@@ -525,9 +565,10 @@ const ListasComparativasPage: React.FC = () => {
                                   });
                                   setShowDetallesModal(true);
                                 }}
-                                className="text-xs text-blue-600 hover:text-blue-800 h-6 px-2 w-fit"
+                                className="text-xs text-blue-600 hover:text-blue-800 border-blue-300 hover:bg-blue-50 w-fit"
                               >
-                                Ver Detalles ({cantidadOpciones} proveedores)
+                                <Info className="w-3 h-3 mr-1" />
+                                Ver Precios de {cantidadOpciones} Proveedores
                               </Button>
                             )}
                           </div>
@@ -744,25 +785,23 @@ const ListasComparativasPage: React.FC = () => {
                             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                           ></path>
                         </svg>
-                        Procesando archivo en el servidor...
+                        {uploadProgress < 30 ? "Procesando archivo localmente..." : "Subiendo al servidor y guardando..."}
                       </>
                     ) : (
                       <>Subiendo archivo...</>
                     )}
                   </span>
-                  {!isProcessing && (
-                    <span className="font-medium">{uploadProgress}%</span>
-                  )}
+                  <span className="font-medium">{uploadProgress}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  {isProcessing ? (
-                    <div className="bg-blue-500 h-2.5 rounded-full animate-pulse" style={{ width: '100%' }}></div>
-                  ) : (
-                    <div
-                      className="bg-blue-500 h-2.5 rounded-full transition-all duration-300 ease-in-out"
-                      style={{ width: `${uploadProgress}%` }}
-                    ></div>
-                  )}
+                <div
+                  className={`h-2.5 rounded-full transition-all duration-300 ease-in-out ${
+                    isProcessing && uploadProgress >= 30 
+                      ? 'bg-green-500 animate-pulse' 
+                      : 'bg-blue-500'
+                  }`}
+                  style={{ width: `${uploadProgress}%` }}
+                ></div>
                 </div>
                 {isProcessing && (
                   <p className="text-xs text-gray-500 mt-1">
