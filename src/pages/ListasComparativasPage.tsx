@@ -471,15 +471,43 @@ const ListasComparativasPage: React.FC = () => {
   const productosAgrupados = agruparProductos(listas);
   const estadisticas = calcularEstadisticas(listas, todosLosProveedores.length);
   
+  // Aplicar filtros locales a productosAgrupados (después de agrupar)
+  const productosAgrupadosFiltrados = productosAgrupados.filter((grupo) => {
+    const { mejorPrecio } = grupo;
+    
+    // Filtro por término de búsqueda
+    if (searchTerm) {
+      const termino = searchTerm.toLowerCase();
+      const coincideCodigo = mejorPrecio.codigo?.toLowerCase().includes(termino);
+      const coincideDescripcion = mejorPrecio.descripcion?.toLowerCase().includes(termino);
+      const coincideLaboratorio = mejorPrecio.laboratorio?.toLowerCase().includes(termino);
+      
+      if (!coincideCodigo && !coincideDescripcion && !coincideLaboratorio) {
+        return false;
+      }
+    }
+    
+    // Filtro por proveedor
+    if (filtroProveedor) {
+      if (mejorPrecio.proveedorId !== filtroProveedor) {
+        return false;
+      }
+    }
+    
+    return true;
+  });
+  
   // Debug: Log para verificar que las listas se están cargando
   useEffect(() => {
     if (listas.length > 0) {
       console.log(`✅ Listas cargadas: ${listas.length} items`);
       console.log(`✅ Productos agrupados: ${productosAgrupados.length} grupos`);
+      console.log(`✅ Productos filtrados: ${productosAgrupadosFiltrados.length} grupos`);
+      console.log(`✅ Filtros activos - searchTerm: "${searchTerm}", filtroProveedor: "${filtroProveedor}"`);
     } else if (!loading) {
       console.log("⚠️ No hay listas cargadas");
     }
-  }, [listas, productosAgrupados.length, loading]);
+  }, [listas, productosAgrupados.length, productosAgrupadosFiltrados.length, searchTerm, filtroProveedor, loading]);
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-4">
@@ -584,10 +612,51 @@ const ListasComparativasPage: React.FC = () => {
 
       {/* Tabla de listas comparativas */}
       {loading ? (
-        <div className="text-center py-8">Cargando listas comparativas...</div>
+        <div className="text-center py-8">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+          <p>Cargando listas comparativas...</p>
+        </div>
       ) : productosAgrupados.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
-          No hay listas de precios disponibles. Sube una lista de precios para comenzar.
+          {listas.length === 0 ? (
+            <div>
+              <p className="mb-2">No hay listas de precios disponibles.</p>
+              <p>Sube una lista de precios para comenzar.</p>
+            </div>
+          ) : (
+            <div>
+              <p className="mb-2">No se encontraron productos que coincidan con los filtros aplicados.</p>
+              <p className="text-sm mb-4">Total de listas cargadas: {listas.length}</p>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearchTerm("");
+                  setFiltroProveedor("");
+                  fetchListas();
+                }}
+                className="mt-2"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Limpiar Filtros y Refrescar
+              </Button>
+            </div>
+          )}
+        </div>
+      ) : productosAgrupadosFiltrados.length === 0 ? (
+        <div className="text-center py-8 text-gray-500">
+          <p className="mb-2">No se encontraron productos que coincidan con los filtros aplicados.</p>
+          <p className="text-sm mb-4">Total de productos: {productosAgrupados.length}</p>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setSearchTerm("");
+              setFiltroProveedor("");
+            }}
+            className="mt-2"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Limpiar Filtros
+          </Button>
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -608,7 +677,7 @@ const ListasComparativasPage: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {productosAgrupados.map((grupo) => {
+                {productosAgrupadosFiltrados.map((grupo) => {
                   const isExpanded = expandedProducts.has(grupo.clave);
                   const { mejorPrecio, todosLosPrecios, cantidadOpciones, mejorCosto } = grupo;
                   
