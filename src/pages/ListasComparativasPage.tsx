@@ -34,6 +34,7 @@ const ListasComparativasPage: React.FC = () => {
     agregarListasTemporales,
     eliminarLista,
     eliminarListasPorProveedor,
+    subirListaPorLotes,
   } = useListasComparativas();
 
   // Obtener todos los proveedores registrados
@@ -210,13 +211,27 @@ const ListasComparativasPage: React.FC = () => {
         return;
       }
       
-      // 4. Subir al backend (esperar a que termine antes de cerrar)
+      // 4. Verificar tamaño del archivo para decidir método de subida
+      const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+      const esArchivoGrande = archivoParaSubir.size > MAX_SIZE;
+      
+      // 5. Subir al backend (esperar a que termine antes de cerrar)
       try {
-        await subirListaExcel(archivoParaSubir, proveedorIdParaSubir, (progress) => {
-          // Actualizar progreso: 30% (procesado) + 70% (subida)
-          const progresoTotal = 30 + Math.round((progress / 100) * 70);
-          setUploadProgress(progresoTotal);
-        });
+        if (esArchivoGrande) {
+          // Archivo grande: ya está procesado localmente, usar /batch directamente
+          await subirListaPorLotes(listasLocales, proveedorIdParaSubir, (progress) => {
+            // Progreso: 30% (procesado) + 70% (subida por lotes)
+            const progresoTotal = 30 + Math.round((progress / 100) * 70);
+            setUploadProgress(progresoTotal);
+          });
+        } else {
+          // Archivo pequeño: subir directamente usando /excel
+          await subirListaExcel(archivoParaSubir, proveedorIdParaSubir, (progress) => {
+            // Actualizar progreso: 30% (procesado) + 70% (subida)
+            const progresoTotal = 30 + Math.round((progress / 100) * 70);
+            setUploadProgress(progresoTotal);
+          });
+        }
         
         // 5. Subida exitosa - refrescar desde el servidor
         setUploadProgress(100);

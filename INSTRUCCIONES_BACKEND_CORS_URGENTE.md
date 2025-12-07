@@ -1,5 +1,7 @@
 # ⚠️ URGENTE: Configurar CORS en el Backend
 
+**NOTA ADICIONAL:** Si recibes error 502 Bad Gateway al subir archivos grandes, ver también `INSTRUCCIONES_BACKEND_ARCHIVOS_GRANDES.md`
+
 ## 🔴 Error Actual
 
 El frontend está recibiendo errores de CORS en TODOS los endpoints:

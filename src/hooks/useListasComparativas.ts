@@ -336,7 +336,85 @@ export function useListasComparativas() {
     });
   };
 
-  // Subir lista de precios desde Excel con progreso (ahora en background)
+  // Subir lista de precios usando /batch (para archivos grandes)
+  const subirListaPorLotes = async (
+    items: ListaComparativa[],
+    proveedorId: string,
+    onProgress?: (progress: number) => void
+  ) => {
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("No se encontró el token de autenticación");
+
+    const usuario = JSON.parse(localStorage.getItem("usuario") || "null");
+    const usuarioCorreo = usuario?.correo;
+    if (!usuarioCorreo) throw new Error("No se encontró el correo del usuario");
+
+    const LOTE_SIZE = 300; // Procesar en lotes de 300 items
+    const lotes = [];
+    
+    // Dividir items en lotes
+    for (let i = 0; i < items.length; i += LOTE_SIZE) {
+      lotes.push(items.slice(i, i + LOTE_SIZE));
+    }
+
+    let itemsProcesados = 0;
+    
+    // Procesar cada lote
+    for (let i = 0; i < lotes.length; i++) {
+      const lote = lotes[i];
+      
+      // Preparar datos del lote (sin _id temporal, solo datos necesarios)
+      const itemsParaEnviar = lote.map(item => ({
+        proveedorId: item.proveedorId,
+        codigo: item.codigo,
+        descripcion: item.descripcion,
+        laboratorio: item.laboratorio,
+        precio: item.precio,
+        descuento: item.descuento,
+        precioNeto: item.precioNeto,
+        fechaVencimiento: item.fechaVencimiento,
+        existencia: item.existencia,
+      }));
+
+      const response = await fetch(`${API_BASE_URL}/listas-comparativas/batch`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          items: itemsParaEnviar,
+          proveedorId,
+          usuarioCorreo,
+        }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("usuario");
+          setTimeout(() => {
+            window.location.href = "/login";
+          }, 2000);
+          throw new Error("Su sesión ha expirado. Por favor, inicie sesión nuevamente.");
+        }
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Error al subir lote ${i + 1}/${lotes.length}`);
+      }
+
+      itemsProcesados += lote.length;
+      
+      // Actualizar progreso
+      if (onProgress) {
+        const progress = Math.round((itemsProcesados / items.length) * 100);
+        onProgress(progress);
+      }
+    }
+
+    return { message: "Lista subida exitosamente", items_procesados: itemsProcesados };
+  };
+
+  // Subir lista de precios desde Excel con progreso
   const subirListaExcel = async (
     archivo: File,
     proveedorId: string,
@@ -359,6 +437,10 @@ export function useListasComparativas() {
       const usuarioCorreo = usuario?.correo;
       if (!usuarioCorreo) throw new Error("No se encontró el correo del usuario");
 
+      // Nota: La verificación de tamaño se hace en el componente
+      // Si llegamos aquí, el archivo es pequeño (< 10MB) y usamos /excel
+
+      // Archivo pequeño: usar endpoint /excel
       const formData = new FormData();
       formData.append("archivo", archivo);
       formData.append("proveedorId", proveedorId);
@@ -500,6 +582,7 @@ export function useListasComparativas() {
     eliminarLista,
     eliminarListasPorProveedor,
     fetchProveedores,
+    subirListaPorLotes,
   };
 }
 
