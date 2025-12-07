@@ -29,6 +29,8 @@ const ListasComparativasPage: React.FC = () => {
     fetchListas,
     buscarListas,
     subirListaExcel,
+    procesarExcelLocal,
+    agregarListasTemporales,
     eliminarLista,
     eliminarListasPorProveedor,
   } = useListasComparativas();
@@ -126,31 +128,47 @@ const ListasComparativasPage: React.FC = () => {
     setUploadSuccess(false);
 
     try {
-      await subirListaExcel(excelFile, selectedProveedor, (progress) => {
-        setUploadProgress(progress);
-        // Cuando el upload llegue al 100%, cambiar a modo "procesando"
-        if (progress >= 100) {
-          setIsProcessing(true);
-        }
-      });
-      // El backend terminó de procesar
-      setIsProcessing(false);
+      // 1. Procesar Excel localmente (rápido, muestra datos inmediatamente)
+      const proveedor = proveedores.find(p => p._id === selectedProveedor);
+      const proveedorNombre = proveedor?.nombreJuridico || "Proveedor";
+      
+      setUploadProgress(10);
+      setIsProcessing(true);
+      
+      const listasLocales = await procesarExcelLocal(excelFile, selectedProveedor, proveedorNombre);
+      
+      // 2. Agregar listas procesadas localmente al estado (muestra inmediatamente)
+      agregarListasTemporales(listasLocales);
+      
+      setUploadProgress(30);
       setUploadSuccess(true);
-      setUploadProgress(100);
+      
+      // 3. Cerrar modal y mostrar datos
       setExcelFile(null);
       setSelectedProveedor("");
-      setTimeout(() => {
-        setShowUploadModal(false);
-        setUploadSuccess(false);
-        setUploadProgress(0);
-        setIsProcessing(false);
+      setShowUploadModal(false);
+      setUploadSuccess(false);
+      setUploadProgress(0);
+      setIsProcessing(false);
+      setUploading(false);
+      
+      // 4. Subir al backend en background (sin bloquear UI)
+      subirListaExcel(excelFile, selectedProveedor, (progress) => {
+        // El progreso del upload se puede mostrar en una notificación o badge
+        console.log(`Subiendo al servidor: ${progress}%`);
+      }).then(() => {
+        // Cuando termine, refrescar desde el servidor para obtener datos completos (con inventario)
         fetchListas();
-      }, 2000);
+      }).catch((err) => {
+        console.error("Error al subir al servidor (los datos ya están visibles localmente):", err);
+        // Mostrar notificación de que hubo error pero los datos están visibles
+        setUploadError("Los datos se procesaron localmente pero hubo un error al guardar en el servidor. Los datos seguirán visibles hasta que se recargue la página.");
+      });
+      
     } catch (err: any) {
       setIsProcessing(false);
-      setUploadError(err.message || "Error al subir el archivo");
+      setUploadError(err.message || "Error al procesar el archivo");
       setUploadProgress(0);
-    } finally {
       setUploading(false);
     }
   };

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import * as XLSX from 'xlsx';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -41,6 +42,11 @@ export function useListasComparativas() {
   const [proveedores, setProveedores] = useState<Proveedor[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Función para agregar listas temporalmente (procesadas localmente)
+  const agregarListasTemporales = (nuevasListas: ListaComparativa[]) => {
+    setListas(prevListas => [...nuevasListas, ...prevListas]);
+  };
 
   // Obtener todos los proveedores
   const fetchProveedores = async () => {
@@ -131,7 +137,128 @@ export function useListasComparativas() {
     }
   };
 
-  // Subir lista de precios desde Excel con progreso
+  // Procesar Excel localmente y devolver datos inmediatamente
+  const procesarExcelLocal = async (
+    archivo: File,
+    proveedorId: string,
+    proveedorNombre: string
+  ): Promise<ListaComparativa[]> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
+        try {
+          const data = e.target?.result;
+          const workbook = XLSX.read(data, { type: 'binary' });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+          
+          if (jsonData.length < 2) {
+            reject(new Error("El archivo Excel debe tener al menos una fila de datos"));
+            return;
+          }
+          
+          // Obtener headers (primera fila)
+          const headers = (jsonData[0] || []).map((h: any) => String(h || "").toLowerCase().trim());
+          
+          // Buscar índices de columnas
+          const codigoIdx = headers.findIndex(h => h.includes("codigo") || h.includes("código"));
+          const descripcionIdx = headers.findIndex(h => h.includes("descripcion") || h.includes("descripción"));
+          const laboratorioIdx = headers.findIndex(h => h.includes("laboratorio"));
+          const precioIdx = headers.findIndex(h => h.includes("precio"));
+          const descuentoIdx = headers.findIndex(h => h.includes("descuento"));
+          const fechaVencIdx = headers.findIndex(h => h.includes("vencimiento") || h.includes("venc"));
+          const existenciaIdx = headers.findIndex(h => h.includes("existencia"));
+          
+          if (codigoIdx === -1 || descripcionIdx === -1 || precioIdx === -1 || descuentoIdx === -1 || existenciaIdx === -1) {
+            reject(new Error("El archivo Excel debe tener las columnas: CODIGO, DESCRIPCION, PRECIO, DESCUENTO, EXISTENCIA"));
+            return;
+          }
+          
+          // Obtener proveedor para descuento comercial
+          const proveedor = proveedores.find(p => p._id === proveedorId);
+          const descuentoComercial = proveedor?.descuentosComerciales || 0;
+          
+          // Procesar filas
+          const listas: ListaComparativa[] = [];
+          
+          for (let i = 1; i < jsonData.length; i++) {
+            const row = jsonData[i];
+            if (!row || row.length === 0) continue;
+            
+            const codigo = String(row[codigoIdx] || "").trim();
+            const descripcion = String(row[descripcionIdx] || "").trim();
+            
+            if (!codigo || !descripcion) continue;
+            
+            const laboratorio = laboratorioIdx >= 0 ? String(row[laboratorioIdx] || "").trim() : "";
+            const precio = parseFloat(row[precioIdx]) || 0;
+            const descuento = parseFloat(row[descuentoIdx]) || 0;
+            const existencia = parseInt(String(row[existenciaIdx] || 0)) || 0;
+            
+            // Parsear fecha
+            let fechaVencimiento: string | null = null;
+            if (fechaVencIdx >= 0 && row[fechaVencIdx]) {
+              const fecha = row[fechaVencIdx];
+              if (fecha instanceof Date) {
+                fechaVencimiento = fecha.toISOString();
+              } else if (typeof fecha === 'number') {
+                // Excel serial date
+                const excelDate = XLSX.SSF.parse_date_code(fecha);
+                fechaVencimiento = new Date(excelDate.y, excelDate.m - 1, excelDate.d).toISOString();
+              } else {
+                try {
+                  fechaVencimiento = new Date(String(fecha)).toISOString();
+                } catch {
+                  fechaVencimiento = null;
+                }
+              }
+            }
+            
+            // Calcular precio neto
+            const precioNeto = precio * (1 - descuento / 100) * (1 - descuentoComercial / 100);
+            
+            const lista: ListaComparativa = {
+              _id: `temp_${Date.now()}_${i}`,
+              proveedorId,
+              proveedor: {
+                _id: proveedorId,
+                nombreJuridico: proveedorNombre,
+                descuentosComerciales: descuentoComercial
+              },
+              codigo,
+              descripcion,
+              laboratorio,
+              precio,
+              descuento,
+              precioNeto: Math.round(precioNeto * 100) / 100,
+              fechaVencimiento,
+              existencia,
+              miCosto: null,
+              existencias: [],
+              fechaCreacion: new Date().toISOString(),
+              fechaActualizacion: new Date().toISOString()
+            };
+            
+            listas.push(lista);
+          }
+          
+          resolve(listas);
+        } catch (error: any) {
+          reject(new Error(`Error al procesar Excel: ${error.message}`));
+        }
+      };
+      
+      reader.onerror = () => {
+        reject(new Error("Error al leer el archivo Excel"));
+      };
+      
+      reader.readAsBinaryString(archivo);
+    });
+  };
+
+  // Subir lista de precios desde Excel con progreso (ahora en background)
   const subirListaExcel = async (
     archivo: File,
     proveedorId: string,
@@ -269,6 +396,8 @@ export function useListasComparativas() {
     fetchListas,
     buscarListas,
     subirListaExcel,
+    procesarExcelLocal,
+    agregarListasTemporales,
     eliminarLista,
     eliminarListasPorProveedor,
     fetchProveedores,
