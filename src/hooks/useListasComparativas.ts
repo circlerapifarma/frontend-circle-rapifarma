@@ -23,12 +23,15 @@ export interface ListaComparativa {
   precio: number;
   descuento: number; // Porcentaje de descuento
   precioNeto: number; // Precio con descuento aplicado
+  precioAnterior?: number; // Precio anterior para comparación
   fechaVencimiento: string | null;
   existencia: number;
   miCosto: number | null;
   existencias: ExistenciaPorFarmacia[]; // Existencias por farmacia (del inventario)
   fechaCreacion: string;
   fechaActualizacion: string;
+  esNuevo?: boolean; // Si es un producto nuevo (no estaba en lista anterior)
+  cambioPrecio?: 'bajo' | 'subio' | 'igual'; // Cambio de precio respecto a lista anterior
 }
 
 export interface Proveedor {

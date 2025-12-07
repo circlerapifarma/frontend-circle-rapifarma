@@ -222,7 +222,65 @@ const ListasComparativasPage: React.FC = () => {
     }).format(value);
   };
 
-  // Función para agrupar productos
+  // Función para calcular estadísticas
+  const calcularEstadisticas = (listas: ListaComparativa[]) => {
+    const proveedoresUnicos = new Set(listas.map(l => l.proveedorId));
+    const skuNuevos = listas.filter(l => l.esNuevo === true).length;
+    const productosOferta = listas.filter(l => l.cambioPrecio === 'bajo').length;
+    const productosSubieron = listas.filter(l => l.cambioPrecio === 'subio').length;
+    
+    return {
+      numeroProveedores: proveedoresUnicos.size,
+      numeroListas: listas.length,
+      skuNuevos,
+      productosOferta,
+      productosSubieron,
+    };
+  };
+
+  // Función para determinar color según estado del producto
+  const obtenerColorProducto = (lista: ListaComparativa) => {
+    // Azul: Producto nuevo
+    if (lista.esNuevo) {
+      return 'bg-blue-50 hover:bg-blue-100 border-l-4 border-blue-500';
+    }
+    
+    // Calcular existencia total en mis farmacias
+    const existenciaTotal = lista.existencias?.reduce((sum, e) => sum + e.existencia, 0) || 0;
+    
+    // Verde: Poca o cero existencia (0-10)
+    if (existenciaTotal <= 10) {
+      return 'bg-green-50 hover:bg-green-100 border-l-4 border-green-500';
+    }
+    
+    // Rojo: Mucha existencia (>100)
+    if (existenciaTotal > 100) {
+      return 'bg-red-50 hover:bg-red-100 border-l-4 border-red-500';
+    }
+    
+    return '';
+  };
+
+  // Función para determinar color del costo
+  const obtenerColorCosto = (miCosto: number | null, precioNeto: number) => {
+    if (!miCosto) return '';
+    
+    const diferencia = ((miCosto - precioNeto) / precioNeto) * 100;
+    
+    // Si mi costo está por encima del precio de la lista (>10% más caro)
+    if (diferencia > 10) {
+      return 'text-orange-600 font-bold bg-orange-50 px-2 py-1 rounded';
+    }
+    
+    // Si mi costo está muy por debajo del precio de la lista (>20% más barato)
+    if (diferencia < -20) {
+      return 'text-purple-600 font-bold bg-purple-50 px-2 py-1 rounded';
+    }
+    
+    return '';
+  };
+
+  // Función para agrupar productos (mejorada: mismo código+descripción+laboratorio = solo mejor precio)
   const agruparProductos = (listas: ListaComparativa[]) => {
     // Validar que listas es un array
     if (!listas || !Array.isArray(listas)) {
@@ -232,16 +290,13 @@ const ListasComparativasPage: React.FC = () => {
     const grupos = new Map<string, ListaComparativa[]>();
     
     listas.forEach((lista: ListaComparativa) => {
-      // Prioridad 1: Agrupar por código (si existe y no está vacío)
-      let clave = "";
-      if (lista.codigo && lista.codigo.trim() !== "") {
-        clave = `codigo:${lista.codigo.toLowerCase().trim()}`;
-      } else {
-        // Prioridad 2: Agrupar por nombre + laboratorio
-        const nombreNormalizado = lista.descripcion.toLowerCase().trim();
-        const labNormalizado = (lista.laboratorio || "").toLowerCase().trim();
-        clave = `nombre:${nombreNormalizado}|lab:${labNormalizado}`;
-      }
+      // Agrupar por código + descripción + laboratorio (todos deben coincidir)
+      const codigoNormalizado = (lista.codigo || "").toLowerCase().trim();
+      const descripcionNormalizada = lista.descripcion.toLowerCase().trim();
+      const laboratorioNormalizado = (lista.laboratorio || "").toLowerCase().trim();
+      
+      // Clave única: código + descripción + laboratorio
+      const clave = `${codigoNormalizado}|${descripcionNormalizada}|${laboratorioNormalizado}`;
       
       if (!grupos.has(clave)) {
         grupos.set(clave, []);
@@ -255,11 +310,9 @@ const ListasComparativasPage: React.FC = () => {
       const mejorPrecio = sorted[0];
       
       // Calcular existencia total: sumar todas las existencias de todas las farmacias de todos los productos del grupo
-      // Primero, crear un mapa de farmacias para evitar duplicados
       const existenciasPorFarmacia = new Map<string, number>();
       
       sorted.forEach((item) => {
-        // Validar que existencias existe y es un array
         if (item.existencias && Array.isArray(item.existencias)) {
           item.existencias.forEach((exist: ExistenciaPorFarmacia) => {
             const farmaciaKey = exist.farmacia;
@@ -269,7 +322,6 @@ const ListasComparativasPage: React.FC = () => {
         }
       });
       
-      // Sumar todas las existencias
       const existenciaTotal = Array.from(existenciasPorFarmacia.values()).reduce((sum, exist) => sum + exist, 0);
       
       // Obtener el mejor costo (el más bajo, si existe)
@@ -289,8 +341,6 @@ const ListasComparativasPage: React.FC = () => {
     });
   };
 
-  const productosAgrupados = agruparProductos(listas);
-  
   const toggleExpand = (clave: string) => {
     setExpandedProducts(prev => {
       const nuevo = new Set(prev);
@@ -303,17 +353,48 @@ const ListasComparativasPage: React.FC = () => {
     });
   };
 
+  // Calcular productos agrupados y estadísticas
+  const productosAgrupados = agruparProductos(listas);
+  const estadisticas = calcularEstadisticas(listas);
+
   return (
     <div className="max-w-7xl mx-auto py-8 px-4">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Listas Comparativas</h1>
-        <Button
-          onClick={() => setShowUploadModal(true)}
-          className="bg-green-600 hover:bg-green-700"
-        >
-          <Upload className="w-4 h-4 mr-2" />
-          Subir Lista de Precios
-        </Button>
+      {/* Navbar con estadísticas */}
+      <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-3xl font-bold text-gray-800">Listas Comparativas</h1>
+          <Button
+            onClick={() => setShowUploadModal(true)}
+            className="bg-green-600 hover:bg-green-700"
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            Subir Lista de Precios
+          </Button>
+        </div>
+        
+        {/* Estadísticas */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
+          <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+            <p className="text-sm text-gray-600 mb-1">Proveedores</p>
+            <p className="text-2xl font-bold text-blue-600">{estadisticas.numeroProveedores}</p>
+          </div>
+          <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+            <p className="text-sm text-gray-600 mb-1">Listas Cargadas</p>
+            <p className="text-2xl font-bold text-purple-600">{estadisticas.numeroListas}</p>
+          </div>
+          <div className="bg-cyan-50 rounded-lg p-4 border border-cyan-200">
+            <p className="text-sm text-gray-600 mb-1">SKU Nuevas</p>
+            <p className="text-2xl font-bold text-cyan-600">{estadisticas.skuNuevos}</p>
+          </div>
+          <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+            <p className="text-sm text-gray-600 mb-1">En Oferta</p>
+            <p className="text-2xl font-bold text-green-600">{estadisticas.productosOferta}</p>
+          </div>
+          <div className="bg-red-50 rounded-lg p-4 border border-red-200">
+            <p className="text-sm text-gray-600 mb-1">Subieron Precio</p>
+            <p className="text-2xl font-bold text-red-600">{estadisticas.productosSubieron}</p>
+          </div>
+        </div>
       </div>
 
       {error && (
@@ -395,7 +476,7 @@ const ListasComparativasPage: React.FC = () => {
                   return (
                     <React.Fragment key={grupo.clave}>
                       {/* Fila principal con el mejor precio */}
-                      <TableRow className="bg-green-50 hover:bg-green-100">
+                      <TableRow className={obtenerColorProducto(mejorPrecio)}>
                         <TableCell>
                           <Button
                             variant="ghost"
@@ -414,12 +495,34 @@ const ListasComparativasPage: React.FC = () => {
                         <TableCell className="font-semibold">{mejorPrecio.descripcion}</TableCell>
                         <TableCell>{mejorPrecio.laboratorio || "N/A"}</TableCell>
                         <TableCell className="font-bold text-green-700 text-lg">
-                          {formatCurrency(mejorPrecio.precioNeto)}
-                          {cantidadOpciones > 1 && (
-                            <span className="ml-2 text-xs text-gray-500 font-normal">
-                              ({cantidadOpciones} opciones)
-                            </span>
-                          )}
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                              <span>{formatCurrency(mejorPrecio.precioNeto)}</span>
+                              {mejorPrecio.precioAnterior && mejorPrecio.precioAnterior !== mejorPrecio.precioNeto && (
+                                <span className={`text-xs font-semibold ${mejorPrecio.precioNeto < mejorPrecio.precioAnterior ? 'text-green-600' : 'text-red-600'}`}>
+                                  ({mejorPrecio.precioNeto < mejorPrecio.precioAnterior ? '↓' : '↑'} {formatCurrency(mejorPrecio.precioAnterior)})
+                                </span>
+                              )}
+                            </div>
+                            {cantidadOpciones > 1 && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setProductoDetalles({
+                                    descripcion: mejorPrecio.descripcion,
+                                    codigo: mejorPrecio.codigo || "N/A",
+                                    laboratorio: mejorPrecio.laboratorio || "N/A",
+                                    todosLosPrecios: todosLosPrecios
+                                  });
+                                  setShowDetallesModal(true);
+                                }}
+                                className="text-xs text-blue-600 hover:text-blue-800 h-6 px-2 w-fit"
+                              >
+                                Ver Detalles ({cantidadOpciones} proveedores)
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <div className="font-medium">{mejorPrecio.proveedor?.nombreJuridico || "N/A"}</div>
@@ -427,8 +530,15 @@ const ListasComparativasPage: React.FC = () => {
                             Precio: {formatCurrency(mejorPrecio.precio)} | Desc: {mejorPrecio.descuento}%
                           </div>
                         </TableCell>
-                        <TableCell className={mejorCosto ? "font-semibold" : ""}>
-                          {formatCurrency(mejorCosto)}
+                        <TableCell>
+                          <div className={obtenerColorCosto(mejorCosto, mejorPrecio.precioNeto)}>
+                            {formatCurrency(mejorCosto)}
+                            {mejorCosto && mejorPrecio.precioNeto && (
+                              <span className="text-xs block mt-1">
+                                {mejorCosto > mejorPrecio.precioNeto ? '↑ Costo mayor' : mejorCosto < mejorPrecio.precioNeto * 0.8 ? '↓ Costo menor' : ''}
+                              </span>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell className="font-semibold text-blue-600">
                           {mejorPrecio.existencia || 0}
@@ -472,7 +582,7 @@ const ListasComparativasPage: React.FC = () => {
                       </TableRow>
                       
                       {/* Filas expandidas con todos los precios */}
-                      {isExpanded && todosLosPrecios.map((lista) => (
+                      {isExpanded && todosLosPrecios.map((lista: ListaComparativa) => (
                         <TableRow key={lista._id} className="bg-gray-50">
                           <TableCell></TableCell>
                           <TableCell className="text-sm text-gray-600">{lista.codigo || "N/A"}</TableCell>
