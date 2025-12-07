@@ -94,14 +94,25 @@ const ListasComparativasPage: React.FC = () => {
     let mounted = true;
     
     const cargarDatos = async () => {
+      // Verificar token antes de cargar
+      const token = localStorage.getItem("token");
+      if (!token) {
+        // El error se mostrará automáticamente cuando fetchListas falle
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 2000);
+        return;
+      }
+      
       try {
         // Cargar listas y proveedores en paralelo
         await Promise.all([
           fetchListas(),
           // fetchProveedores se llama automáticamente en useListasComparativas
         ]);
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error al cargar datos iniciales:", err);
+        // El error ya se maneja en fetchListas y se muestra en el estado 'error'
       }
     };
     
@@ -150,11 +161,25 @@ const ListasComparativasPage: React.FC = () => {
       return;
     }
 
+    // Verificar token ANTES de empezar
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setUploadError("No se encontró el token de autenticación. Por favor, inicie sesión nuevamente.");
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 2000);
+      return;
+    }
+
     setUploading(true);
     setUploadProgress(0);
     setIsProcessing(false);
     setUploadError(null);
     setUploadSuccess(false);
+
+    // Guardar referencia al archivo antes de cualquier operación
+    const archivoParaSubir = excelFile;
+    const proveedorIdParaSubir = selectedProveedor;
 
     try {
       // 1. Procesar Excel localmente (rápido, muestra datos inmediatamente)
@@ -164,7 +189,7 @@ const ListasComparativasPage: React.FC = () => {
       setUploadProgress(10);
       setIsProcessing(true);
       
-      const listasLocales = await procesarExcelLocal(excelFile, selectedProveedor, proveedorNombre);
+      const listasLocales = await procesarExcelLocal(archivoParaSubir, proveedorIdParaSubir, proveedorNombre);
       
       // 2. Agregar listas procesadas localmente al estado (muestra inmediatamente)
       agregarListasTemporales(listasLocales);
@@ -172,15 +197,28 @@ const ListasComparativasPage: React.FC = () => {
       setUploadProgress(30);
       setIsProcessing(true); // Cambiar a "Subiendo al servidor..."
       
-      // 3. Subir al backend (esperar a que termine antes de cerrar)
+      // 3. Verificar token nuevamente antes de subir
+      const tokenAntesDeSubir = localStorage.getItem("token");
+      if (!tokenAntesDeSubir) {
+        setUploadError("Su sesión expiró durante el procesamiento. Por favor, inicie sesión nuevamente.");
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 2000);
+        setIsProcessing(false);
+        setUploadProgress(0);
+        setUploading(false);
+        return;
+      }
+      
+      // 4. Subir al backend (esperar a que termine antes de cerrar)
       try {
-        await subirListaExcel(excelFile, selectedProveedor, (progress) => {
+        await subirListaExcel(archivoParaSubir, proveedorIdParaSubir, (progress) => {
           // Actualizar progreso: 30% (procesado) + 70% (subida)
           const progresoTotal = 30 + Math.round((progress / 100) * 70);
           setUploadProgress(progresoTotal);
         });
         
-        // 4. Subida exitosa - refrescar desde el servidor
+        // 5. Subida exitosa - refrescar desde el servidor
         setUploadProgress(100);
         setUploadSuccess(true);
         setIsProcessing(false);
@@ -202,10 +240,19 @@ const ListasComparativasPage: React.FC = () => {
       } catch (uploadError: any) {
         // Error al subir al servidor
         console.error("Error al subir al servidor:", uploadError);
-        setUploadError(
-          uploadError.message || 
-          "Error al guardar en el servidor. Los datos están visibles localmente pero no se guardaron. Por favor, intente nuevamente."
-        );
+        
+        // Si el error es de autenticación, redirigir
+        if (uploadError.message && (uploadError.message.includes("token") || uploadError.message.includes("sesión") || uploadError.message.includes("autenticación"))) {
+          setUploadError("Su sesión expiró. Por favor, inicie sesión nuevamente.");
+          setTimeout(() => {
+            window.location.href = "/login";
+          }, 2000);
+        } else {
+          setUploadError(
+            uploadError.message || 
+            "Error al guardar en el servidor. Los datos están visibles localmente pero no se guardaron. Por favor, intente nuevamente."
+          );
+        }
         setIsProcessing(false);
         setUploadProgress(0);
         // NO cerrar el modal para que el usuario vea el error

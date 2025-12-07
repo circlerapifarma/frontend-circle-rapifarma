@@ -100,7 +100,15 @@ export function useListasComparativas() {
     setError(null);
     try {
       const token = localStorage.getItem("token");
-      if (!token) throw new Error("No se encontró el token de autenticación");
+      if (!token) {
+        const errorMsg = "No se encontró el token de autenticación. Por favor, inicie sesión nuevamente.";
+        setError(errorMsg);
+        // Redirigir al login después de un momento
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 2000);
+        throw new Error(errorMsg);
+      }
 
       const params = new URLSearchParams();
       if (filtros?.codigo) params.append("codigo", filtros.codigo);
@@ -121,12 +129,32 @@ export function useListasComparativas() {
       
       clearTimeout(timeoutId);
       
-      if (!res.ok) throw new Error("Error al obtener listas comparativas");
+      if (!res.ok) {
+        if (res.status === 401) {
+          // Token inválido o expirado
+          localStorage.removeItem("token");
+          localStorage.removeItem("usuario");
+          setError("Su sesión ha expirado. Por favor, inicie sesión nuevamente.");
+          setTimeout(() => {
+            window.location.href = "/login";
+          }, 2000);
+          throw new Error("Sesión expirada");
+        }
+        throw new Error("Error al obtener listas comparativas");
+      }
       const data = await res.json();
-      setListas(data);
+      // Asegurarse de que data es un array
+      if (Array.isArray(data)) {
+        setListas(data);
+      } else {
+        console.error("La respuesta del servidor no es un array:", data);
+        setListas([]);
+      }
     } catch (err: any) {
       if (err.name === 'AbortError') {
         setError("La solicitud tardó demasiado. Por favor, intente nuevamente.");
+      } else if (err.message === "Sesión expirada") {
+        // Ya se manejó arriba
       } else {
         setError(err.message || "Error al obtener listas comparativas");
       }
@@ -318,7 +346,14 @@ export function useListasComparativas() {
     setError(null);
     try {
       const token = localStorage.getItem("token");
-      if (!token) throw new Error("No se encontró el token de autenticación");
+      if (!token) {
+        const errorMsg = "No se encontró el token de autenticación. Por favor, inicie sesión nuevamente.";
+        setError(errorMsg);
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 2000);
+        throw new Error(errorMsg);
+      }
 
       const usuario = JSON.parse(localStorage.getItem("usuario") || "null");
       const usuarioCorreo = usuario?.correo;
@@ -346,19 +381,31 @@ export function useListasComparativas() {
             try {
               const data = JSON.parse(xhr.responseText);
               if (onProgress) onProgress(100);
+              setLoading(false);
               resolve(data);
             } catch (parseError) {
+              setLoading(false);
               reject(new Error("Error al procesar la respuesta del servidor"));
             }
           } else {
-            try {
-              const errorData = JSON.parse(xhr.responseText);
-              reject(new Error(errorData.detail || "Error al subir lista de precios"));
-            } catch {
-              reject(new Error(`Error al subir archivo: ${xhr.status} ${xhr.statusText}`));
+            setLoading(false);
+            if (xhr.status === 401) {
+              // Token inválido o expirado
+              localStorage.removeItem("token");
+              localStorage.removeItem("usuario");
+              setTimeout(() => {
+                window.location.href = "/login";
+              }, 2000);
+              reject(new Error("Su sesión ha expirado. Por favor, inicie sesión nuevamente."));
+            } else {
+              try {
+                const errorData = JSON.parse(xhr.responseText);
+                reject(new Error(errorData.detail || "Error al subir lista de precios"));
+              } catch {
+                reject(new Error(`Error al subir archivo: ${xhr.status} ${xhr.statusText}`));
+              }
             }
           }
-          setLoading(false);
         };
 
         xhr.onerror = () => {
