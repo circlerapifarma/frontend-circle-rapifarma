@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Upload, Trash2, FileSpreadsheet, ChevronDown, ChevronRight, ShoppingCart, X, FileDown, FileText, Info } from "lucide-react";
+import { Search, Upload, Trash2, FileSpreadsheet, ChevronDown, ChevronRight, ShoppingCart, X, FileDown, FileText, Info, RefreshCw } from "lucide-react";
 import { useOrdenCompra } from "@/hooks/useOrdenCompra";
 
 const ListasComparativasPage: React.FC = () => {
@@ -241,7 +241,11 @@ const ListasComparativasPage: React.FC = () => {
         // Esperar un momento para mostrar el éxito
         await new Promise(resolve => setTimeout(resolve, 1500));
         
-        // Refrescar lista desde el servidor
+        // Limpiar filtros para mostrar todas las listas
+        setSearchTerm("");
+        setFiltroProveedor("");
+        
+        // Refrescar lista desde el servidor (sin filtros)
         await fetchListas();
         
         // Cerrar modal y limpiar
@@ -466,6 +470,16 @@ const ListasComparativasPage: React.FC = () => {
   // Calcular productos agrupados y estadísticas
   const productosAgrupados = agruparProductos(listas);
   const estadisticas = calcularEstadisticas(listas, todosLosProveedores.length);
+  
+  // Debug: Log para verificar que las listas se están cargando
+  useEffect(() => {
+    if (listas.length > 0) {
+      console.log(`✅ Listas cargadas: ${listas.length} items`);
+      console.log(`✅ Productos agrupados: ${productosAgrupados.length} grupos`);
+    } else if (!loading) {
+      console.log("⚠️ No hay listas cargadas");
+    }
+  }, [listas, productosAgrupados.length, loading]);
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-4">
@@ -473,13 +487,28 @@ const ListasComparativasPage: React.FC = () => {
       <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-3xl font-bold text-gray-800">Listas Comparativas</h1>
-          <Button
-            onClick={() => setShowUploadModal(true)}
-            className="bg-green-600 hover:bg-green-700"
-          >
-            <Upload className="w-4 h-4 mr-2" />
-            Subir Lista de Precios
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSearchTerm("");
+                setFiltroProveedor("");
+                fetchListas();
+              }}
+              className="border-blue-300 text-blue-600 hover:bg-blue-50"
+              title="Refrescar listas"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Refrescar
+            </Button>
+            <Button
+              onClick={() => setShowUploadModal(true)}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Subir Lista de Precios
+            </Button>
+          </div>
         </div>
         
         {/* Estadísticas */}
