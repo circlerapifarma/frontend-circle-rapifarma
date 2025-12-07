@@ -251,31 +251,30 @@ const ListasComparativasPage: React.FC = () => {
         
         // Refrescar lista desde el servidor (sin filtros) - hacer múltiples intentos
         let intentos = 0;
-        const maxIntentos = 5;
+        const maxIntentos = 3; // Reducir a 3 intentos
         
         while (intentos < maxIntentos) {
           await fetchListas();
           
           // Esperar un momento antes de verificar
-          await new Promise(resolve => setTimeout(resolve, 1500));
+          await new Promise(resolve => setTimeout(resolve, 2000));
           
-          // Verificar si las listas se actualizaron
-          const itemsDespues = listas.length;
-          console.log(`📊 Intento ${intentos + 1}/${maxIntentos}: Items después de refrescar: ${itemsDespues}`);
-          
-          // Si hay más items que antes, asumimos que se guardaron correctamente
-          if (itemsDespues > itemsAntes) {
-            console.log(`✅ Listas actualizadas correctamente: ${itemsAntes} → ${itemsDespues} items`);
-            break;
-          }
-          
+          // Obtener el número actual de items después de que el estado se actualice
+          // Nota: listas.length puede no estar actualizado inmediatamente, así que
+          // simplemente hacemos los refrescos y confiamos en que el backend guardó correctamente
           intentos++;
-          
-          // Si después de varios intentos no hay cambios, mostrar advertencia pero continuar
-          if (intentos >= maxIntentos) {
-            console.warn(`⚠️ Después de ${maxIntentos} intentos, las listas no se actualizaron (${itemsAntes} → ${itemsDespues} items). Esto puede indicar que el backend no guardó los items. Por favor, verifica los logs del backend o refresca la página manualmente.`);
-            setUploadError("⚠️ La lista se procesó pero puede que no se haya guardado completamente. Por favor, verifica en el servidor o refresca la página.");
-          }
+          console.log(`📊 Intento ${intentos}/${maxIntentos} de refresco completado`);
+        }
+        
+        // Verificar si las listas se actualizaron después de todos los intentos
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Esperar un momento más
+        const itemsDespues = listas.length;
+        
+        if (itemsDespues <= itemsAntes) {
+          console.warn(`⚠️ Después de ${maxIntentos} intentos, las listas no se actualizaron (${itemsAntes} → ${itemsDespues} items). Esto indica que el backend NO guardó los items.`);
+          // No mostrar error aquí porque ya se mostró arriba si el backend reportó 0 insertados
+        } else {
+          console.log(`✅ Listas actualizadas correctamente: ${itemsAntes} → ${itemsDespues} items`);
         }
         
         // Cerrar modal y limpiar
@@ -297,10 +296,17 @@ const ListasComparativasPage: React.FC = () => {
             window.location.href = "/login";
           }, 2000);
         } else {
-          setUploadError(
-            uploadError.message || 
-            "Error al guardar en el servidor. Los datos están visibles localmente pero no se guardaron. Por favor, intente nuevamente."
-          );
+          // Si el error indica que el backend no guardó items, mostrar mensaje más claro
+          let mensajeError = uploadError.message || 
+            "Error al guardar en el servidor. Los datos están visibles localmente pero no se guardaron. Por favor, intente nuevamente.";
+          
+          if (uploadError.message?.includes("NO guardó ninguno") || 
+              uploadError.message?.includes("0 insertados, 0 actualizados") ||
+              uploadError.message?.includes("ERROR CRÍTICO")) {
+            mensajeError = `🚨 ERROR CRÍTICO DEL BACKEND: El servidor procesó el archivo Excel pero NO guardó los items en la base de datos (0 insertados, 0 actualizados). Esto es un problema del backend que debe ser corregido. Los datos procesados localmente se mostrarán temporalmente pero se perderán al refrescar la página. Por favor, contacta al administrador del sistema o revisa el documento INSTRUCCIONES_BACKEND_LISTAS_COMPARATIVAS_INSERCION.md.`;
+          }
+          
+          setUploadError(mensajeError);
         }
         setIsProcessing(false);
         setUploadProgress(0);

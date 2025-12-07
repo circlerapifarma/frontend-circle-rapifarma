@@ -466,12 +466,25 @@ export function useListasComparativas() {
               // Verificar si el backend guardó items correctamente
               const itemsInsertados = data.items_insertados || data.itemsInsertados || 0;
               const itemsActualizados = data.items_actualizados || data.itemsActualizados || 0;
+              const itemsProcesados = data.items_procesados || data.itemsProcesados || 0;
               const totalProcesado = itemsInsertados + itemsActualizados;
               
-              console.log(`📊 Respuesta del backend: ${itemsInsertados} insertados, ${itemsActualizados} actualizados`);
+              console.log(`📊 Respuesta del backend: ${itemsInsertados} insertados, ${itemsActualizados} actualizados, ${itemsProcesados} procesados`);
               
-              if (totalProcesado === 0 && data.items_procesados !== undefined && data.items_procesados > 0) {
-                console.warn(`⚠️ El backend procesó ${data.items_procesados} items pero no guardó ninguno. Esto puede indicar un problema en el backend.`);
+              // Si el backend procesó items pero no guardó ninguno, lanzar error
+              if (totalProcesado === 0 && itemsProcesados > 0) {
+                const errorMsg = `⚠️ ERROR CRÍTICO: El backend procesó ${itemsProcesados} items del Excel pero NO guardó ninguno en la base de datos (0 insertados, 0 actualizados). Esto indica un problema en el backend que debe ser corregido. Los datos procesados localmente se mostrarán temporalmente pero se perderán al refrescar.`;
+                console.error(errorMsg);
+                setError(errorMsg);
+                // Lanzar error para que el componente lo maneje
+                throw new Error(errorMsg);
+              }
+              
+              // Si no se procesó ningún item, también es un problema
+              if (itemsProcesados === 0) {
+                const errorMsg = "⚠️ El backend no procesó ningún item del archivo Excel. Verifica que el formato del archivo sea correcto.";
+                console.warn(errorMsg);
+                setError(errorMsg);
               }
               
               if (onProgress) onProgress(100);
