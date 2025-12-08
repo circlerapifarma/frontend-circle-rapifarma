@@ -29,6 +29,8 @@ const PERMISOS = [
   "proveedores",
   "listas_comparativas",
   "orden_compra",
+  "cajeros",
+  "comisiones",
   "acceso_admin",
   "gestionar_usuarios",
   "ver_inventarios",
