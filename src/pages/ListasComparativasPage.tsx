@@ -466,7 +466,7 @@ const ListasComparativasPage: React.FC = () => {
     return '';
   };
 
-  // Función para agrupar productos (mejorada: mismo código+descripción+laboratorio = solo mejor precio)
+  // Función para agrupar productos (agrupa por código normalizado, mostrando el mejor precio)
   const agruparProductos = (listas: ListaComparativa[]) => {
     // Validar que listas es un array
     if (!listas || !Array.isArray(listas)) {
@@ -476,13 +476,17 @@ const ListasComparativasPage: React.FC = () => {
     const grupos = new Map<string, ListaComparativa[]>();
     
     listas.forEach((lista: ListaComparativa) => {
-      // Agrupar por código + descripción + laboratorio (todos deben coincidir)
-      const codigoNormalizado = (lista.codigo || "").toLowerCase().trim();
-      const descripcionNormalizada = lista.descripcion.toLowerCase().trim();
-      const laboratorioNormalizado = (lista.laboratorio || "").toLowerCase().trim();
+      // Normalizar código: eliminar espacios, guiones y otros caracteres especiales
+      // Esto permite agrupar productos con el mismo código aunque tenga formato diferente
+      const codigoNormalizado = (lista.codigo || "")
+        .toString()
+        .replace(/\s+/g, '') // Eliminar espacios
+        .replace(/[-\/]/g, '') // Eliminar guiones y barras
+        .toLowerCase()
+        .trim();
       
-      // Clave única: código + descripción + laboratorio
-      const clave = `${codigoNormalizado}|${descripcionNormalizada}|${laboratorioNormalizado}`;
+      // Si el código está vacío, usar descripción + laboratorio como fallback
+      const clave = codigoNormalizado || `${(lista.descripcion || "").toLowerCase().trim()}|${(lista.laboratorio || "").toLowerCase().trim()}`;
       
       if (!grupos.has(clave)) {
         grupos.set(clave, []);
@@ -492,6 +496,7 @@ const ListasComparativasPage: React.FC = () => {
     
     // Convertir a array y ordenar cada grupo por precio neto (mejor precio primero)
     return Array.from(grupos.entries()).map(([clave, items]) => {
+      // Ordenar por precio neto (mejor precio primero)
       const sorted = [...items].sort((a, b) => a.precioNeto - b.precioNeto);
       const mejorPrecio = sorted[0];
       
