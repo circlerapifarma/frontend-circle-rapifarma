@@ -188,10 +188,26 @@ const UsuariosAdminPage: React.FC = () => {
       const permisosValidos = nuevo.permisos.filter(p => PERMISOS.includes(p));
 
       // Preparar datos del usuario
+      let farmaciasUsuario: Record<string, string> = {};
+      if (nuevo.esAdministrativo) {
+        // Si es administrativo, incluir todas las farmacias
+        farmacias.forEach(f => {
+          farmaciasUsuario[f.id] = f.nombre;
+        });
+      } else {
+        // Si no es administrativo, solo la farmacia seleccionada
+        if (farmaciaSeleccionada) {
+          const farmacia = farmacias.find(f => f.id === farmaciaSeleccionada);
+          if (farmacia) {
+            farmaciasUsuario[farmacia.id] = farmacia.nombre;
+          }
+        }
+      }
+
       const usuarioData: Usuario = {
         ...nuevo,
         permisos: permisosValidos, // Solo enviar permisos válidos
-        farmacias: nuevo.esAdministrativo ? {} : (farmaciaSeleccionada ? { [farmaciaSeleccionada]: farmacias.find(f => f.id === farmaciaSeleccionada)?.nombre || "" } : {})
+        farmacias: farmaciasUsuario
       };
 
       const res = await fetch(`${API_BASE_URL}/usuarios`, {
@@ -239,10 +255,19 @@ const UsuariosAdminPage: React.FC = () => {
       const permisosValidos = editando.permisos.filter(p => PERMISOS.includes(p));
 
       // Preparar datos para actualizar (sin contraseña si está vacía)
+      // Si es administrativo, asegurar que tenga todas las farmacias
+      let farmaciasActualizacion: Record<string, string> = editando.farmacias;
+      if (editando.esAdministrativo) {
+        farmaciasActualizacion = {};
+        farmacias.forEach(f => {
+          farmaciasActualizacion[f.id] = f.nombre;
+        });
+      }
+
       const datosActualizacion: any = {
         correo: editando.correo,
         nombre: editando.nombre,
-        farmacias: editando.farmacias,
+        farmacias: farmaciasActualizacion,
         permisos: permisosValidos, // Solo enviar permisos válidos
         esAdministrativo: editando.esAdministrativo
       };
@@ -359,7 +384,12 @@ const UsuariosAdminPage: React.FC = () => {
                   name="tipoUsuario" 
                   checked={nuevo.esAdministrativo === true}
                   onChange={() => {
-                    setNuevo({ ...nuevo, esAdministrativo: true, farmacias: {} });
+                    // Cuando es administrativo, incluir todas las farmacias
+                    const todasLasFarmacias: Record<string, string> = {};
+                    farmacias.forEach(f => {
+                      todasLasFarmacias[f.id] = f.nombre;
+                    });
+                    setNuevo({ ...nuevo, esAdministrativo: true, farmacias: todasLasFarmacias });
                     setFarmaciaSeleccionada("");
                   }}
                   className="cursor-pointer"
@@ -438,7 +468,12 @@ const UsuariosAdminPage: React.FC = () => {
                           name={`tipoUsuarioEdit-${u._id}`}
                           checked={editando?.esAdministrativo === true}
                           onChange={() => {
-                            setEditando(editando ? { ...editando, esAdministrativo: true, farmacias: {} } : null);
+                            // Cuando es administrativo, incluir todas las farmacias
+                            const todasLasFarmacias: Record<string, string> = {};
+                            farmacias.forEach(f => {
+                              todasLasFarmacias[f.id] = f.nombre;
+                            });
+                            setEditando(editando ? { ...editando, esAdministrativo: true, farmacias: todasLasFarmacias } : null);
                           }}
                           className="cursor-pointer"
                         />
@@ -498,9 +533,16 @@ const UsuariosAdminPage: React.FC = () => {
                   <div><b>Correo:</b> {u.correo}</div>
                   <div><b>Tipo:</b> {u.esAdministrativo ? "Administrativo" : "Farmacia"}</div>
                   {u.esAdministrativo ? (
-                    <div><b>Farmacias:</b> Todas (Administrativo)</div>
+                    <div>
+                      <b>Farmacias:</b> Todas ({Object.keys(u.farmacias || {}).length} farmacias)
+                      {Object.keys(u.farmacias || {}).length > 0 && (
+                        <div className="text-xs text-gray-600 mt-1">
+                          {Object.entries(u.farmacias || {}).map(([id, nombre]) => `${nombre} (${id})`).join(", ")}
+                        </div>
+                      )}
+                    </div>
                   ) : (
-                    <div><b>Farmacia:</b> {Object.entries(u.farmacias).map(([id, nombre]) => `${nombre} (${id})`).join(", ") || "Sin farmacia asignada"}</div>
+                    <div><b>Farmacia:</b> {Object.entries(u.farmacias || {}).map(([id, nombre]) => `${nombre} (${id})`).join(", ") || "Sin farmacia asignada"}</div>
                   )}
                   <div>
                     <b>Permisos:</b>

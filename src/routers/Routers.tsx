@@ -4,6 +4,7 @@ import { Routes, Route } from "react-router";
 import AboutPage from "@/pages/AboutPage";
 import NotFoundPage from "@/pages/NotFoundPage";
 import AdminPage from "@/pages/AdminPage";
+import HomePage from "@/pages/HomePage";
 import LoginPage from "@/pages/LoginPage";
 import PrivateRoute from "./PrivateRoute";
 import PermissionRoute from "./PermissionRoute";
@@ -46,7 +47,7 @@ const AppRouter = () => (
       path="/"
       element={
         <PrivateRoute>
-          <AdminPage />
+          <HomePage />
         </PrivateRoute>
       }
     />

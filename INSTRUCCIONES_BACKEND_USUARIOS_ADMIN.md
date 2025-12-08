@@ -39,7 +39,8 @@ El frontend ha sido actualizado para mejorar la administración de usuarios:
 - El campo `nombre` debe estar presente (puede ser null o string vacío si no se ha asignado)
 - El campo `contraseña` NO debe devolverse en la respuesta por seguridad
 - El campo `esAdministrativo` indica si el usuario es administrativo (true) o de farmacia (false)
-- Si `esAdministrativo` es true, el campo `farmacias` puede estar vacío o contener todas las farmacias
+- Si `esAdministrativo` es true, el frontend enviará TODAS las farmacias disponibles en el campo `farmacias`
+- El backend debe guardar todas las farmacias enviadas, NO debe limpiar el campo
 - Si `esAdministrativo` es false, el campo `farmacias` debe contener al menos una farmacia
 - El campo `permisos` debe ser siempre un array (puede estar vacío `[]`)
 - **CRÍTICO**: La respuesta debe ser un array, no un objeto. Si hay un error 401, devolver un objeto de error, pero si es exitoso, SIEMPRE devolver un array
@@ -82,11 +83,20 @@ El frontend ha sido actualizado para mejorar la administración de usuarios:
   "correo": "admin@rapifarma.com",
   "nombre": "Administrador",
   "contraseña": "admin123",
-  "farmacias": {},
+  "farmacias": {
+    "01": "Santa Elena",
+    "02": "Farmacia Centro",
+    "03": "Farmacia Norte"
+  },
   "permisos": ["acceso_admin", "ver_inventarios", "usuarios"],
   "esAdministrativo": true
 }
 ```
+
+**IMPORTANTE**: Cuando `esAdministrativo` es `true`, el frontend ahora envía TODAS las farmacias disponibles en el objeto `farmacias`. El backend debe:
+- Aceptar y guardar todas las farmacias enviadas
+- NO limpiar el campo `farmacias` cuando es administrativo
+- Almacenar todas las farmacias para que el frontend pueda mostrarlas correctamente
 
 **Response esperado** (200 OK):
 ```json
@@ -107,7 +117,9 @@ El frontend ha sido actualizado para mejorar la administración de usuarios:
 3. **nombre**: Opcional pero recomendado
 4. **farmacias**: 
    - Si `esAdministrativo` es false, debe contener al menos una farmacia válida
-   - Si `esAdministrativo` es true, puede estar vacío
+   - Si `esAdministrativo` is true, el frontend enviará TODAS las farmacias disponibles
+   - El backend debe aceptar y guardar todas las farmacias enviadas para usuarios administrativos
+   - NO debe limpiar el campo `farmacias` cuando es administrativo
 5. **permisos**: Array de strings, cada permiso debe ser válido según tu sistema
 6. **esAdministrativo**: Boolean, si no se envía, default false
 
@@ -132,7 +144,8 @@ El frontend ha sido actualizado para mejorar la administración de usuarios:
 **Notas importantes**:
 - Si `contraseña` está vacío o no se envía, mantener la contraseña actual
 - Si `contraseña` tiene un valor, actualizar la contraseña (hashearla)
-- Si `esAdministrativo` cambia de false a true, limpiar el campo `farmacias` o mantener todas
+- Si `esAdministrativo` cambia de false a true, el frontend enviará TODAS las farmacias disponibles
+- El backend debe guardar todas las farmacias enviadas, NO debe limpiar el campo `farmacias`
 - Si `esAdministrativo` cambia de true a false, requerir al menos una farmacia
 
 **Response esperado** (200 OK):
@@ -184,9 +197,11 @@ El frontend ha sido actualizado para mejorar la administración de usuarios:
 ### Al Crear Usuario:
 
 1. **Si esAdministrativo = true**:
-   - El campo `farmacias` puede estar vacío `{}`
+   - El frontend enviará TODAS las farmacias disponibles en el campo `farmacias`
+   - El backend debe aceptar y guardar todas las farmacias enviadas
+   - NO debe limpiar o vaciar el campo `farmacias`
    - El usuario tendrá acceso a todas las farmacias según sus permisos
-   - No requiere validación de farmacia específica
+   - Validar que las farmacias enviadas existan en la base de datos
 
 2. **Si esAdministrativo = false** (o no se envía):
    - El campo `farmacias` debe contener al menos una farmacia válida
@@ -196,7 +211,9 @@ El frontend ha sido actualizado para mejorar la administración de usuarios:
 ### Al Actualizar Usuario:
 
 1. **Si cambia esAdministrativo de false a true**:
-   - Limpiar o mantener todas las farmacias según tu lógica de negocio
+   - El frontend enviará TODAS las farmacias disponibles
+   - El backend debe guardar todas las farmacias enviadas en el campo `farmacias`
+   - NO debe limpiar el campo `farmacias`
    - El usuario ahora tiene acceso administrativo
 
 2. **Si cambia esAdministrativo de true a false**:
@@ -271,8 +288,20 @@ async def crear_usuario(
             detail="El correo ya está registrado"
         )
     
-    # Validar farmacias si no es administrativo
-    if not usuario.esAdministrativo:
+    # Validar farmacias
+    if usuario.esAdministrativo:
+        # Si es administrativo, el frontend enviará todas las farmacias
+        # Validar que todas las farmacias enviadas existan
+        if usuario.farmacias:
+            for farmacia_id in usuario.farmacias.keys():
+                farmacia = await db.farmacias.find_one({"_id": farmacia_id})
+                if not farmacia:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"La farmacia {farmacia_id} no existe"
+                    )
+    else:
+        # Si no es administrativo, debe tener al menos una farmacia
         if not usuario.farmacias:
             raise HTTPException(
                 status_code=400,
@@ -369,15 +398,15 @@ async def actualizar_usuario(
     if usuario_update.esAdministrativo is not None:
         update_data["esAdministrativo"] = usuario_update.esAdministrativo
         
-        # Si cambia a administrativo, limpiar farmacias
-        if usuario_update.esAdministrativo:
-            update_data["farmacias"] = {}
+        # Si cambia a administrativo, el frontend enviará todas las farmacias
+        # NO limpiar farmacias, el frontend las enviará en el campo farmacias
         # Si cambia a no administrativo, validar farmacias
-        elif usuario_update.farmacias is None or not usuario_update.farmacias:
-            raise HTTPException(
-                status_code=400,
-                detail="Los usuarios de farmacia deben tener al menos una farmacia asignada"
-            )
+        if not usuario_update.esAdministrativo:
+            if usuario_update.farmacias is None or not usuario_update.farmacias:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Los usuarios de farmacia deben tener al menos una farmacia asignada"
+                )
     
     if usuario_update.farmacias is not None:
         if not usuario_update.esAdministrativo if usuario_update.esAdministrativo is not None else not usuario.get("esAdministrativo", False):
@@ -504,8 +533,22 @@ router.post('/usuarios', async (req, res) => {
       return res.status(400).json({ detail: 'El correo ya está registrado' });
     }
     
-    // Validar farmacias si no es administrativo
-    if (!esAdministrativo) {
+    // Validar farmacias
+    if (esAdministrativo) {
+      // Si es administrativo, el frontend enviará todas las farmacias
+      // Validar que todas las farmacias enviadas existan
+      if (farmacias && Object.keys(farmacias).length > 0) {
+        for (const farmaciaId of Object.keys(farmacias)) {
+          const farmacia = await Farmacia.findById(farmaciaId);
+          if (!farmacia) {
+            return res.status(400).json({ 
+              detail: `La farmacia ${farmaciaId} no existe` 
+            });
+          }
+        }
+      }
+    } else {
+      // Si no es administrativo, debe tener al menos una farmacia
       if (!farmacias || Object.keys(farmacias).length === 0) {
         return res.status(400).json({ 
           detail: 'Los usuarios de farmacia deben tener al menos una farmacia asignada' 
@@ -607,18 +650,35 @@ router.patch('/usuarios/:id', async (req, res) => {
     if (esAdministrativo !== undefined) {
       updateData.esAdministrativo = esAdministrativo;
       
-      if (esAdministrativo) {
-        updateData.farmacias = {};
-      } else if (!farmacias || Object.keys(farmacias).length === 0) {
-        return res.status(400).json({ 
-          detail: 'Los usuarios de farmacia deben tener al menos una farmacia asignada' 
-        });
+      // Si cambia a administrativo, el frontend enviará todas las farmacias
+      // NO limpiar farmacias aquí, el frontend las enviará en el campo farmacias
+      if (!esAdministrativo) {
+        if (!farmacias || Object.keys(farmacias).length === 0) {
+          return res.status(400).json({ 
+            detail: 'Los usuarios de farmacia deben tener al menos una farmacia asignada' 
+          });
+        }
       }
     }
     
     if (farmacias !== undefined) {
       const esAdmin = esAdministrativo !== undefined ? esAdministrativo : usuario.esAdministrativo;
-      if (!esAdmin) {
+      
+      if (esAdmin) {
+        // Si es administrativo, el frontend enviará todas las farmacias
+        // Validar que todas las farmacias enviadas existan
+        if (farmacias && Object.keys(farmacias).length > 0) {
+          for (const farmaciaId of Object.keys(farmacias)) {
+            const farmacia = await Farmacia.findById(farmaciaId);
+            if (!farmacia) {
+              return res.status(400).json({ 
+                detail: `La farmacia ${farmaciaId} no existe` 
+              });
+            }
+          }
+        }
+      } else {
+        // Si no es administrativo, debe tener al menos una farmacia
         if (!farmacias || Object.keys(farmacias).length === 0) {
           return res.status(400).json({ 
             detail: 'Los usuarios de farmacia deben tener al menos una farmacia asignada' 
@@ -780,6 +840,22 @@ module.exports = router;
    - Debe mostrarse en las respuestas GET
 
 5. **Tipo de Usuario**:
-   - `esAdministrativo: true` → Usuario administrativo, puede tener acceso a todas las farmacias
+   - `esAdministrativo: true` → Usuario administrativo, el frontend enviará TODAS las farmacias disponibles
+   - El backend debe guardar todas las farmacias enviadas, NO debe limpiar el campo `farmacias`
    - `esAdministrativo: false` → Usuario de farmacia, debe tener al menos una farmacia asignada
+
+## CAMBIO IMPORTANTE - Usuarios Administrativos y Farmacias
+
+**PROBLEMA CORREGIDO**: Cuando se seleccionaba "Administrativo", el frontend enviaba `farmacias: {}` (vacío), pero ahora envía TODAS las farmacias disponibles.
+
+**COMPORTAMIENTO ACTUAL DEL FRONTEND**:
+- Cuando `esAdministrativo = true`, el frontend envía todas las farmacias disponibles en el objeto `farmacias`
+- El backend debe aceptar y guardar todas las farmacias enviadas
+- NO debe limpiar o vaciar el campo `farmacias` cuando es administrativo
+
+**ACCIÓN REQUERIDA EN EL BACKEND**:
+1. Actualizar la lógica de creación (POST `/usuarios`) para aceptar todas las farmacias cuando `esAdministrativo = true`
+2. Actualizar la lógica de actualización (PATCH `/usuarios/{id}`) para NO limpiar `farmacias` cuando cambia a administrativo
+3. Validar que todas las farmacias enviadas existan en la base de datos
+4. Guardar todas las farmacias en el campo `farmacias` del usuario administrativo
 
