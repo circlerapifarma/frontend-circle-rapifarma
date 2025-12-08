@@ -372,6 +372,42 @@ const ListasComparativasPage: React.FC = () => {
   };
 
   // Función para calcular estadísticas
+  // Función para generar un color único y consistente para cada proveedor
+  const obtenerColorProveedor = (proveedorId: string | undefined): { bg: string; text: string; border: string } => {
+    if (!proveedorId) {
+      return { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-300' };
+    }
+
+    // Paleta de colores suaves y distinguibles
+    const colores = [
+      { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-300' },
+      { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-300' },
+      { bg: 'bg-yellow-100', text: 'text-yellow-800', border: 'border-yellow-300' },
+      { bg: 'bg-purple-100', text: 'text-purple-800', border: 'border-purple-300' },
+      { bg: 'bg-pink-100', text: 'text-pink-800', border: 'border-pink-300' },
+      { bg: 'bg-indigo-100', text: 'text-indigo-800', border: 'border-indigo-300' },
+      { bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-300' },
+      { bg: 'bg-teal-100', text: 'text-teal-800', border: 'border-teal-300' },
+      { bg: 'bg-orange-100', text: 'text-orange-800', border: 'border-orange-300' },
+      { bg: 'bg-cyan-100', text: 'text-cyan-800', border: 'border-cyan-300' },
+      { bg: 'bg-amber-100', text: 'text-amber-800', border: 'border-amber-300' },
+      { bg: 'bg-lime-100', text: 'text-lime-800', border: 'border-lime-300' },
+      { bg: 'bg-emerald-100', text: 'text-emerald-800', border: 'border-emerald-300' },
+      { bg: 'bg-violet-100', text: 'text-violet-800', border: 'border-violet-300' },
+      { bg: 'bg-rose-100', text: 'text-rose-800', border: 'border-rose-300' },
+    ];
+
+    // Generar un hash simple del ID del proveedor
+    let hash = 0;
+    for (let i = 0; i < proveedorId.length; i++) {
+      hash = proveedorId.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    
+    // Usar el hash para seleccionar un color de la paleta
+    const index = Math.abs(hash) % colores.length;
+    return colores[index];
+  };
+
   const calcularEstadisticas = (listas: ListaComparativa[], totalProveedoresRegistrados: number) => {
     // Proveedores que tienen listas cargadas (no el total de items)
     const proveedoresConListas = new Set(listas.map(l => l.proveedorId));
@@ -550,7 +586,47 @@ const ListasComparativasPage: React.FC = () => {
       {/* Navbar con estadísticas */}
       <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
         <div className="flex justify-between items-center mb-4">
-          <h1 className="text-3xl font-bold text-gray-800">Listas Comparativas</h1>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800">Listas Comparativas</h1>
+            {/* Leyenda de colores de proveedores */}
+            {proveedores.length > 0 && (
+              <div className="flex flex-wrap gap-2 items-center mt-2">
+                <span className="text-xs text-gray-600 font-semibold mr-2">Proveedores:</span>
+                {proveedores.slice(0, 8).map((prov) => {
+                  const colorProveedor = obtenerColorProveedor(prov._id);
+                  return (
+                    <div
+                      key={prov._id}
+                      className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full border text-xs ${colorProveedor.bg} ${colorProveedor.text} ${colorProveedor.border}`}
+                      title={prov.nombreJuridico}
+                    >
+                      <div className="w-2 h-2 rounded-full" style={{ 
+                        backgroundColor: colorProveedor.bg.includes('blue') ? '#3b82f6' :
+                                        colorProveedor.bg.includes('green') ? '#10b981' :
+                                        colorProveedor.bg.includes('yellow') ? '#eab308' :
+                                        colorProveedor.bg.includes('purple') ? '#a855f7' :
+                                        colorProveedor.bg.includes('pink') ? '#ec4899' :
+                                        colorProveedor.bg.includes('indigo') ? '#6366f1' :
+                                        colorProveedor.bg.includes('red') ? '#ef4444' :
+                                        colorProveedor.bg.includes('teal') ? '#14b8a6' :
+                                        colorProveedor.bg.includes('orange') ? '#f97316' :
+                                        colorProveedor.bg.includes('cyan') ? '#06b6d4' :
+                                        colorProveedor.bg.includes('amber') ? '#f59e0b' :
+                                        colorProveedor.bg.includes('lime') ? '#84cc16' :
+                                        colorProveedor.bg.includes('emerald') ? '#10b981' :
+                                        colorProveedor.bg.includes('violet') ? '#8b5cf6' :
+                                        colorProveedor.bg.includes('rose') ? '#f43f5e' : '#6b7280'
+                      }}></div>
+                      <span className="truncate max-w-[100px]">{prov.nombreJuridico}</span>
+                    </div>
+                  );
+                })}
+                {proveedores.length > 8 && (
+                  <span className="text-xs text-gray-500">+{proveedores.length - 8} más</span>
+                )}
+              </div>
+            )}
+          </div>
           <div className="flex gap-2">
             <Button
               variant="outline"
@@ -770,10 +846,36 @@ const ListasComparativasPage: React.FC = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="font-medium">{mejorPrecio.proveedor?.nombreJuridico || "N/A"}</div>
-                          <div className="text-xs text-gray-500">
-                            Precio: {formatCurrency(mejorPrecio.precio)} | Desc: {mejorPrecio.descuento}%
-                          </div>
+                          {(() => {
+                            const colorProveedor = obtenerColorProveedor(mejorPrecio.proveedorId);
+                            return (
+                              <div>
+                                <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border-2 ${colorProveedor.bg} ${colorProveedor.text} ${colorProveedor.border}`}>
+                                  <div className={`w-3 h-3 rounded-full ${colorProveedor.bg.replace('bg-', 'bg-').split('-')[0] === 'bg' ? colorProveedor.bg : colorProveedor.bg}`} style={{ 
+                                    backgroundColor: colorProveedor.bg.includes('blue') ? '#3b82f6' :
+                                                    colorProveedor.bg.includes('green') ? '#10b981' :
+                                                    colorProveedor.bg.includes('yellow') ? '#eab308' :
+                                                    colorProveedor.bg.includes('purple') ? '#a855f7' :
+                                                    colorProveedor.bg.includes('pink') ? '#ec4899' :
+                                                    colorProveedor.bg.includes('indigo') ? '#6366f1' :
+                                                    colorProveedor.bg.includes('red') ? '#ef4444' :
+                                                    colorProveedor.bg.includes('teal') ? '#14b8a6' :
+                                                    colorProveedor.bg.includes('orange') ? '#f97316' :
+                                                    colorProveedor.bg.includes('cyan') ? '#06b6d4' :
+                                                    colorProveedor.bg.includes('amber') ? '#f59e0b' :
+                                                    colorProveedor.bg.includes('lime') ? '#84cc16' :
+                                                    colorProveedor.bg.includes('emerald') ? '#10b981' :
+                                                    colorProveedor.bg.includes('violet') ? '#8b5cf6' :
+                                                    colorProveedor.bg.includes('rose') ? '#f43f5e' : '#6b7280'
+                                  }}></div>
+                                  <div className="font-medium">{mejorPrecio.proveedor?.nombreJuridico || "N/A"}</div>
+                                </div>
+                                <div className="text-xs text-gray-500 mt-1">
+                                  Precio: {formatCurrency(mejorPrecio.precio)} | Desc: {mejorPrecio.descuento}%
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </TableCell>
                         <TableCell>
                           <div className={obtenerColorCosto(mejorCosto, mejorPrecio.precioNeto)}>
@@ -842,17 +944,41 @@ const ListasComparativasPage: React.FC = () => {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <div className="text-sm">
-                              <div className="font-medium">{lista.proveedor?.nombreJuridico || "N/A"}</div>
-                              <div className="text-xs text-gray-500">
-                                Desc. Comercial: {lista.proveedor?.descuentosComerciales || 0}%
-                              </div>
-                              {lista.fechaVencimiento && (
-                                <div className="text-xs text-gray-500 mt-1">
-                                  Vence: {new Date(lista.fechaVencimiento).toLocaleDateString('es-VE')}
+                            {(() => {
+                              const colorProveedor = obtenerColorProveedor(lista.proveedorId);
+                              return (
+                                <div className="text-sm">
+                                  <div className={`inline-flex items-center gap-2 px-2 py-1 rounded-full border ${colorProveedor.bg} ${colorProveedor.text} ${colorProveedor.border}`}>
+                                    <div className={`w-2.5 h-2.5 rounded-full`} style={{ 
+                                      backgroundColor: colorProveedor.bg.includes('blue') ? '#3b82f6' :
+                                                      colorProveedor.bg.includes('green') ? '#10b981' :
+                                                      colorProveedor.bg.includes('yellow') ? '#eab308' :
+                                                      colorProveedor.bg.includes('purple') ? '#a855f7' :
+                                                      colorProveedor.bg.includes('pink') ? '#ec4899' :
+                                                      colorProveedor.bg.includes('indigo') ? '#6366f1' :
+                                                      colorProveedor.bg.includes('red') ? '#ef4444' :
+                                                      colorProveedor.bg.includes('teal') ? '#14b8a6' :
+                                                      colorProveedor.bg.includes('orange') ? '#f97316' :
+                                                      colorProveedor.bg.includes('cyan') ? '#06b6d4' :
+                                                      colorProveedor.bg.includes('amber') ? '#f59e0b' :
+                                                      colorProveedor.bg.includes('lime') ? '#84cc16' :
+                                                      colorProveedor.bg.includes('emerald') ? '#10b981' :
+                                                      colorProveedor.bg.includes('violet') ? '#8b5cf6' :
+                                                      colorProveedor.bg.includes('rose') ? '#f43f5e' : '#6b7280'
+                                    }}></div>
+                                    <div className="font-medium text-xs">{lista.proveedor?.nombreJuridico || "N/A"}</div>
+                                  </div>
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    Desc. Comercial: {lista.proveedor?.descuentosComerciales || 0}%
+                                  </div>
+                                  {lista.fechaVencimiento && (
+                                    <div className="text-xs text-gray-500 mt-1">
+                                      Vence: {new Date(lista.fechaVencimiento).toLocaleDateString('es-VE')}
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                            </div>
+                              );
+                            })()}
                           </TableCell>
                           <TableCell className="text-sm">
                             {formatCurrency(lista.miCosto)}
