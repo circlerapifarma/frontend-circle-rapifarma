@@ -28,6 +28,7 @@ const PERMISOS = [
   "verificar_gastos",
   "proveedores",
   "listas_comparativas",
+  "orden_compra",
   "acceso_admin",
   "gestionar_usuarios",
   "ver_inventarios",

@@ -37,6 +37,7 @@ import RegistroUsuario from "@/pages/auth/RegistroUsuario";
 import ProveedoresPage from "@/pages/ProveedoresPage";
 import UsuariosAdminPage from "@/pages/UsuariosAdminPage";
 import ListasComparativasPage from "@/pages/ListasComparativasPage";
+import OrdenCompraPage from "@/pages/OrdenCompraPage";
 
 const AppRouter = () => (
   <Routes>
@@ -314,6 +315,14 @@ const AppRouter = () => (
       element={
         <PermissionRoute permiso="listas_comparativas">
           <ListasComparativasPage />
+        </PermissionRoute>
+      }
+    />
+    <Route
+      path="/orden-compra"
+      element={
+        <PermissionRoute permiso="orden_compra">
+          <OrdenCompraPage />
         </PermissionRoute>
       }
     />

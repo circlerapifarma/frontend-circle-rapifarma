@@ -170,6 +170,11 @@ const allLinks: LinkCategory[] = [
         permiso: "listas_comparativas",
       },
       {
+        to: "/orden-compra",
+        label: "Orden de Compra",
+        permiso: "orden_compra",
+      },
+      {
         to: "/valesporfarmacia",
         label: "Vales por Farmacia",
         permiso: "ver_cuadres_dia",

@@ -56,6 +56,7 @@ const PERMISOS_DISPONIBLES: string[] = [
   "modificar_cuadre",
   "proveedores",
   "listas_comparativas",
+  "orden_compra",
 ];
 
 // --- COMPONENTE ---
