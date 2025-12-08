@@ -30,6 +30,7 @@ const OrdenCompraPage: React.FC = () => {
     limpiarCarrito,
     exportarExcelPorFarmacia,
     exportarPDFPorFarmacia,
+    imprimirPorFarmacia,
     totalItems,
     totalGeneral,
   } = useOrdenCompra();
@@ -46,12 +47,13 @@ const OrdenCompraPage: React.FC = () => {
     ? ordenCompraPorFarmacia.filter(o => o.farmacia === farmaciaSeleccionada)
     : ordenCompraPorFarmacia;
 
-  const formatCurrency = (value: number) => {
+  const formatCurrency = (value: number | undefined | null) => {
+    const numValue = value || 0;
     return new Intl.NumberFormat("es-VE", {
       style: "currency",
       currency: "USD",
       minimumFractionDigits: 2,
-    }).format(value);
+    }).format(numValue);
   };
 
   const handleTotalizar = (farmaciaId: string) => {
@@ -255,7 +257,7 @@ const OrdenCompraPage: React.FC = () => {
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => window.print()}
+                  onClick={() => imprimirPorFarmacia(orden.farmacia)}
                   className="border-purple-300 text-purple-600 hover:bg-purple-50"
                 >
                   <Printer className="w-4 h-4 mr-2" />
@@ -274,7 +276,11 @@ const OrdenCompraPage: React.FC = () => {
             {/* Items agrupados por proveedor */}
             {Array.from(itemsPorProveedor.entries()).map(([proveedorId, items]) => {
               const proveedorNombre = items[0]?.proveedorNombre || "N/A";
-              const subtotalProveedor = items.reduce((sum, item) => sum + (item.precioNeto * item.cantidad), 0);
+              const subtotalProveedor = items.reduce((sum, item) => {
+                const precioNeto = item.precioNeto || 0;
+                const cantidad = item.cantidad || 0;
+                return sum + (precioNeto * cantidad);
+              }, 0);
 
               return (
                 <div key={proveedorId} className="mb-6 border-b pb-4 last:border-b-0">
@@ -298,7 +304,9 @@ const OrdenCompraPage: React.FC = () => {
                       </TableHeader>
                       <TableBody>
                         {items.map((item, idx) => {
-                          const subtotal = item.precioNeto * item.cantidad;
+                          const precioNeto = item.precioNeto || 0;
+                          const cantidad = item.cantidad || 0;
+                          const subtotal = precioNeto * cantidad;
                           const isEditing = editandoCantidad?.listaId === item.listaId && 
                                           editandoCantidad?.farmaciaId === item.farmacia;
 
@@ -307,10 +315,10 @@ const OrdenCompraPage: React.FC = () => {
                               <TableCell className="font-medium">{item.codigo}</TableCell>
                               <TableCell>{item.descripcion}</TableCell>
                               <TableCell>{item.laboratorio || "N/A"}</TableCell>
-                              <TableCell>{formatCurrency(item.precio)}</TableCell>
-                              <TableCell>{item.descuento}%</TableCell>
+                              <TableCell>{formatCurrency(item.precio || 0)}</TableCell>
+                              <TableCell>{item.descuento || 0}%</TableCell>
                               <TableCell className="font-semibold text-green-700">
-                                {formatCurrency(item.precioNeto)}
+                                {formatCurrency(item.precioNeto || 0)}
                               </TableCell>
                               <TableCell>
                                 {isEditing ? (

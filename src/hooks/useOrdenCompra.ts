@@ -157,7 +157,7 @@ export function useOrdenCompra() {
     });
   };
 
-  // Exportar a Excel por farmacia
+  // Exportar a Excel por farmacia (agrupado por proveedor)
   const exportarExcelPorFarmacia = (farmaciaId: string) => {
     const grupo = ordenCompraPorFarmacia().find(g => g.farmacia === farmaciaId);
     if (!grupo || grupo.items.length === 0) {
@@ -165,82 +165,132 @@ export function useOrdenCompra() {
       return;
     }
 
-    // Preparar datos para Excel
-    const datos: Array<{
-      'Código': string;
-      'Descripción': string;
-      'Laboratorio': string;
-      'Proveedor': string;
-      'Precio': number;
-      'Descuento (%)': number;
-      'Precio Neto': number;
-      'Cantidad': number | string;
-      'Subtotal': number;
-      'Fecha Vencimiento': string;
-    }> = grupo.items.map(item => ({
-      'Código': item.codigo,
-      'Descripción': item.descripcion,
-      'Laboratorio': item.laboratorio || '',
-      'Proveedor': item.proveedorNombre,
-      'Precio': item.precio,
-      'Descuento (%)': item.descuento,
-      'Precio Neto': item.precioNeto,
-      'Cantidad': item.cantidad,
-      'Subtotal': item.precioNeto * item.cantidad,
-      'Fecha Vencimiento': item.fechaVencimiento 
-        ? new Date(item.fechaVencimiento).toLocaleDateString('es-VE')
-        : '',
-    }));
-
-    // Agregar fila de total
-    datos.push({
-      'Código': '',
-      'Descripción': '',
-      'Laboratorio': '',
-      'Proveedor': '',
-      'Precio': 0,
-      'Descuento (%)': 0,
-      'Precio Neto': 0,
-      'Cantidad': 'TOTAL',
-      'Subtotal': grupo.total,
-      'Fecha Vencimiento': '',
+    // Agrupar items por proveedor
+    const itemsPorProveedor = new Map<string, ItemOrdenCompra[]>();
+    grupo.items.forEach(item => {
+      const proveedorKey = item.proveedorId;
+      if (!itemsPorProveedor.has(proveedorKey)) {
+        itemsPorProveedor.set(proveedorKey, []);
+      }
+      itemsPorProveedor.get(proveedorKey)!.push(item);
     });
 
     // Crear workbook
     const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(datos);
-    
-    // Ajustar anchos de columna
-    const colWidths = [
-      { wch: 15 }, // Código
-      { wch: 40 }, // Descripción
-      { wch: 25 }, // Laboratorio
-      { wch: 30 }, // Proveedor
-      { wch: 12 }, // Precio
-      { wch: 12 }, // Descuento
-      { wch: 12 }, // Precio Neto
-      { wch: 10 }, // Cantidad
-      { wch: 12 }, // Subtotal
-      { wch: 15 }, // Fecha Vencimiento
-    ];
-    ws['!cols'] = colWidths;
 
-    XLSX.utils.book_append_sheet(wb, ws, 'Orden de Compra');
+    // Crear una hoja por proveedor
+    const proveedoresArray = Array.from(itemsPorProveedor.entries());
+    proveedoresArray.forEach(([, items], index) => {
+      const proveedorNombre = items[0]?.proveedorNombre || 'N/A';
+      const subtotalProveedor = items.reduce((sum, item) => sum + ((item.precioNeto || 0) * (item.cantidad || 0)), 0);
+
+      // Preparar datos para Excel
+      const datos: Array<{
+        'Código': string;
+        'Descripción': string;
+        'Laboratorio': string;
+        'Precio': number;
+        'Descuento (%)': number;
+        'Precio Neto': number;
+        'Cantidad': number | string;
+        'Subtotal': number;
+        'Fecha Vencimiento': string;
+      }> = items
+        .filter(item => item != null)
+        .map(item => {
+          const precio = (item?.precio != null && !isNaN(item.precio)) ? item.precio : 0;
+          const precioNeto = (item?.precioNeto != null && !isNaN(item.precioNeto)) ? item.precioNeto : 0;
+          const cantidad = (item?.cantidad != null && !isNaN(item.cantidad)) ? item.cantidad : 0;
+          const descuento = (item?.descuento != null && !isNaN(item.descuento)) ? item.descuento : 0;
+          return {
+            'Código': item?.codigo || '',
+            'Descripción': item?.descripcion || '',
+            'Laboratorio': item?.laboratorio || '',
+            'Precio': precio,
+            'Descuento (%)': descuento,
+            'Precio Neto': precioNeto,
+            'Cantidad': cantidad,
+            'Subtotal': precioNeto * cantidad,
+            'Fecha Vencimiento': item?.fechaVencimiento 
+              ? new Date(item.fechaVencimiento).toLocaleDateString('es-VE')
+              : '',
+          };
+        });
+
+      // Agregar fila de subtotal del proveedor
+      datos.push({
+        'Código': '',
+        'Descripción': '',
+        'Laboratorio': '',
+        'Precio': 0,
+        'Descuento (%)': 0,
+        'Precio Neto': 0,
+        'Cantidad': `SUBTOTAL ${proveedorNombre}`,
+        'Subtotal': subtotalProveedor,
+        'Fecha Vencimiento': '',
+      });
+
+      // Agregar fila de total general (solo en el último proveedor)
+      const esUltimoProveedor = index === proveedoresArray.length - 1;
+      if (esUltimoProveedor) {
+        datos.push({
+          'Código': '',
+          'Descripción': '',
+          'Laboratorio': '',
+          'Precio': 0,
+          'Descuento (%)': 0,
+          'Precio Neto': 0,
+          'Cantidad': 'TOTAL GENERAL',
+          'Subtotal': grupo.total || 0,
+          'Fecha Vencimiento': '',
+        });
+      }
+
+      const ws = XLSX.utils.json_to_sheet(datos);
+      
+      // Ajustar anchos de columna
+      const colWidths = [
+        { wch: 15 }, // Código
+        { wch: 40 }, // Descripción
+        { wch: 25 }, // Laboratorio
+        { wch: 12 }, // Precio
+        { wch: 12 }, // Descuento
+        { wch: 12 }, // Precio Neto
+        { wch: 10 }, // Cantidad
+        { wch: 12 }, // Subtotal
+        { wch: 15 }, // Fecha Vencimiento
+      ];
+      ws['!cols'] = colWidths;
+
+      // Limpiar nombre de hoja (máximo 31 caracteres)
+      const nombreHoja = proveedorNombre.substring(0, 31);
+      XLSX.utils.book_append_sheet(wb, ws, nombreHoja);
+    });
     
     // Descargar
     const nombreArchivo = `Orden_Compra_${grupo.farmaciaNombre}_${new Date().toISOString().split('T')[0]}.xlsx`;
     XLSX.writeFile(wb, nombreArchivo);
   };
 
-  // Exportar a PDF por farmacia (usando window.print o jsPDF si está disponible)
-  const exportarPDFPorFarmacia = (farmaciaId: string) => {
+  // Imprimir orden por farmacia (agrupado por proveedor)
+  const imprimirPorFarmacia = (farmaciaId: string) => {
     const grupo = ordenCompraPorFarmacia().find(g => g.farmacia === farmaciaId);
     if (!grupo || grupo.items.length === 0) {
       alert('No hay items en la orden de compra para esta farmacia');
       return;
     }
 
-    // Crear contenido HTML para el PDF
+    // Agrupar items por proveedor
+    const itemsPorProveedor = new Map<string, ItemOrdenCompra[]>();
+    grupo.items.forEach(item => {
+      const proveedorKey = item.proveedorId;
+      if (!itemsPorProveedor.has(proveedorKey)) {
+        itemsPorProveedor.set(proveedorKey, []);
+      }
+      itemsPorProveedor.get(proveedorKey)!.push(item);
+    });
+
+    // Crear contenido HTML para imprimir
     const contenido = `
       <!DOCTYPE html>
       <html>
@@ -248,14 +298,22 @@ export function useOrdenCompra() {
           <meta charset="UTF-8">
           <title>Orden de Compra - ${grupo.farmaciaNombre}</title>
           <style>
+            @media print {
+              body { margin: 0; padding: 20px; }
+              .no-print { display: none; }
+              @page { margin: 1cm; }
+            }
             body { font-family: Arial, sans-serif; padding: 20px; }
             h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; }
             .info { margin-bottom: 20px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            .proveedor-section { margin-bottom: 30px; page-break-inside: avoid; }
+            .proveedor-title { background-color: #4CAF50; color: white; padding: 10px; font-weight: bold; margin-bottom: 10px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
             th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
             th { background-color: #4CAF50; color: white; }
             tr:nth-child(even) { background-color: #f2f2f2; }
-            .total { font-weight: bold; font-size: 1.2em; }
+            .subtotal { font-weight: bold; background-color: #e8f5e9; }
+            .total { font-weight: bold; font-size: 1.2em; background-color: #c8e6c9; }
             .footer { margin-top: 30px; text-align: right; }
           </style>
         </head>
@@ -266,40 +324,70 @@ export function useOrdenCompra() {
             <p><strong>Fecha:</strong> ${new Date().toLocaleDateString('es-VE')}</p>
             <p><strong>Total de Items:</strong> ${grupo.items.length}</p>
           </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Código</th>
-                <th>Descripción</th>
-                <th>Laboratorio</th>
-                <th>Proveedor</th>
-                <th>Precio</th>
-                <th>Desc. (%)</th>
-                <th>Precio Neto</th>
-                <th>Cantidad</th>
-                <th>Subtotal</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${grupo.items.map(item => `
-                <tr>
-                  <td>${item.codigo}</td>
-                  <td>${item.descripcion}</td>
-                  <td>${item.laboratorio || ''}</td>
-                  <td>${item.proveedorNombre}</td>
-                  <td>$${item.precio.toFixed(2)}</td>
-                  <td>${item.descuento}%</td>
-                  <td>$${item.precioNeto.toFixed(2)}</td>
-                  <td>${item.cantidad}</td>
-                  <td>$${(item.precioNeto * item.cantidad).toFixed(2)}</td>
-                </tr>
-              `).join('')}
+          ${Array.from(itemsPorProveedor.entries()).map(([, items]) => {
+            if (!items || items.length === 0) return '';
+            const proveedorNombre = items[0]?.proveedorNombre || 'N/A';
+            const subtotalProveedor = items
+              .filter(item => item != null)
+              .reduce((sum, item) => {
+                const precioNeto = (item?.precioNeto != null && !isNaN(item.precioNeto)) ? item.precioNeto : 0;
+                const cantidad = (item?.cantidad != null && !isNaN(item.cantidad)) ? item.cantidad : 0;
+                return sum + (precioNeto * cantidad);
+              }, 0);
+            return `
+            <div class="proveedor-section">
+              <div class="proveedor-title">Proveedor: ${proveedorNombre}</div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Código</th>
+                    <th>Descripción</th>
+                    <th>Laboratorio</th>
+                    <th>Precio</th>
+                    <th>Desc. (%)</th>
+                    <th>Precio Neto</th>
+                    <th>Cantidad</th>
+                    <th>Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${items.filter(item => item != null).map(item => {
+                    if (!item) return '';
+                    const precio = (item.precio != null && !isNaN(item.precio)) ? item.precio : 0;
+                    const precioNeto = (item.precioNeto != null && !isNaN(item.precioNeto)) ? item.precioNeto : 0;
+                    const cantidad = (item.cantidad != null && !isNaN(item.cantidad)) ? item.cantidad : 0;
+                    const descuento = (item.descuento != null && !isNaN(item.descuento)) ? item.descuento : 0;
+                    const subtotal = precioNeto * cantidad;
+                    return `
+                    <tr>
+                      <td>${item.codigo || ''}</td>
+                      <td>${item.descripcion || ''}</td>
+                      <td>${item.laboratorio || ''}</td>
+                      <td>$${Number(precio).toFixed(2)}</td>
+                      <td>${Number(descuento)}%</td>
+                      <td>$${Number(precioNeto).toFixed(2)}</td>
+                      <td>${Number(cantidad)}</td>
+                      <td>$${Number(subtotal).toFixed(2)}</td>
+                    </tr>
+                  `;
+                  }).join('')}
+                  <tr class="subtotal">
+                    <td colspan="7" style="text-align: right;">Subtotal ${proveedorNombre}:</td>
+                    <td>$${Number(subtotalProveedor || 0).toFixed(2)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            `;
+          }).join('')}
+          <div style="margin-top: 20px;">
+            <table>
               <tr class="total">
-                <td colspan="8" style="text-align: right;">TOTAL:</td>
-                <td>$${grupo.total.toFixed(2)}</td>
+                <td colspan="7" style="text-align: right; padding: 15px;">TOTAL ${grupo.farmaciaNombre}:</td>
+                <td style="padding: 15px;">$${Number(grupo.total || 0).toFixed(2)}</td>
               </tr>
-            </tbody>
-          </table>
+            </table>
+          </div>
           <div class="footer">
             <p>Generado el ${new Date().toLocaleString('es-VE')}</p>
           </div>
@@ -307,7 +395,7 @@ export function useOrdenCompra() {
       </html>
     `;
 
-    // Abrir ventana para imprimir/guardar como PDF
+    // Abrir ventana para imprimir
     const ventana = window.open('', '_blank');
     if (ventana) {
       ventana.document.write(contenido);
@@ -316,6 +404,12 @@ export function useOrdenCompra() {
         ventana.print();
       }, 250);
     }
+  };
+
+  // Exportar a PDF por farmacia (agrupado por proveedor, usando window.print)
+  const exportarPDFPorFarmacia = (farmaciaId: string) => {
+    // Reutilizar la función de imprimir que ya agrupa por proveedor
+    imprimirPorFarmacia(farmaciaId);
   };
 
   // Exportar todas las farmacias a Excel (múltiples hojas)
@@ -345,11 +439,11 @@ export function useOrdenCompra() {
         'Descripción': item.descripcion,
         'Laboratorio': item.laboratorio || '',
         'Proveedor': item.proveedorNombre,
-        'Precio': item.precio,
-        'Descuento (%)': item.descuento,
-        'Precio Neto': item.precioNeto,
-        'Cantidad': item.cantidad,
-        'Subtotal': item.precioNeto * item.cantidad,
+        'Precio': item.precio || 0,
+        'Descuento (%)': item.descuento || 0,
+        'Precio Neto': item.precioNeto || 0,
+        'Cantidad': item.cantidad || 0,
+        'Subtotal': (item.precioNeto || 0) * (item.cantidad || 0),
         'Fecha Vencimiento': item.fechaVencimiento 
           ? new Date(item.fechaVencimiento).toLocaleDateString('es-VE')
           : '',
@@ -398,6 +492,7 @@ export function useOrdenCompra() {
     limpiarCarrito,
     exportarExcelPorFarmacia,
     exportarPDFPorFarmacia,
+    imprimirPorFarmacia,
     exportarTodasFarmaciasExcel,
     totalItems,
     totalGeneral,
