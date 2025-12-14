@@ -84,6 +84,9 @@ export function useResumenData() {
   const [inventariosFarmacia, setInventariosFarmacia] = useState<{
     [key: string]: number;
   }>({});
+  const [costoInventarioCuadresPorFarmacia, setCostoInventarioCuadresPorFarmacia] = useState<{
+    [key: string]: number;
+  }>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [fechaInicio, setFechaInicio] = useState<string>("");
@@ -579,6 +582,47 @@ export function useResumenData() {
     return () => clearInterval(interval);
   }, []);
 
+  // Fetch costo de inventario de cuadres por farmacia usando el endpoint optimizado
+  useEffect(() => {
+    const fetchCostoInventarioCuadres = async () => {
+      try {
+        // Calcular rango del mes actual hasta el día de hoy dinámicamente
+        const now = new Date();
+        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const fechaInicioMes = firstDayOfMonth.toISOString().split("T")[0];
+        const fechaFinHoy = today.toISOString().split("T")[0];
+        
+        const token = localStorage.getItem("token");
+        const headers: HeadersInit = {};
+        if (token) {
+          headers.Authorization = `Bearer ${token}`;
+        }
+        
+        // Usar el endpoint optimizado del backend
+        const url = `${API_BASE_URL}/cuadres/costo-inventario/por-farmacia?fecha_inicio=${fechaInicioMes}&fecha_fin=${fechaFinHoy}`;
+        const res = await fetch(url, { headers });
+        
+        if (res.ok) {
+          const data = await res.json();
+          console.log("useResumenData - Costo inventario cuadres por farmacia obtenidos:", data);
+          setCostoInventarioCuadresPorFarmacia(data);
+        } else {
+          console.error("useResumenData - Error al obtener costo inventario cuadres por farmacia:", res.status, res.statusText);
+          setCostoInventarioCuadresPorFarmacia({});
+        }
+      } catch (error) {
+        console.error("useResumenData - Error al obtener costo inventario cuadres por farmacia:", error);
+        setCostoInventarioCuadresPorFarmacia({});
+      }
+    };
+    
+    fetchCostoInventarioCuadres();
+    // Actualizar cada 60 segundos
+    const interval = setInterval(fetchCostoInventarioCuadres, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
   const gastosPorFarmacia = useMemo(() => {
     // Si tenemos datos del endpoint optimizado, usarlos directamente
     if (Object.keys(gastosPorFarmaciaData).length > 0) {
@@ -782,6 +826,7 @@ export function useResumenData() {
     sortedFarmacias,
     pendientesPorFarmacia,
     inventariosFarmacia,
+    costoInventarioCuadresPorFarmacia,
     fechaInicio,
     fechaFin,
     setFechaInicio,

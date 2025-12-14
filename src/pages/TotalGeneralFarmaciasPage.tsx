@@ -136,14 +136,45 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
         const total = verified.reduce((acc: number, cuadre: any) => acc + (cuadre.totalGeneralUsd || 0), 0);
         const sobrantes = verified.reduce((acc: number, cuadre: any) => acc + (cuadre.sobranteUsd || 0), 0);
         const faltantes = verified.reduce((acc: number, cuadre: any) => acc + (cuadre.faltanteUsd || 0), 0);
-        const costoInventarioTotal = verified.reduce((acc: number, cuadre: any) => acc + (cuadre.costoInventario || 0), 0);
-        const costoInventarioRestante = total - costoInventarioTotal;
 
         setTotalGeneral(total);
         setTotalSobrantes(sobrantes);
         setTotalFaltantes(faltantes);
-        setTotalCostoInventario(costoInventarioTotal);
-        setTotalCostoInventarioRestante(costoInventarioRestante);
+        
+        // Obtener costo de inventario desde el endpoint optimizado
+        try {
+          const token = localStorage.getItem("token");
+          const headers: HeadersInit = {};
+          if (token) {
+            headers.Authorization = `Bearer ${token}`;
+          }
+          
+          const fechaInicioStr = fechaInicio || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
+          const fechaFinStr = fechaFin || new Date().toISOString().slice(0, 10);
+          
+          const urlCostoInventario = `${API_BASE_URL}/cuadres/costo-inventario/total?fecha_inicio=${fechaInicioStr}&fecha_fin=${fechaFinStr}`;
+          const resCostoInventario = await fetch(urlCostoInventario, { headers });
+          
+          if (resCostoInventario.ok) {
+            const dataCostoInventario = await resCostoInventario.json();
+            const costoInventarioTotal = dataCostoInventario.totalCostoInventario || 0;
+            console.log("VentaTotal - Costo inventario obtenido del endpoint:", costoInventarioTotal);
+            setTotalCostoInventario(costoInventarioTotal);
+            setTotalCostoInventarioRestante(total - costoInventarioTotal);
+          } else {
+            // Fallback: calcular desde los cuadres si el endpoint falla
+            console.warn("VentaTotal - Error al obtener costo inventario, usando fallback");
+            const costoInventarioTotal = verified.reduce((acc: number, cuadre: any) => acc + (cuadre.costoInventario || 0), 0);
+            setTotalCostoInventario(costoInventarioTotal);
+            setTotalCostoInventarioRestante(total - costoInventarioTotal);
+          }
+        } catch (error) {
+          console.error("VentaTotal - Error al obtener costo inventario:", error);
+          // Fallback: calcular desde los cuadres si hay error
+          const costoInventarioTotal = verified.reduce((acc: number, cuadre: any) => acc + (cuadre.costoInventario || 0), 0);
+          setTotalCostoInventario(costoInventarioTotal);
+          setTotalCostoInventarioRestante(total - costoInventarioTotal);
+        }
 
         // Calcular totales por método de pago
         setTotalEfectivoUsd(verified.reduce((acc: number, cuadre: any) => acc + (cuadre.efectivoUsd || 0), 0));
