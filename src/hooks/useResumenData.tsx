@@ -347,10 +347,11 @@ export function useResumenData() {
         faltantes += Number(c.faltanteUsd || 0);
         sobrantes += Number(c.sobranteUsd || 0);
         valesUsd += Number(c.valesUsd || 0);
-        if (typeof c.costo === "number") {
-          totalCosto += c.costo;
-        } else if (typeof c.costo === "string" && c.costo !== "") {
-          totalCosto += Number(c.costo);
+        // Sumar costoInventario de los cuadres (no costo)
+        if (typeof c.costoInventario === "number") {
+          totalCosto += c.costoInventario;
+        } else if (typeof c.costoInventario === "string" && c.costoInventario !== "") {
+          totalCosto += Number(c.costoInventario);
         }
       });
       ventasPorFarmacia[farm.id] = {
@@ -602,29 +603,30 @@ export function useResumenData() {
   }, [fetchWithRetry]);
 
   // Fetch costo de inventario de cuadres por farmacia usando el endpoint optimizado
+  // IMPORTANTE: Usa las fechas del filtro (fechaInicio y fechaFin) para que coincida con las ventas
   useEffect(() => {
     const fetchCostoInventarioCuadres = async () => {
+      // Solo hacer fetch si hay fechas definidas
+      if (!fechaInicio || !fechaFin) {
+        setCostoInventarioCuadresPorFarmacia({});
+        return;
+      }
+      
       try {
-        // Calcular rango del mes actual hasta el día de hoy dinámicamente
-        const now = new Date();
-        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const fechaInicioMes = firstDayOfMonth.toISOString().split("T")[0];
-        const fechaFinHoy = today.toISOString().split("T")[0];
-        
         const token = localStorage.getItem("token");
         const headers: HeadersInit = {};
         if (token) {
           headers.Authorization = `Bearer ${token}`;
         }
         
-        // Usar el endpoint optimizado del backend con reintentos
-        const url = `${API_BASE_URL}/cuadres/costo-inventario/por-farmacia?fecha_inicio=${fechaInicioMes}&fecha_fin=${fechaFinHoy}`;
+        // Usar las fechas del filtro (fechaInicio y fechaFin) para que coincida con las ventas
+        const url = `${API_BASE_URL}/cuadres/costo-inventario/por-farmacia?fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`;
         const res = await fetchWithRetry(url, { headers });
         
         if (res && res.ok) {
           const data = await res.json();
           console.log("useResumenData - Costo inventario cuadres por farmacia obtenidos:", data);
+          console.log("useResumenData - Rango de fechas usado:", fechaInicio, "a", fechaFin);
           setCostoInventarioCuadresPorFarmacia(data);
         } else {
           setCostoInventarioCuadresPorFarmacia({});
@@ -638,7 +640,7 @@ export function useResumenData() {
     // Actualizar cada 60 segundos
     const interval = setInterval(fetchCostoInventarioCuadres, 60000);
     return () => clearInterval(interval);
-  }, [fetchWithRetry]);
+  }, [fechaInicio, fechaFin, fetchWithRetry]);
 
   const gastosPorFarmacia = useMemo(() => {
     // Si tenemos datos del endpoint optimizado, usarlos directamente

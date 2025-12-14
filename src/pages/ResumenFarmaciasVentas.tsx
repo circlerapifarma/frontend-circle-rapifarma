@@ -10,6 +10,7 @@ const ResumenFarmaciasVentas: React.FC = () => {
     ventas,
     pendientesPorFarmacia,
     inventariosFarmacia,
+    costoInventarioCuadresPorFarmacia,
     fechaInicio,
     fechaFin,
     setFechaInicio,
@@ -188,7 +189,7 @@ const ResumenFarmaciasVentas: React.FC = () => {
                   pendienteVerificar={pendientesPorFarmacia[farm.id] || 0}
                   fechaInicio={fechaInicio}
                   fechaFin={fechaFin}
-                  totalCosto={ventas[farm.id]?.totalCosto || 0}
+                  totalCosto={costoInventarioCuadresPorFarmacia[farm.id] || 0}
                   totalInventario={inventariosFarmacia[farm.id] || 0}
                   gastos={gastosPorFarmacia[farm.id] || 0}
                   cuentasPorPagarActivas={
