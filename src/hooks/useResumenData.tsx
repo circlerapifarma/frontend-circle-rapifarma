@@ -48,6 +48,7 @@ interface Cuadre {
   valesUsd?: number;
   devolucionesBs?: number;
   costo?: number | string;
+  costoInventario?: number | string;
 }
 
 interface InventarioItem {
