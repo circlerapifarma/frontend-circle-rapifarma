@@ -255,18 +255,16 @@ export function useResumenData() {
         if (token) {
           headers.Authorization = `Bearer ${token}`;
         }
-        const resGastos = await fetch(`${API_BASE_URL}/gastos`, { headers });
-        if (resGastos.ok) {
+        const resGastos = await fetchWithRetry(`${API_BASE_URL}/gastos`, { headers });
+        if (resGastos && resGastos.ok) {
           const dataGastos = await resGastos.json();
           console.log("useResumenData - Gastos actualizados:", dataGastos.length, "total");
           console.log("useResumenData - Gastos verified:", dataGastos.filter((g: any) => g.estado === "verified").length);
           setGastos(dataGastos);
-        } else {
-          console.error("useResumenData - Error al obtener gastos:", resGastos.status, resGastos.statusText);
         }
       } catch (err) {
         // Silenciosamente fallar, no interrumpir
-        console.error("useResumenData - Error al actualizar gastos:", err);
+        // No loguear errores de conexión para no saturar la consola
       }
     };
     
@@ -274,7 +272,7 @@ export function useResumenData() {
     fetchGastos();
     const interval = setInterval(fetchGastos, 60000); // 60 segundos
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchWithRetry]);
 
   useEffect(() => {
     const ventasPorFarmacia: { [key: string]: VentasFarmacia } = {};
@@ -347,6 +345,30 @@ export function useResumenData() {
     setVentas(ventasPorFarmacia);
   }, [cuadresPorFarmacia, farmacias, fechaInicio, fechaFin]);
 
+  // Función helper para hacer fetch con reintentos (definida antes de su uso)
+  const fetchWithRetry = useCallback(async (url: string, options: RequestInit, maxRetries = 2): Promise<Response | null> => {
+    for (let i = 0; i <= maxRetries; i++) {
+      try {
+        const res = await fetch(url, options);
+        if (res.ok) return res;
+        // Si no es un error de conexión, no reintentar
+        if (i === maxRetries) return res;
+      } catch (error: any) {
+        // Si es el último intento, lanzar el error
+        if (i === maxRetries) {
+          // Silenciar errores de conexión en consola (son muy comunes)
+          if (error.message?.includes('Failed to fetch') || error.message?.includes('ERR_CONNECTION_CLOSED')) {
+            return null;
+          }
+          throw error;
+        }
+        // Esperar antes de reintentar (backoff exponencial)
+        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+      }
+    }
+    return null;
+  }, []);
+
   useEffect(() => {
     const fetchPagosPorRango = async () => {
       if (!fechaInicio || !fechaFin) {
@@ -361,21 +383,20 @@ export function useResumenData() {
           headers.Authorization = `Bearer ${token}`;
         }
         const url = `${API_BASE_URL}/pagoscpp/rango-fechas?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`;
-        const resPagos = await fetch(url, { headers });
-        if (resPagos.ok) {
+        const resPagos = await fetchWithRetry(url, { headers });
+        if (resPagos && resPagos.ok) {
           setPagos(await resPagos.json()); // <-- Actualiza el estado 'pagos'
         } else {
-          console.error("Error al obtener los pagos por rango de fecha.");
           setPagos([]);
         }
       } catch (error) {
-        console.error("Error en la petición de pagos:", error);
+        // Silenciar errores de conexión
         setPagos([]);
       }
     };
 
     fetchPagosPorRango();
-  }, [fechaInicio, fechaFin]);
+  }, [fechaInicio, fechaFin, fetchWithRetry]);
 
   const pendientesPorFarmacia = useMemo(() => {
     const pendientes: { [key: string]: number } = {};
@@ -556,21 +577,19 @@ export function useResumenData() {
           headers.Authorization = `Bearer ${token}`;
         }
         
-        // Usar el endpoint optimizado del backend
+        // Usar el endpoint optimizado del backend con reintentos
         const url = `${API_BASE_URL}/gastos/verified/por-farmacia?fecha_inicio=${fechaInicioMes}&fecha_fin=${fechaFinHoy}`;
-        const res = await fetch(url, { headers });
+        const res = await fetchWithRetry(url, { headers });
         
-        if (res.ok) {
+        if (res && res.ok) {
           const data = await res.json();
           console.log("useResumenData - Gastos por farmacia obtenidos:", data);
           setGastosPorFarmaciaData(data);
         } else {
-          console.error("useResumenData - Error al obtener gastos por farmacia:", res.status, res.statusText);
           // Fallback: usar el método anterior si el nuevo endpoint falla
           setGastosPorFarmaciaData({});
         }
       } catch (error) {
-        console.error("useResumenData - Error al obtener gastos por farmacia:", error);
         // Fallback: usar el método anterior si hay error
         setGastosPorFarmaciaData({});
       }
@@ -580,7 +599,7 @@ export function useResumenData() {
     // Actualizar cada 60 segundos
     const interval = setInterval(fetchGastosPorFarmacia, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchWithRetry]);
 
   // Fetch costo de inventario de cuadres por farmacia usando el endpoint optimizado
   useEffect(() => {
@@ -599,20 +618,18 @@ export function useResumenData() {
           headers.Authorization = `Bearer ${token}`;
         }
         
-        // Usar el endpoint optimizado del backend
+        // Usar el endpoint optimizado del backend con reintentos
         const url = `${API_BASE_URL}/cuadres/costo-inventario/por-farmacia?fecha_inicio=${fechaInicioMes}&fecha_fin=${fechaFinHoy}`;
-        const res = await fetch(url, { headers });
+        const res = await fetchWithRetry(url, { headers });
         
-        if (res.ok) {
+        if (res && res.ok) {
           const data = await res.json();
           console.log("useResumenData - Costo inventario cuadres por farmacia obtenidos:", data);
           setCostoInventarioCuadresPorFarmacia(data);
         } else {
-          console.error("useResumenData - Error al obtener costo inventario cuadres por farmacia:", res.status, res.statusText);
           setCostoInventarioCuadresPorFarmacia({});
         }
       } catch (error) {
-        console.error("useResumenData - Error al obtener costo inventario cuadres por farmacia:", error);
         setCostoInventarioCuadresPorFarmacia({});
       }
     };
@@ -621,7 +638,7 @@ export function useResumenData() {
     // Actualizar cada 60 segundos
     const interval = setInterval(fetchCostoInventarioCuadres, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchWithRetry]);
 
   const gastosPorFarmacia = useMemo(() => {
     // Si tenemos datos del endpoint optimizado, usarlos directamente
