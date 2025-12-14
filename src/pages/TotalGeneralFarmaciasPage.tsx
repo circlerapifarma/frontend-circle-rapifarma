@@ -125,14 +125,21 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
     // Fetch nuevos totales generales
     const fetchResumenes = async () => {
       try {
+        // Calcular rango del mes actual hasta el día de hoy dinámicamente
+        const now = new Date();
+        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const fechaInicioMes = firstDayOfMonth.toISOString().split("T")[0];
+        const fechaFinHoy = today.toISOString().split("T")[0];
+        
         // GASTOS
         const resGastos = await fetch(`${API_BASE_URL}/gastos`);
         const dataGastos = await resGastos.json();
         const gastosFiltrados = Array.isArray(dataGastos)
           ? dataGastos.filter((g: any) =>
               g.estado === 'verified' &&
-              (!fechaInicio || new Date(g.fecha) >= new Date(fechaInicio)) &&
-              (!fechaFin || new Date(g.fecha) <= new Date(fechaFin))
+              g.fecha >= fechaInicioMes &&
+              g.fecha <= fechaFinHoy
             )
           : [];
         const totalGastosCalc = gastosFiltrados.reduce((acc: number, g: any) => {
@@ -202,8 +209,11 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
         // No interrumpe la carga principal
       }
     };
-    if (fechaInicio && fechaFin) fetchResumenes();
-  }, [fechaInicio, fechaFin]);
+    fetchResumenes();
+    // Ejecutar cada minuto para actualizar si cambió el día o se verificaron nuevos gastos
+    const interval = setInterval(fetchResumenes, 60000); // 60 segundos
+    return () => clearInterval(interval);
+  }, []); // Se ejecuta al montar y se actualiza periódicamente
 
   const currentMonthName = new Date().toLocaleString('es-VE', { month: 'long', year: 'numeric' });
 

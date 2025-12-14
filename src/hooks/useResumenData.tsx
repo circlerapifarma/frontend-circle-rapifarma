@@ -235,6 +235,29 @@ export function useResumenData() {
     fetchInitialData();
   }, [setMesActual]);
 
+  // Recargar gastos periódicamente para que aparezcan los nuevos gastos verificados
+  useEffect(() => {
+    const fetchGastos = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const headers: HeadersInit = {};
+        if (token) {
+          headers.Authorization = `Bearer ${token}`;
+        }
+        const resGastos = await fetch(`${API_BASE_URL}/gastos`, { headers });
+        if (resGastos.ok) setGastos(await resGastos.json());
+      } catch (err) {
+        // Silenciosamente fallar, no interrumpir
+        console.error("Error al actualizar gastos:", err);
+      }
+    };
+    
+    // Recargar inmediatamente y luego cada minuto
+    fetchGastos();
+    const interval = setInterval(fetchGastos, 60000); // 60 segundos
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     const ventasPorFarmacia: { [key: string]: VentasFarmacia } = {};
     farmacias.forEach((farm) => {
@@ -454,13 +477,20 @@ export function useResumenData() {
 
   const gastosPorFarmacia = useMemo(() => {
     const resultado: { [key: string]: number } = {};
+    // Calcular rango del mes actual hasta el día de hoy dinámicamente
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const fechaInicioMes = firstDayOfMonth.toISOString().split("T")[0];
+    const fechaFinHoy = today.toISOString().split("T")[0];
+    
     farmacias.forEach((farm) => {
       const gastosFiltrados = gastos.filter(
         (g) =>
           g.localidad === farm.id &&
           g.estado === "verified" &&
-          (!fechaInicio || new Date(g.fecha) >= new Date(fechaInicio)) &&
-          (!fechaFin || new Date(g.fecha) <= new Date(fechaFin))
+          g.fecha >= fechaInicioMes &&
+          g.fecha <= fechaFinHoy
       );
       const total = gastosFiltrados.reduce((acc, g) => {
         if (g.divisa === "Bs" && g.tasa && Number(g.tasa) > 0) {
@@ -471,7 +501,7 @@ export function useResumenData() {
       resultado[farm.id] = Math.max(0, total);
     });
     return resultado;
-  }, [gastos, farmacias, fechaInicio, fechaFin]);
+  }, [gastos, farmacias]);
 
   const cuentasActivasPorFarmacia = useMemo(() => {
     const resultado: { [key: string]: number } = {};
