@@ -66,8 +66,11 @@ GET /cuadres/costo-inventario/por-farmacia?fecha_inicio=2025-12-01&fecha_fin=202
    - `dia >= fecha_inicio`
    - `dia <= fecha_fin`
 2. Agrupar por `farmacia`
-3. Sumar `costoInventario` de cada cuadre por farmacia
-4. Retornar objeto con `{ farmacia_id: total_costo }`
+3. Para cada cuadre:
+   - Si `tasa` existe y es > 0: `costoEnUsd = costoInventario / tasa`
+   - Si no: `costoEnUsd = costoInventario` (asumir que ya está en USD)
+4. Sumar `costoEnUsd` de cada cuadre por farmacia
+5. Retornar objeto con `{ farmacia_id: total_costo }` (en USD)
 
 **Ejemplo de consulta MongoDB:**
 ```javascript
@@ -82,12 +85,29 @@ db.cuadres.aggregate([
     }
   },
   {
+    $project: {
+      farmacia: 1,
+      costoInventario: { $ifNull: ["$costoInventario", 0] },
+      tasa: { $ifNull: ["$tasa", 0] }
+    }
+  },
+  {
+    $project: {
+      farmacia: 1,
+      costoEnUsd: {
+        $cond: [
+          { $and: [{ $gt: ["$tasa", 0] }, { $ne: ["$tasa", null] }] },
+          { $divide: ["$costoInventario", "$tasa"] },
+          "$costoInventario"
+        ]
+      }
+    }
+  },
+  {
     $group: {
       _id: "$farmacia",
       totalCostoInventario: {
-        $sum: {
-          $ifNull: ["$costoInventario", 0]
-        }
+        $sum: "$costoEnUsd"
       }
     }
   },
@@ -95,7 +115,7 @@ db.cuadres.aggregate([
     $project: {
       _id: 0,
       farmacia: "$_id",
-      totalCostoInventario: 1
+      totalCostoInventario: { $round: ["$totalCostoInventario", 2] }
     }
   }
 ])
@@ -138,8 +158,11 @@ GET /cuadres/costo-inventario/total?fecha_inicio=2025-12-01&fecha_fin=2025-12-14
    - `estado === "verified"`
    - `dia >= fecha_inicio`
    - `dia <= fecha_fin`
-2. Sumar `costoInventario` de todos los cuadres filtrados
-3. Retornar objeto con `{ totalCostoInventario: suma_total }`
+2. Para cada cuadre:
+   - Si `tasa` existe y es > 0: `costoEnUsd = costoInventario / tasa`
+   - Si no: `costoEnUsd = costoInventario` (asumir que ya está en USD)
+3. Sumar `costoEnUsd` de todos los cuadres filtrados
+4. Retornar objeto con `{ totalCostoInventario: suma_total }` (en USD)
 
 **Ejemplo de consulta MongoDB:**
 ```javascript
@@ -154,19 +177,34 @@ db.cuadres.aggregate([
     }
   },
   {
+    $project: {
+      costoInventario: { $ifNull: ["$costoInventario", 0] },
+      tasa: { $ifNull: ["$tasa", 0] }
+    }
+  },
+  {
+    $project: {
+      costoEnUsd: {
+        $cond: [
+          { $and: [{ $gt: ["$tasa", 0] }, { $ne: ["$tasa", null] }] },
+          { $divide: ["$costoInventario", "$tasa"] },
+          "$costoInventario"
+        ]
+      }
+    }
+  },
+  {
     $group: {
       _id: null,
       totalCostoInventario: {
-        $sum: {
-          $ifNull: ["$costoInventario", 0]
-        }
+        $sum: "$costoEnUsd"
       }
     }
   },
   {
     $project: {
       _id: 0,
-      totalCostoInventario: 1
+      totalCostoInventario: { $round: ["$totalCostoInventario", 2] }
     }
   }
 ])
@@ -208,11 +246,17 @@ def validate_fechas(fecha_inicio: str, fecha_fin: str):
         )
 ```
 
-### 2. Validación de Campo `costoInventario`
+### 2. Validación de Campo `costoInventario` y `tasa`
 
+**`costoInventario`:**
 - ✅ Si `costoInventario` es `null` o `undefined`, tratarlo como `0`
 - ✅ Si `costoInventario` es negativo, tratarlo como `0` (o validar según reglas de negocio)
 - ✅ Solo sumar cuadres con `estado === "verified"`
+
+**`tasa`:**
+- ✅ Si `tasa` existe y es > 0: `costoEnUsd = costoInventario / tasa`
+- ✅ Si `tasa` es `null`, `undefined`, o `0`: `costoEnUsd = costoInventario` (asumir que ya está en USD)
+- ✅ **CRÍTICO**: Siempre dividir `costoInventario` por `tasa` si la tasa existe y es > 0
 
 ---
 
@@ -220,14 +264,28 @@ def validate_fechas(fecha_inicio: str, fecha_fin: str):
 
 ### Escenario:
 - **Farmacia A**: 
-  - Día 01/12: 4 cuadres verificados, cada uno con `costoInventario: 100` → Total: 400
-  - Día 02/12: 2 cuadres verificados, cada uno con `costoInventario: 150` → Total: 300
-  - **Total Farmacia A**: 700
+  - Día 01/12: 4 cuadres verificados
+    - Cuadre 1: `costoInventario: 4000` (Bs), `tasa: 40` → 4000 / 40 = 100 USD
+    - Cuadre 2: `costoInventario: 4000` (Bs), `tasa: 40` → 4000 / 40 = 100 USD
+    - Cuadre 3: `costoInventario: 4000` (Bs), `tasa: 40` → 4000 / 40 = 100 USD
+    - Cuadre 4: `costoInventario: 4000` (Bs), `tasa: 40` → 4000 / 40 = 100 USD
+    - **Total día 01/12**: 400 USD
+  - Día 02/12: 2 cuadres verificados
+    - Cuadre 1: `costoInventario: 6000` (Bs), `tasa: 40` → 6000 / 40 = 150 USD
+    - Cuadre 2: `costoInventario: 6000` (Bs), `tasa: 40` → 6000 / 40 = 150 USD
+    - **Total día 02/12**: 300 USD
+  - **Total Farmacia A**: 700 USD
 
 - **Farmacia B**:
-  - Día 01/12: 3 cuadres verificados, cada uno con `costoInventario: 200` → Total: 600
-  - Día 03/12: 1 cuadre verificado con `costoInventario: 250` → Total: 250
-  - **Total Farmacia B**: 850
+  - Día 01/12: 3 cuadres verificados
+    - Cuadre 1: `costoInventario: 8000` (Bs), `tasa: 40` → 8000 / 40 = 200 USD
+    - Cuadre 2: `costoInventario: 8000` (Bs), `tasa: 40` → 8000 / 40 = 200 USD
+    - Cuadre 3: `costoInventario: 8000` (Bs), `tasa: 40` → 8000 / 40 = 200 USD
+    - **Total día 01/12**: 600 USD
+  - Día 03/12: 1 cuadre verificado
+    - Cuadre 1: `costoInventario: 10000` (Bs), `tasa: 40` → 10000 / 40 = 250 USD
+    - **Total día 03/12**: 250 USD
+  - **Total Farmacia B**: 850 USD
 
 - **Filtro de fechas**: 2025-12-01 a 2025-12-14
 
@@ -245,6 +303,8 @@ def validate_fechas(fecha_inicio: str, fecha_fin: str):
   "totalCostoInventario": 1550.00
 }
 ```
+
+**Nota importante:** Los valores están en USD después de dividir por la tasa.
 
 ---
 
@@ -275,7 +335,7 @@ async def get_costo_inventario_por_farmacia(
     except ValueError:
         raise HTTPException(400, "Formato de fecha inválido. Use YYYY-MM-DD")
     
-    # Agregación MongoDB
+    # Agregación MongoDB con conversión por tasa
     pipeline = [
         {
             "$match": {
@@ -287,12 +347,29 @@ async def get_costo_inventario_por_farmacia(
             }
         },
         {
+            "$project": {
+                "farmacia": 1,
+                "costoInventario": {"$ifNull": ["$costoInventario", 0]},
+                "tasa": {"$ifNull": ["$tasa", 0]}
+            }
+        },
+        {
+            "$project": {
+                "farmacia": 1,
+                "costoEnUsd": {
+                    "$cond": [
+                        {"$and": [{"$gt": ["$tasa", 0]}, {"$ne": ["$tasa", None]}]},
+                        {"$divide": ["$costoInventario", "$tasa"]},
+                        "$costoInventario"
+                    ]
+                }
+            }
+        },
+        {
             "$group": {
                 "_id": "$farmacia",
                 "totalCostoInventario": {
-                    "$sum": {
-                        "$ifNull": ["$costoInventario", 0]
-                    }
+                    "$sum": "$costoEnUsd"
                 }
             }
         }
@@ -323,7 +400,7 @@ async def get_costo_inventario_total(
     except ValueError:
         raise HTTPException(400, "Formato de fecha inválido. Use YYYY-MM-DD")
     
-    # Agregación MongoDB
+    # Agregación MongoDB con conversión por tasa
     pipeline = [
         {
             "$match": {
@@ -335,12 +412,27 @@ async def get_costo_inventario_total(
             }
         },
         {
+            "$project": {
+                "costoInventario": {"$ifNull": ["$costoInventario", 0]},
+                "tasa": {"$ifNull": ["$tasa", 0]}
+            }
+        },
+        {
+            "$project": {
+                "costoEnUsd": {
+                    "$cond": [
+                        {"$and": [{"$gt": ["$tasa", 0]}, {"$ne": ["$tasa", None]}]},
+                        {"$divide": ["$costoInventario", "$tasa"]},
+                        "$costoInventario"
+                    ]
+                }
+            }
+        },
+        {
             "$group": {
                 "_id": None,
                 "totalCostoInventario": {
-                    "$sum": {
-                        "$ifNull": ["$costoInventario", 0]
-                    }
+                    "$sum": "$costoEnUsd"
                 }
             }
         }
@@ -365,10 +457,12 @@ async def get_costo_inventario_total(
 - ✅ **CRÍTICO**: Solo sumar cuadres con `estado === "verified"`
 - ✅ No incluir cuadres con `estado === "wait"` o `estado === "denied"`
 
-### 3. **Campo `costoInventario`**
+### 3. **Campo `costoInventario` y Conversión por Tasa**
 - ✅ **CRÍTICO**: Usar el campo `costoInventario` del cuadre (no `costo`)
 - ✅ Si el campo no existe o es null, tratarlo como `0`
-- ✅ El valor debe estar en USD
+- ✅ **CRÍTICO**: Si `tasa` existe y es > 0, dividir `costoInventario / tasa` para convertir a USD
+- ✅ Si `tasa` es null, undefined, o 0, asumir que `costoInventario` ya está en USD
+- ✅ El resultado final debe estar siempre en USD
 
 ### 4. **Formato de Respuesta**
 - ✅ `/por-farmacia`: Debe retornar objeto con `{ farmacia_id: total }`
@@ -475,7 +569,8 @@ GET /cuadres/costo-inventario/por-farmacia?fecha_inicio=2025-12-01&fecha_fin=202
 - **Solo cuadres verificados** (`estado === "verified"`)
 - **Filtrado por fecha** debe coincidir exactamente con el filtro de ventas
 - **Formato de respuesta** debe ser exactamente como se especifica
-- **Valores en USD** (ya están en USD en la base de datos)
+- **Conversión por tasa**: Si `tasa > 0`, dividir `costoInventario / tasa` para obtener USD
+- **Valores finales en USD**: El resultado siempre debe estar en USD después de la conversión
 
 **Una vez implementado, el frontend mostrará automáticamente los costos correctos filtrados por fecha.**
 
