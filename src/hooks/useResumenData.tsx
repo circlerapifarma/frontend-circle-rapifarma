@@ -145,6 +145,30 @@ export function useResumenData() {
     setDateRange(firstDay, today);
   }, [setDateRange]);
 
+  // Función helper para hacer fetch con reintentos (definida antes de su uso)
+  const fetchWithRetry = useCallback(async (url: string, options: RequestInit, maxRetries = 2): Promise<Response | null> => {
+    for (let i = 0; i <= maxRetries; i++) {
+      try {
+        const res = await fetch(url, options);
+        if (res.ok) return res;
+        // Si no es un error de conexión, no reintentar
+        if (i === maxRetries) return res;
+      } catch (error: any) {
+        // Si es el último intento, lanzar el error
+        if (i === maxRetries) {
+          // Silenciar errores de conexión en consola (son muy comunes)
+          if (error.message?.includes('Failed to fetch') || error.message?.includes('ERR_CONNECTION_CLOSED')) {
+            return null;
+          }
+          throw error;
+        }
+        // Esperar antes de reintentar (backoff exponencial)
+        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+      }
+    }
+    return null;
+  }, []);
+
   useEffect(() => {
     const fetchInitialData = async () => {
       setLoading(true);
@@ -344,30 +368,6 @@ export function useResumenData() {
     });
     setVentas(ventasPorFarmacia);
   }, [cuadresPorFarmacia, farmacias, fechaInicio, fechaFin]);
-
-  // Función helper para hacer fetch con reintentos (definida antes de su uso)
-  const fetchWithRetry = useCallback(async (url: string, options: RequestInit, maxRetries = 2): Promise<Response | null> => {
-    for (let i = 0; i <= maxRetries; i++) {
-      try {
-        const res = await fetch(url, options);
-        if (res.ok) return res;
-        // Si no es un error de conexión, no reintentar
-        if (i === maxRetries) return res;
-      } catch (error: any) {
-        // Si es el último intento, lanzar el error
-        if (i === maxRetries) {
-          // Silenciar errores de conexión en consola (son muy comunes)
-          if (error.message?.includes('Failed to fetch') || error.message?.includes('ERR_CONNECTION_CLOSED')) {
-            return null;
-          }
-          throw error;
-        }
-        // Esperar antes de reintentar (backoff exponencial)
-        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
-      }
-    }
-    return null;
-  }, []);
 
   useEffect(() => {
     const fetchPagosPorRango = async () => {
