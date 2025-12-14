@@ -132,49 +132,68 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
         const fechaInicioMes = firstDayOfMonth.toISOString().split("T")[0];
         const fechaFinHoy = today.toISOString().split("T")[0];
         
+        // Obtener token de autenticación
+        const token = localStorage.getItem("token");
+        const headers: HeadersInit = {};
+        if (token) {
+          headers.Authorization = `Bearer ${token}`;
+        }
+        
         // GASTOS
-        const resGastos = await fetch(`${API_BASE_URL}/gastos`);
-        const dataGastos = await resGastos.json();
-        const gastosFiltrados = Array.isArray(dataGastos)
-          ? dataGastos.filter((g: any) =>
-              g.estado === 'verified' &&
-              g.fecha >= fechaInicioMes &&
-              g.fecha <= fechaFinHoy
-            )
-          : [];
-        const totalGastosCalc = gastosFiltrados.reduce((acc: number, g: any) => {
-          if (g.divisa === 'Bs' && g.tasa && Number(g.tasa) > 0) {
-            return acc + (Number(g.monto || 0) / Number(g.tasa));
-          }
-          return acc + Number(g.monto || 0);
-        }, 0);
-        setTotalGastos(Math.max(0, totalGastosCalc));
+        const resGastos = await fetch(`${API_BASE_URL}/gastos`, { headers });
+        if (resGastos.ok) {
+          const dataGastos = await resGastos.json();
+          console.log("Gastos obtenidos:", dataGastos.length, "total");
+          console.log("Rango de fechas:", fechaInicioMes, "a", fechaFinHoy);
+          
+          const gastosFiltrados = Array.isArray(dataGastos)
+            ? dataGastos.filter((g: any) => {
+                const esVerificado = g.estado === 'verified';
+                const enRango = g.fecha >= fechaInicioMes && g.fecha <= fechaFinHoy;
+                return esVerificado && enRango;
+              })
+            : [];
+          console.log("Gastos filtrados (verified y en rango):", gastosFiltrados.length);
+          
+          const totalGastosCalc = gastosFiltrados.reduce((acc: number, g: any) => {
+            if (g.divisa === 'Bs' && g.tasa && Number(g.tasa) > 0) {
+              return acc + (Number(g.monto || 0) / Number(g.tasa));
+            }
+            return acc + Number(g.monto || 0);
+          }, 0);
+          console.log("Total gastos calculado:", totalGastosCalc);
+          setTotalGastos(Math.max(0, totalGastosCalc));
+        } else {
+          console.error("Error al obtener gastos:", resGastos.status, resGastos.statusText);
+        }
 
         // INVENTARIO
-        const resInventario = await fetch(`${API_BASE_URL}/inventarios`);
-        const dataInventario = await resInventario.json();
-        // Solo inventarios activos y dentro de rango de fechas
-        const inventarioFiltrado = Array.isArray(dataInventario)
-          ? dataInventario.filter((inv: any) =>
-              inv.estado === 'activo' &&
-              (!fechaInicio || new Date(inv.fecha) >= new Date(fechaInicio)) &&
-              (!fechaFin || new Date(inv.fecha) <= new Date(fechaFin))
-            )
-          : [];
-        // Sumar costo (USD), pero si algún inventario está en Bs y tiene tasa, convertirlo
-        const totalInventarioCalc = inventarioFiltrado.reduce((acc: number, inv: any) => {
-          if (inv.divisa === 'Bs' && inv.tasa && Number(inv.tasa) > 0) {
-            return acc + (Number(inv.costo || 0) / Number(inv.tasa));
-          }
-          return acc + Number(inv.costo || 0);
-        }, 0);
-        setTotalInventario(Math.max(0, totalInventarioCalc));
+        const resInventario = await fetch(`${API_BASE_URL}/inventarios`, { headers });
+        if (resInventario.ok) {
+          const dataInventario = await resInventario.json();
+          // Solo inventarios activos y dentro de rango de fechas
+          const inventarioFiltrado = Array.isArray(dataInventario)
+            ? dataInventario.filter((inv: any) =>
+                inv.estado === 'activo' &&
+                (!inv.fecha || (new Date(inv.fecha) >= new Date(fechaInicioMes) && new Date(inv.fecha) <= new Date(fechaFinHoy)))
+              )
+            : [];
+          // Sumar costo (USD), pero si algún inventario está en Bs y tiene tasa, convertirlo
+          const totalInventarioCalc = inventarioFiltrado.reduce((acc: number, inv: any) => {
+            if (inv.divisa === 'Bs' && inv.tasa && Number(inv.tasa) > 0) {
+              return acc + (Number(inv.costo || 0) / Number(inv.tasa));
+            }
+            return acc + Number(inv.costo || 0);
+          }, 0);
+          setTotalInventario(Math.max(0, totalInventarioCalc));
+        } else {
+          console.error("Error al obtener inventarios:", resInventario.status);
+        }
 
         // CUENTAS POR PAGAR
-        const token = localStorage.getItem("token");
         if (token) {
           const resCuentas = await fetch(`${API_BASE_URL}/cuentas-por-pagar`, {
-            headers: { "Authorization": `Bearer ${token}` }
+            headers
           });
           const dataCuentas = await resCuentas.json();
           // Activas (sin filtrar por fecha)
@@ -187,8 +206,7 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
           const cuentasPagadas = Array.isArray(dataCuentas)
             ? dataCuentas.filter((c: any) =>
                 c.estatus === 'pagada' &&
-                (!fechaInicio || new Date(c.fechaEmision) >= new Date(fechaInicio)) &&
-                (!fechaFin || new Date(c.fechaEmision) <= new Date(fechaFin))
+                (!c.fechaEmision || (new Date(c.fechaEmision) >= new Date(fechaInicioMes) && new Date(c.fechaEmision) <= new Date(fechaFinHoy)))
               )
             : [];
           const totalCuentasPagadasCalc = cuentasPagadas.reduce((acc: number, c: any) => {

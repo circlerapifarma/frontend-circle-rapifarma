@@ -219,7 +219,14 @@ export function useResumenData() {
         setInventariosFarmacia(inventariosPorFarmacia);
 
         const resGastos = await fetch(`${API_BASE_URL}/gastos`, { headers });
-        if (resGastos.ok) setGastos(await resGastos.json());
+        if (resGastos.ok) {
+          const dataGastos = await resGastos.json();
+          console.log("useResumenData - Gastos iniciales obtenidos:", dataGastos.length, "total");
+          console.log("useResumenData - Gastos verified iniciales:", dataGastos.filter((g: any) => g.estado === "verified").length);
+          setGastos(dataGastos);
+        } else {
+          console.error("useResumenData - Error al obtener gastos iniciales:", resGastos.status, resGastos.statusText);
+        }
 
         const resCuentas = await fetch(`${API_BASE_URL}/cuentas-por-pagar`, {
           headers,
@@ -245,10 +252,17 @@ export function useResumenData() {
           headers.Authorization = `Bearer ${token}`;
         }
         const resGastos = await fetch(`${API_BASE_URL}/gastos`, { headers });
-        if (resGastos.ok) setGastos(await resGastos.json());
+        if (resGastos.ok) {
+          const dataGastos = await resGastos.json();
+          console.log("useResumenData - Gastos actualizados:", dataGastos.length, "total");
+          console.log("useResumenData - Gastos verified:", dataGastos.filter((g: any) => g.estado === "verified").length);
+          setGastos(dataGastos);
+        } else {
+          console.error("useResumenData - Error al obtener gastos:", resGastos.status, resGastos.statusText);
+        }
       } catch (err) {
         // Silenciosamente fallar, no interrumpir
-        console.error("Error al actualizar gastos:", err);
+        console.error("useResumenData - Error al actualizar gastos:", err);
       }
     };
     
@@ -484,14 +498,26 @@ export function useResumenData() {
     const fechaInicioMes = firstDayOfMonth.toISOString().split("T")[0];
     const fechaFinHoy = today.toISOString().split("T")[0];
     
+    console.log("useResumenData - Total gastos:", gastos.length);
+    console.log("useResumenData - Rango de fechas:", fechaInicioMes, "a", fechaFinHoy);
+    console.log("useResumenData - Farmacias:", farmacias.length);
+    
     farmacias.forEach((farm) => {
-      const gastosFiltrados = gastos.filter(
-        (g) =>
-          g.localidad === farm.id &&
-          g.estado === "verified" &&
-          g.fecha >= fechaInicioMes &&
-          g.fecha <= fechaFinHoy
-      );
+      const gastosFiltrados = gastos.filter((g) => {
+        const tieneLocalidad = g.localidad === farm.id;
+        const esVerificado = g.estado === "verified";
+        const enRango = g.fecha >= fechaInicioMes && g.fecha <= fechaFinHoy;
+        return tieneLocalidad && esVerificado && enRango;
+      });
+      
+      console.log(`useResumenData - Farmacia ${farm.nombre} (${farm.id}):`, {
+        totalGastos: gastos.length,
+        gastosDeEstaFarmacia: gastos.filter(g => g.localidad === farm.id).length,
+        gastosVerificados: gastos.filter(g => g.localidad === farm.id && g.estado === "verified").length,
+        gastosEnRango: gastosFiltrados.length,
+        gastosFiltrados: gastosFiltrados.map(g => ({ id: g._id, monto: g.monto, divisa: g.divisa, fecha: g.fecha }))
+      });
+      
       const total = gastosFiltrados.reduce((acc, g) => {
         if (g.divisa === "Bs" && g.tasa && Number(g.tasa) > 0) {
           return acc + Number(g.monto || 0) / Number(g.tasa);
@@ -499,6 +525,7 @@ export function useResumenData() {
         return acc + Number(g.monto || 0);
       }, 0);
       resultado[farm.id] = Math.max(0, total);
+      console.log(`useResumenData - Total para ${farm.nombre}:`, resultado[farm.id]);
     });
     return resultado;
   }, [gastos, farmacias]);
