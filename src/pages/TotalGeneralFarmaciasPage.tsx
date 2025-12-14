@@ -187,71 +187,52 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
           headers.Authorization = `Bearer ${token}`;
         }
         
-        // GASTOS
-        const resGastos = await fetch(`${API_BASE_URL}/gastos`, { headers });
+        // GASTOS - Usar endpoint optimizado del backend
+        const urlGastos = `${API_BASE_URL}/gastos/verified/total?fecha_inicio=${fechaInicioMes}&fecha_fin=${fechaFinHoy}`;
+        const resGastos = await fetch(urlGastos, { headers });
         if (resGastos.ok) {
           const dataGastos = await resGastos.json();
           console.log("=== VentaTotal - Gastos ===");
-          console.log("Gastos obtenidos del backend:", Array.isArray(dataGastos) ? dataGastos.length : 0, "total");
           console.log("Rango de fechas:", fechaInicioMes, "a", fechaFinHoy);
+          console.log("Respuesta del endpoint optimizado:", dataGastos);
           
-          // Mostrar todos los gastos verified para debug
-          const gastosVerified = Array.isArray(dataGastos) 
-            ? dataGastos.filter((g: any) => g.estado === 'verified')
-            : [];
-          console.log("=== VentaTotal - Debug Gastos ===");
-          console.log("Gastos con estado 'verified':", gastosVerified.length);
-          
-          // Mostrar ejemplos de gastos verified con análisis de fechas usando parseDate
-          const ejemplos = gastosVerified.slice(0, 10).map((g: any) => {
-            const fechaGasto = parseDate(g.fecha);
-            const enRango = fechaGasto ? (fechaGasto >= fechaInicioDate && fechaGasto <= fechaFinDate) : false;
-            return {
-              id: g._id,
-              fechaOriginal: g.fecha,
-              fechaParseada: fechaGasto ? fechaGasto.toISOString().split('T')[0] : 'ERROR',
-              rangoEsperado: `${fechaInicioMes} a ${fechaFinHoy}`,
-              enRango: enRango,
-              localidad: g.localidad,
-              monto: g.monto,
-              divisa: g.divisa
-            };
-          });
-          console.log("Ejemplos de gastos verified (primeros 10):", ejemplos);
-          
-          // Contar cuántos están en rango
-          const enRango = ejemplos.filter(e => e.enRango).length;
-          console.log(`VentaTotal - De los primeros 10 verified, ${enRango} están en rango`);
-          
-          const gastosFiltrados = Array.isArray(dataGastos)
-            ? dataGastos.filter((g: any) => {
-                const esVerificado = g.estado === 'verified';
-                
-                // Comparar fechas usando la función helper
-                let enRango = false;
-                if (g.fecha) {
-                  const fechaGasto = parseDate(g.fecha);
-                  if (fechaGasto) {
-                    fechaGasto.setHours(0, 0, 0, 0);
-                    enRango = fechaGasto >= fechaInicioDate && fechaGasto <= fechaFinDate;
-                  }
-                }
-                
-                return esVerificado && enRango;
-              })
-            : [];
-          console.log("Gastos filtrados (verified y en rango):", gastosFiltrados.length);
-          
-          const totalGastosCalc = gastosFiltrados.reduce((acc: number, g: any) => {
-            if (g.divisa === 'Bs' && g.tasa && Number(g.tasa) > 0) {
-              return acc + (Number(g.monto || 0) / Number(g.tasa));
-            }
-            return acc + Number(g.monto || 0);
-          }, 0);
-          console.log("Total gastos calculado:", totalGastosCalc);
+          // El endpoint devuelve: { "totalGastosVerificados": 5601.50 }
+          const totalGastosCalc = dataGastos.totalGastosVerificados || 0;
+          console.log("Total gastos calculado (desde endpoint):", totalGastosCalc);
           setTotalGastos(Math.max(0, totalGastosCalc));
         } else {
           console.error("Error al obtener gastos:", resGastos.status, resGastos.statusText);
+          // Fallback: intentar con el endpoint anterior si el nuevo falla
+          try {
+            const resGastosFallback = await fetch(`${API_BASE_URL}/gastos`, { headers });
+            if (resGastosFallback.ok) {
+              const dataGastos = await resGastosFallback.json();
+              const gastosFiltrados = Array.isArray(dataGastos)
+                ? dataGastos.filter((g: any) => {
+                    const esVerificado = g.estado === 'verified';
+                    let enRango = false;
+                    if (g.fecha) {
+                      const fechaGasto = parseDate(g.fecha);
+                      if (fechaGasto) {
+                        fechaGasto.setHours(0, 0, 0, 0);
+                        enRango = fechaGasto >= fechaInicioDate && fechaGasto <= fechaFinDate;
+                      }
+                    }
+                    return esVerificado && enRango;
+                  })
+                : [];
+              const totalGastosCalc = gastosFiltrados.reduce((acc: number, g: any) => {
+                if (g.divisa === 'Bs' && g.tasa && Number(g.tasa) > 0) {
+                  return acc + (Number(g.monto || 0) / Number(g.tasa));
+                }
+                return acc + Number(g.monto || 0);
+              }, 0);
+              console.log("Total gastos calculado (fallback):", totalGastosCalc);
+              setTotalGastos(Math.max(0, totalGastosCalc));
+            }
+          } catch (e) {
+            console.error("Error en fallback de gastos:", e);
+          }
         }
 
         // INVENTARIO

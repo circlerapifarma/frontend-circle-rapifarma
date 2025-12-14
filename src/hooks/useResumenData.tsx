@@ -533,13 +533,62 @@ export function useResumenData() {
     return null;
   };
 
-  const gastosPorFarmacia = useMemo(() => {
-    const resultado: { [key: string]: number } = {};
-    // Calcular rango del mes actual hasta el día de hoy dinámicamente
-    const now = new Date();
-    console.log("useResumenData - Fecha actual del sistema:", now);
-    console.log("useResumenData - Año:", now.getFullYear(), "Mes:", now.getMonth() + 1, "Día:", now.getDate());
+  // Estado para almacenar gastos por farmacia desde el endpoint optimizado
+  const [gastosPorFarmaciaData, setGastosPorFarmaciaData] = useState<{ [key: string]: number }>({});
+
+  // Fetch gastos por farmacia usando el endpoint optimizado
+  useEffect(() => {
+    const fetchGastosPorFarmacia = async () => {
+      try {
+        // Calcular rango del mes actual hasta el día de hoy dinámicamente
+        const now = new Date();
+        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const fechaInicioMes = firstDayOfMonth.toISOString().split("T")[0];
+        const fechaFinHoy = today.toISOString().split("T")[0];
+        
+        const token = localStorage.getItem("token");
+        const headers: HeadersInit = {};
+        if (token) {
+          headers.Authorization = `Bearer ${token}`;
+        }
+        
+        // Usar el endpoint optimizado del backend
+        const url = `${API_BASE_URL}/gastos/verified/por-farmacia?fecha_inicio=${fechaInicioMes}&fecha_fin=${fechaFinHoy}`;
+        const res = await fetch(url, { headers });
+        
+        if (res.ok) {
+          const data = await res.json();
+          console.log("useResumenData - Gastos por farmacia obtenidos:", data);
+          setGastosPorFarmaciaData(data);
+        } else {
+          console.error("useResumenData - Error al obtener gastos por farmacia:", res.status, res.statusText);
+          // Fallback: usar el método anterior si el nuevo endpoint falla
+          setGastosPorFarmaciaData({});
+        }
+      } catch (error) {
+        console.error("useResumenData - Error al obtener gastos por farmacia:", error);
+        // Fallback: usar el método anterior si hay error
+        setGastosPorFarmaciaData({});
+      }
+    };
     
+    fetchGastosPorFarmacia();
+    // Actualizar cada 60 segundos
+    const interval = setInterval(fetchGastosPorFarmacia, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const gastosPorFarmacia = useMemo(() => {
+    // Si tenemos datos del endpoint optimizado, usarlos directamente
+    if (Object.keys(gastosPorFarmaciaData).length > 0) {
+      console.log("useResumenData - Usando datos del endpoint optimizado:", gastosPorFarmaciaData);
+      return gastosPorFarmaciaData;
+    }
+    
+    // Fallback: calcular desde gastos si el endpoint no está disponible
+    const resultado: { [key: string]: number } = {};
+    const now = new Date();
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const fechaInicioMes = firstDayOfMonth.toISOString().split("T")[0];
@@ -548,50 +597,17 @@ export function useResumenData() {
     const fechaInicioDate = new Date(fechaInicioMes);
     const fechaFinDate = new Date(fechaFinHoy);
     fechaInicioDate.setHours(0, 0, 0, 0);
-    fechaFinDate.setHours(23, 59, 59, 999); // Incluir todo el día
-    
-    console.log("useResumenData - Total gastos:", gastos.length);
-    console.log("useResumenData - Rango de fechas:", fechaInicioMes, "a", fechaFinHoy);
-    console.log("useResumenData - Farmacias:", farmacias.length);
-    
-    // Mostrar algunas fechas de gastos para debug
-    if (gastos.length > 0) {
-      const gastosVerified = gastos.filter(g => g.estado === "verified");
-      console.log("useResumenData - Total gastos verified:", gastosVerified.length);
-      
-      // Mostrar ejemplos de gastos verified con sus fechas parseadas
-      const ejemplosGastos = gastosVerified.slice(0, 10).map(g => {
-        const fechaParseada = parseDate(g.fecha);
-        return {
-          id: g._id,
-          fechaOriginal: g.fecha,
-          fechaParseada: fechaParseada ? fechaParseada.toISOString().split('T')[0] : 'ERROR',
-          fechaParseadaObj: fechaParseada,
-          localidad: g.localidad,
-          estado: g.estado,
-          monto: g.monto,
-          divisa: g.divisa,
-          enRango: fechaParseada ? (fechaParseada >= fechaInicioDate && fechaParseada <= fechaFinDate) : false
-        };
-      });
-      console.log("useResumenData - Ejemplos de gastos verified (primeros 10):", ejemplosGastos);
-      
-      // Contar cuántos están en rango
-      const enRango = ejemplosGastos.filter(e => e.enRango).length;
-      console.log(`useResumenData - De los primeros 10 verified, ${enRango} están en rango`);
-    }
+    fechaFinDate.setHours(23, 59, 59, 999);
     
     farmacias.forEach((farm) => {
       const gastosFiltrados = gastos.filter((g) => {
         const tieneLocalidad = g.localidad === farm.id;
         const esVerificado = g.estado === "verified";
         
-        // Comparar fechas correctamente usando la función helper
         let enRango = false;
         if (g.fecha) {
           const fechaGasto = parseDate(g.fecha);
           if (fechaGasto) {
-            // Comparar solo la fecha (sin hora)
             fechaGasto.setHours(0, 0, 0, 0);
             enRango = fechaGasto >= fechaInicioDate && fechaGasto <= fechaFinDate;
           }
@@ -600,28 +616,6 @@ export function useResumenData() {
         return tieneLocalidad && esVerificado && enRango;
       });
       
-      const gastosDeEstaFarmacia = gastos.filter(g => g.localidad === farm.id);
-      const gastosVerificados = gastos.filter(g => g.localidad === farm.id && g.estado === "verified");
-      
-      // Debug detallado solo para las primeras 3 farmacias para no saturar la consola
-      if (farmacias.indexOf(farm) < 3) {
-        console.log(`useResumenData - Farmacia ${farm.nombre} (${farm.id}):`, {
-          totalGastos: gastos.length,
-          gastosDeEstaFarmacia: gastosDeEstaFarmacia.length,
-          gastosVerificados: gastosVerificados.length,
-          gastosEnRango: gastosFiltrados.length,
-          gastosFiltrados: gastosFiltrados.slice(0, 5).map(g => ({ 
-            id: g._id, 
-            monto: g.monto, 
-            divisa: g.divisa, 
-            fecha: g.fecha,
-            fechaParseada: parseDate(g.fecha)?.toISOString().split('T')[0],
-            localidad: g.localidad,
-            estado: g.estado
-          }))
-        });
-      }
-      
       const total = gastosFiltrados.reduce((acc, g) => {
         if (g.divisa === "Bs" && g.tasa && Number(g.tasa) > 0) {
           return acc + Number(g.monto || 0) / Number(g.tasa);
@@ -629,13 +623,10 @@ export function useResumenData() {
         return acc + Number(g.monto || 0);
       }, 0);
       resultado[farm.id] = Math.max(0, total);
-      
-      if (farmacias.indexOf(farm) < 3) {
-        console.log(`useResumenData - Total para ${farm.nombre}:`, resultado[farm.id]);
-      }
     });
+    
     return resultado;
-  }, [gastos, farmacias]);
+  }, [gastosPorFarmaciaData, gastos, farmacias]);
 
   const cuentasActivasPorFarmacia = useMemo(() => {
     const resultado: { [key: string]: number } = {};
