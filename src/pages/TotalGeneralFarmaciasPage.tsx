@@ -143,13 +143,35 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
         const resGastos = await fetch(`${API_BASE_URL}/gastos`, { headers });
         if (resGastos.ok) {
           const dataGastos = await resGastos.json();
-          console.log("Gastos obtenidos:", dataGastos.length, "total");
+          console.log("=== VentaTotal - Gastos ===");
+          console.log("Gastos obtenidos del backend:", dataGastos.length, "total");
           console.log("Rango de fechas:", fechaInicioMes, "a", fechaFinHoy);
+          
+          // Mostrar todos los gastos verified para debug
+          const gastosVerified = Array.isArray(dataGastos) 
+            ? dataGastos.filter((g: any) => g.estado === 'verified')
+            : [];
+          console.log("Gastos con estado 'verified':", gastosVerified.length);
+          console.log("Detalles de gastos verified:", gastosVerified.map((g: any) => ({
+            id: g._id,
+            fecha: g.fecha,
+            localidad: g.localidad,
+            monto: g.monto,
+            divisa: g.divisa,
+            tasa: g.tasa,
+            enRango: g.fecha >= fechaInicioMes && g.fecha <= fechaFinHoy
+          })));
           
           const gastosFiltrados = Array.isArray(dataGastos)
             ? dataGastos.filter((g: any) => {
                 const esVerificado = g.estado === 'verified';
                 const enRango = g.fecha >= fechaInicioMes && g.fecha <= fechaFinHoy;
+                if (esVerificado && !enRango) {
+                  console.log(`Gasto ${g._id} está verified pero fuera de rango:`, {
+                    fecha: g.fecha,
+                    rango: `${fechaInicioMes} a ${fechaFinHoy}`
+                  });
+                }
                 return esVerificado && enRango;
               })
             : [];

@@ -511,12 +511,30 @@ export function useResumenData() {
         return tieneLocalidad && esVerificado && enRango;
       });
       
+      const gastosDeEstaFarmacia = gastos.filter(g => g.localidad === farm.id);
+      const gastosVerificados = gastos.filter(g => g.localidad === farm.id && g.estado === "verified");
+      
       console.log(`useResumenData - Farmacia ${farm.nombre} (${farm.id}):`, {
         totalGastos: gastos.length,
-        gastosDeEstaFarmacia: gastos.filter(g => g.localidad === farm.id).length,
-        gastosVerificados: gastos.filter(g => g.localidad === farm.id && g.estado === "verified").length,
+        gastosDeEstaFarmacia: gastosDeEstaFarmacia.length,
+        gastosVerificados: gastosVerificados.length,
         gastosEnRango: gastosFiltrados.length,
-        gastosFiltrados: gastosFiltrados.map(g => ({ id: g._id, monto: g.monto, divisa: g.divisa, fecha: g.fecha }))
+        gastosFiltrados: gastosFiltrados.map(g => ({ 
+          id: g._id, 
+          monto: g.monto, 
+          divisa: g.divisa, 
+          fecha: g.fecha,
+          localidad: g.localidad,
+          estado: g.estado
+        })),
+        // Debug: mostrar todos los gastos de esta farmacia para ver qué falta
+        todosGastosFarmacia: gastosDeEstaFarmacia.map(g => ({
+          id: g._id,
+          localidad: g.localidad,
+          estado: g.estado,
+          fecha: g.fecha,
+          enRango: g.fecha >= fechaInicioMes && g.fecha <= fechaFinHoy
+        }))
       });
       
       const total = gastosFiltrados.reduce((acc, g) => {
