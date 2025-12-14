@@ -83,6 +83,31 @@ export function useGastos(localidadId?: string) {
     []
   );
 
+  // --- Actualización silenciosa sin mostrar loading
+  const refreshGastosSilently = useCallback(
+    async (estado?: string, locId?: string) => {
+      try {
+        const params = new URLSearchParams();
+        if (estado) params.append("estado", estado);
+        if (locId) params.append("localidad", locId);
+        const url = `${API_BASE_URL}/gastos/estado?${params.toString()}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Error al obtener gastos por estado.");
+        const data: Gasto[] = await res.json();
+        setGastos(data);
+      } catch (err: any) {
+        // Silenciosamente fallar, no actualizar el estado de error para no interrumpir
+        console.error("Error al actualizar gastos silenciosamente:", err);
+      }
+    },
+    []
+  );
+
+  // --- Remover un gasto del estado local (actualización optimista)
+  const removeGasto = useCallback((gastoId: string) => {
+    setGastos((prevGastos) => prevGastos.filter((gasto) => gasto._id !== gastoId));
+  }, []);
+
   useEffect(() => {
     fetchLocalidades();
   }, [fetchLocalidades, fetchGastosAll, localidadId]);
@@ -95,5 +120,7 @@ export function useGastos(localidadId?: string) {
     fetchGastosAll,
     fetchGastosPorEstado,
     refreshGastos: fetchGastosAll,
+    refreshGastosSilently,
+    removeGasto,
   };
 }

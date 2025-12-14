@@ -20,6 +20,8 @@ const ChequeoGastosPage: React.FC = () => {
     loading,
     error,
     fetchGastosPorEstado,
+    refreshGastosSilently,
+    removeGasto,
   } = useGastos();
 
   const [modalGastos, setModalGastos] = useState({ abierto: false, id: "", nombre: "" });
@@ -44,27 +46,57 @@ const ChequeoGastosPage: React.FC = () => {
 
   const actualizarEstadoGasto = async (id: string, estado: string) => {
     try {
+      // Actualización optimista: remover el gasto inmediatamente del estado local
+      // Esto hace que desaparezca del modal instantáneamente
+      removeGasto(id);
+      
+      // Actualizar el estado en el servidor
       const res = await fetch(`${apiBase}/gastos/estado`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, estado }),
       });
-      if (!res.ok) throw new Error((await res.json()).message);
-      fetchGastosPorEstado("wait");
-      setModalGastos((prev) => ({ ...prev, abierto: false }));
+      
+      if (!res.ok) {
+        // Si falla, recargar los gastos para restaurar el estado correcto
+        refreshGastosSilently("wait");
+        throw new Error((await res.json()).message);
+      }
+      
+      // Sincronizar con el servidor en segundo plano para asegurar consistencia
+      refreshGastosSilently("wait");
+      
+      // NO cerrar el modal - mantenerlo abierto para seguir verificando
     } catch (e) {
       console.error("Error actualizando gasto:", e);
+      alert("Error al actualizar el gasto. Por favor, intenta de nuevo.");
+      // Recargar los gastos para restaurar el estado correcto
+      refreshGastosSilently("wait");
     }
   };
 
   const eliminarGasto = async (id: string) => {
     try {
-      const res = await fetch(`${apiBase}/gastos/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error((await res.json()).message);
+      // Actualización optimista: remover el gasto inmediatamente del estado local
+      removeGasto(id);
       setGastoAEliminar(null);
-      fetchGastosPorEstado("wait");
+      
+      // Eliminar el gasto en el servidor
+      const res = await fetch(`${apiBase}/gastos/${id}`, { method: "DELETE" });
+      
+      if (!res.ok) {
+        // Si falla, recargar los gastos para restaurar el estado correcto
+        refreshGastosSilently("wait");
+        throw new Error((await res.json()).message);
+      }
+      
+      // Sincronizar con el servidor en segundo plano
+      refreshGastosSilently("wait");
     } catch (e) {
       console.error("Error al eliminar gasto:", e);
+      alert("Error al eliminar el gasto. Por favor, intenta de nuevo.");
+      // Recargar los gastos para restaurar el estado correcto
+      refreshGastosSilently("wait");
     }
   };
 
