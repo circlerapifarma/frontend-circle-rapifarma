@@ -35,6 +35,49 @@ const formatBs = (amount: number | null | undefined) => {
   return `${amount.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs`;
 };
 
+// Función helper para parsear fechas de manera robusta
+const parseDate = (dateStr: string | Date | undefined | null): Date | null => {
+  if (!dateStr) return null;
+  
+  // Si ya es un Date object, retornarlo
+  if (dateStr instanceof Date) {
+    return dateStr;
+  }
+  
+  // Si es string, intentar parsearlo
+  if (typeof dateStr === 'string') {
+    // Formato DD/MM/YYYY
+    if (dateStr.includes('/')) {
+      const partes = dateStr.split('/');
+      if (partes.length === 3) {
+        const [dia, mes, año] = partes;
+        const añoNum = parseInt(año);
+        const mesNum = parseInt(mes) - 1; // Mes es 0-indexed
+        const diaNum = parseInt(dia);
+        if (!isNaN(añoNum) && !isNaN(mesNum) && !isNaN(diaNum)) {
+          return new Date(añoNum, mesNum, diaNum);
+        }
+      }
+    }
+    
+    // Formato YYYY-MM-DD (con o sin hora)
+    if (dateStr.includes('-')) {
+      const fecha = new Date(dateStr);
+      if (!isNaN(fecha.getTime())) {
+        return fecha;
+      }
+    }
+    
+    // Intentar parsear como ISO string
+    const fecha = new Date(dateStr);
+    if (!isNaN(fecha.getTime())) {
+      return fecha;
+    }
+  }
+  
+  return null;
+};
+
 const TotalGeneralFarmaciasPage: React.FC = () => {
   const [totalGeneral, setTotalGeneral] = useState<number | null>(null);
   const [totalSobrantes, setTotalSobrantes] = useState<number | null>(null);
@@ -132,6 +175,11 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
         const fechaInicioMes = firstDayOfMonth.toISOString().split("T")[0];
         const fechaFinHoy = today.toISOString().split("T")[0];
         
+        const fechaInicioDate = new Date(fechaInicioMes);
+        const fechaFinDate = new Date(fechaFinHoy);
+        fechaInicioDate.setHours(0, 0, 0, 0);
+        fechaFinDate.setHours(23, 59, 59, 999); // Incluir todo el día
+        
         // Obtener token de autenticación
         const token = localStorage.getItem("token");
         const headers: HeadersInit = {};
@@ -144,7 +192,7 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
         if (resGastos.ok) {
           const dataGastos = await resGastos.json();
           console.log("=== VentaTotal - Gastos ===");
-          console.log("Gastos obtenidos del backend:", dataGastos.length, "total");
+          console.log("Gastos obtenidos del backend:", Array.isArray(dataGastos) ? dataGastos.length : 0, "total");
           console.log("Rango de fechas:", fechaInicioMes, "a", fechaFinHoy);
           
           // Mostrar todos los gastos verified para debug
@@ -154,30 +202,14 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
           console.log("=== VentaTotal - Debug Gastos ===");
           console.log("Gastos con estado 'verified':", gastosVerified.length);
           
-          // Mostrar ejemplos de gastos verified con análisis de fechas
+          // Mostrar ejemplos de gastos verified con análisis de fechas usando parseDate
           const ejemplos = gastosVerified.slice(0, 10).map((g: any) => {
-            let fechaGasto: Date | null = null;
-            let enRango = false;
-            try {
-              if (typeof g.fecha === 'string' && g.fecha.includes('/')) {
-                const [dia, mes, año] = g.fecha.split('/');
-                fechaGasto = new Date(parseInt(año), parseInt(mes) - 1, parseInt(dia));
-              } else {
-                fechaGasto = new Date(g.fecha);
-              }
-              const fechaInicio = new Date(fechaInicioMes);
-              const fechaFin = new Date(fechaFinHoy);
-              fechaGasto.setHours(0, 0, 0, 0);
-              fechaInicio.setHours(0, 0, 0, 0);
-              fechaFin.setHours(0, 0, 0, 0);
-              enRango = fechaGasto >= fechaInicio && fechaGasto <= fechaFin;
-            } catch (e) {
-              console.error("Error parseando fecha:", g.fecha, e);
-            }
+            const fechaGasto = parseDate(g.fecha);
+            const enRango = fechaGasto ? (fechaGasto >= fechaInicioDate && fechaGasto <= fechaFinDate) : false;
             return {
               id: g._id,
               fechaOriginal: g.fecha,
-              fechaParseada: fechaGasto ? fechaGasto.toISOString().split('T')[0] : 'error',
+              fechaParseada: fechaGasto ? fechaGasto.toISOString().split('T')[0] : 'ERROR',
               rangoEsperado: `${fechaInicioMes} a ${fechaFinHoy}`,
               enRango: enRango,
               localidad: g.localidad,
@@ -187,46 +219,24 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
           });
           console.log("Ejemplos de gastos verified (primeros 10):", ejemplos);
           
+          // Contar cuántos están en rango
+          const enRango = ejemplos.filter(e => e.enRango).length;
+          console.log(`VentaTotal - De los primeros 10 verified, ${enRango} están en rango`);
+          
           const gastosFiltrados = Array.isArray(dataGastos)
             ? dataGastos.filter((g: any) => {
                 const esVerificado = g.estado === 'verified';
                 
-                // Comparar fechas correctamente - convertir a Date para comparación
+                // Comparar fechas usando la función helper
                 let enRango = false;
                 if (g.fecha) {
-                  try {
-                    // Si la fecha viene en formato DD/MM/YYYY, convertirla
-                    let fechaGasto: Date;
-                    if (g.fecha.includes('/')) {
-                      // Formato DD/MM/YYYY
-                      const [dia, mes, año] = g.fecha.split('/');
-                      fechaGasto = new Date(parseInt(año), parseInt(mes) - 1, parseInt(dia));
-                    } else {
-                      // Formato YYYY-MM-DD
-                      fechaGasto = new Date(g.fecha);
-                    }
-                    
-                    const fechaInicio = new Date(fechaInicioMes);
-                    const fechaFin = new Date(fechaFinHoy);
-                    
-                    // Comparar solo la fecha (sin hora)
+                  const fechaGasto = parseDate(g.fecha);
+                  if (fechaGasto) {
                     fechaGasto.setHours(0, 0, 0, 0);
-                    fechaInicio.setHours(0, 0, 0, 0);
-                    fechaFin.setHours(0, 0, 0, 0);
-                    
-                    enRango = fechaGasto >= fechaInicio && fechaGasto <= fechaFin;
-                  } catch (e) {
-                    console.error("Error al parsear fecha del gasto:", g.fecha, e);
-                    enRango = false;
+                    enRango = fechaGasto >= fechaInicioDate && fechaGasto <= fechaFinDate;
                   }
                 }
                 
-                if (esVerificado && !enRango) {
-                  console.log(`Gasto ${g._id} está verified pero fuera de rango:`, {
-                    fecha: g.fecha,
-                    rango: `${fechaInicioMes} a ${fechaFinHoy}`
-                  });
-                }
                 return esVerificado && enRango;
               })
             : [];

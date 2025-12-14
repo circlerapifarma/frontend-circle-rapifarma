@@ -490,6 +490,49 @@ export function useResumenData() {
     [cuadresPorFarmacia, fechaInicio, fechaFin]
   );
 
+  // Función helper para parsear fechas de manera robusta
+  const parseDate = (dateStr: string | Date | undefined | null): Date | null => {
+    if (!dateStr) return null;
+    
+    // Si ya es un Date object, retornarlo
+    if (dateStr instanceof Date) {
+      return dateStr;
+    }
+    
+    // Si es string, intentar parsearlo
+    if (typeof dateStr === 'string') {
+      // Formato DD/MM/YYYY
+      if (dateStr.includes('/')) {
+        const partes = dateStr.split('/');
+        if (partes.length === 3) {
+          const [dia, mes, año] = partes;
+          const añoNum = parseInt(año);
+          const mesNum = parseInt(mes) - 1; // Mes es 0-indexed
+          const diaNum = parseInt(dia);
+          if (!isNaN(añoNum) && !isNaN(mesNum) && !isNaN(diaNum)) {
+            return new Date(añoNum, mesNum, diaNum);
+          }
+        }
+      }
+      
+      // Formato YYYY-MM-DD (con o sin hora)
+      if (dateStr.includes('-')) {
+        const fecha = new Date(dateStr);
+        if (!isNaN(fecha.getTime())) {
+          return fecha;
+        }
+      }
+      
+      // Intentar parsear como ISO string
+      const fecha = new Date(dateStr);
+      if (!isNaN(fecha.getTime())) {
+        return fecha;
+      }
+    }
+    
+    return null;
+  };
+
   const gastosPorFarmacia = useMemo(() => {
     const resultado: { [key: string]: number } = {};
     // Calcular rango del mes actual hasta el día de hoy dinámicamente
@@ -502,6 +545,11 @@ export function useResumenData() {
     const fechaInicioMes = firstDayOfMonth.toISOString().split("T")[0];
     const fechaFinHoy = today.toISOString().split("T")[0];
     
+    const fechaInicioDate = new Date(fechaInicioMes);
+    const fechaFinDate = new Date(fechaFinHoy);
+    fechaInicioDate.setHours(0, 0, 0, 0);
+    fechaFinDate.setHours(23, 59, 59, 999); // Incluir todo el día
+    
     console.log("useResumenData - Total gastos:", gastos.length);
     console.log("useResumenData - Rango de fechas:", fechaInicioMes, "a", fechaFinHoy);
     console.log("useResumenData - Farmacias:", farmacias.length);
@@ -511,20 +559,26 @@ export function useResumenData() {
       const gastosVerified = gastos.filter(g => g.estado === "verified");
       console.log("useResumenData - Total gastos verified:", gastosVerified.length);
       
-      // Mostrar ejemplos de gastos verified con sus fechas
-      const ejemplosGastos = gastosVerified.slice(0, 5).map(g => ({
-        id: g._id,
-        fecha: g.fecha,
-        localidad: g.localidad,
-        estado: g.estado,
-        monto: g.monto,
-        divisa: g.divisa
-      }));
-      console.log("useResumenData - Ejemplos de gastos verified:", ejemplosGastos);
+      // Mostrar ejemplos de gastos verified con sus fechas parseadas
+      const ejemplosGastos = gastosVerified.slice(0, 10).map(g => {
+        const fechaParseada = parseDate(g.fecha);
+        return {
+          id: g._id,
+          fechaOriginal: g.fecha,
+          fechaParseada: fechaParseada ? fechaParseada.toISOString().split('T')[0] : 'ERROR',
+          fechaParseadaObj: fechaParseada,
+          localidad: g.localidad,
+          estado: g.estado,
+          monto: g.monto,
+          divisa: g.divisa,
+          enRango: fechaParseada ? (fechaParseada >= fechaInicioDate && fechaParseada <= fechaFinDate) : false
+        };
+      });
+      console.log("useResumenData - Ejemplos de gastos verified (primeros 10):", ejemplosGastos);
       
-      // Mostrar fechas únicas de gastos verified
-      const fechasUnicasVerified = [...new Set(gastosVerified.map(g => g.fecha))].slice(0, 10);
-      console.log("useResumenData - Fechas únicas de gastos verified (muestra):", fechasUnicasVerified);
+      // Contar cuántos están en rango
+      const enRango = ejemplosGastos.filter(e => e.enRango).length;
+      console.log(`useResumenData - De los primeros 10 verified, ${enRango} están en rango`);
     }
     
     farmacias.forEach((farm) => {
@@ -532,51 +586,14 @@ export function useResumenData() {
         const tieneLocalidad = g.localidad === farm.id;
         const esVerificado = g.estado === "verified";
         
-        // Comparar fechas correctamente - convertir a Date para comparación
+        // Comparar fechas correctamente usando la función helper
         let enRango = false;
         if (g.fecha) {
-          try {
-            // Si la fecha viene en formato DD/MM/YYYY, convertirla
-            let fechaGasto: Date;
-            if (typeof g.fecha === 'string' && g.fecha.includes('/')) {
-              // Formato DD/MM/YYYY
-              const partes = g.fecha.split('/');
-              if (partes.length === 3) {
-                const [dia, mes, año] = partes;
-                fechaGasto = new Date(parseInt(año), parseInt(mes) - 1, parseInt(dia));
-              } else {
-                fechaGasto = new Date(g.fecha);
-              }
-            } else {
-              // Formato YYYY-MM-DD o Date object
-              fechaGasto = new Date(g.fecha);
-            }
-            
-            const fechaInicio = new Date(fechaInicioMes);
-            const fechaFin = new Date(fechaFinHoy);
-            
+          const fechaGasto = parseDate(g.fecha);
+          if (fechaGasto) {
             // Comparar solo la fecha (sin hora)
             fechaGasto.setHours(0, 0, 0, 0);
-            fechaInicio.setHours(0, 0, 0, 0);
-            fechaFin.setHours(0, 0, 0, 0);
-            
-            enRango = fechaGasto >= fechaInicio && fechaGasto <= fechaFin;
-            
-            // Debug para los primeros gastos de esta farmacia
-            if (tieneLocalidad && esVerificado) {
-              console.log(`useResumenData - Debug gasto ${g._id} (${farm.nombre}):`, {
-                fechaOriginal: g.fecha,
-                fechaParseada: fechaGasto.toISOString().split('T')[0],
-                fechaInicio: fechaInicio.toISOString().split('T')[0],
-                fechaFin: fechaFin.toISOString().split('T')[0],
-                enRango: enRango,
-                tieneLocalidad: tieneLocalidad,
-                esVerificado: esVerificado
-              });
-            }
-          } catch (e) {
-            console.error("Error al parsear fecha del gasto:", g.fecha, e);
-            enRango = false;
+            enRango = fechaGasto >= fechaInicioDate && fechaGasto <= fechaFinDate;
           }
         }
         
@@ -586,28 +603,24 @@ export function useResumenData() {
       const gastosDeEstaFarmacia = gastos.filter(g => g.localidad === farm.id);
       const gastosVerificados = gastos.filter(g => g.localidad === farm.id && g.estado === "verified");
       
-      console.log(`useResumenData - Farmacia ${farm.nombre} (${farm.id}):`, {
-        totalGastos: gastos.length,
-        gastosDeEstaFarmacia: gastosDeEstaFarmacia.length,
-        gastosVerificados: gastosVerificados.length,
-        gastosEnRango: gastosFiltrados.length,
-        gastosFiltrados: gastosFiltrados.map(g => ({ 
-          id: g._id, 
-          monto: g.monto, 
-          divisa: g.divisa, 
-          fecha: g.fecha,
-          localidad: g.localidad,
-          estado: g.estado
-        })),
-        // Debug: mostrar todos los gastos de esta farmacia para ver qué falta
-        todosGastosFarmacia: gastosDeEstaFarmacia.map(g => ({
-          id: g._id,
-          localidad: g.localidad,
-          estado: g.estado,
-          fecha: g.fecha,
-          enRango: g.fecha >= fechaInicioMes && g.fecha <= fechaFinHoy
-        }))
-      });
+      // Debug detallado solo para las primeras 3 farmacias para no saturar la consola
+      if (farmacias.indexOf(farm) < 3) {
+        console.log(`useResumenData - Farmacia ${farm.nombre} (${farm.id}):`, {
+          totalGastos: gastos.length,
+          gastosDeEstaFarmacia: gastosDeEstaFarmacia.length,
+          gastosVerificados: gastosVerificados.length,
+          gastosEnRango: gastosFiltrados.length,
+          gastosFiltrados: gastosFiltrados.slice(0, 5).map(g => ({ 
+            id: g._id, 
+            monto: g.monto, 
+            divisa: g.divisa, 
+            fecha: g.fecha,
+            fechaParseada: parseDate(g.fecha)?.toISOString().split('T')[0],
+            localidad: g.localidad,
+            estado: g.estado
+          }))
+        });
+      }
       
       const total = gastosFiltrados.reduce((acc, g) => {
         if (g.divisa === "Bs" && g.tasa && Number(g.tasa) > 0) {
@@ -616,7 +629,10 @@ export function useResumenData() {
         return acc + Number(g.monto || 0);
       }, 0);
       resultado[farm.id] = Math.max(0, total);
-      console.log(`useResumenData - Total para ${farm.nombre}:`, resultado[farm.id]);
+      
+      if (farmacias.indexOf(farm) < 3) {
+        console.log(`useResumenData - Total para ${farm.nombre}:`, resultado[farm.id]);
+      }
     });
     return resultado;
   }, [gastos, farmacias]);
