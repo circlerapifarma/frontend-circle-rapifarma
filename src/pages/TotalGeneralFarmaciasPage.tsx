@@ -151,16 +151,41 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
           const gastosVerified = Array.isArray(dataGastos) 
             ? dataGastos.filter((g: any) => g.estado === 'verified')
             : [];
+          console.log("=== VentaTotal - Debug Gastos ===");
           console.log("Gastos con estado 'verified':", gastosVerified.length);
-          console.log("Detalles de gastos verified:", gastosVerified.map((g: any) => ({
-            id: g._id,
-            fecha: g.fecha,
-            localidad: g.localidad,
-            monto: g.monto,
-            divisa: g.divisa,
-            tasa: g.tasa,
-            enRango: g.fecha >= fechaInicioMes && g.fecha <= fechaFinHoy
-          })));
+          
+          // Mostrar ejemplos de gastos verified con análisis de fechas
+          const ejemplos = gastosVerified.slice(0, 10).map((g: any) => {
+            let fechaGasto: Date | null = null;
+            let enRango = false;
+            try {
+              if (typeof g.fecha === 'string' && g.fecha.includes('/')) {
+                const [dia, mes, año] = g.fecha.split('/');
+                fechaGasto = new Date(parseInt(año), parseInt(mes) - 1, parseInt(dia));
+              } else {
+                fechaGasto = new Date(g.fecha);
+              }
+              const fechaInicio = new Date(fechaInicioMes);
+              const fechaFin = new Date(fechaFinHoy);
+              fechaGasto.setHours(0, 0, 0, 0);
+              fechaInicio.setHours(0, 0, 0, 0);
+              fechaFin.setHours(0, 0, 0, 0);
+              enRango = fechaGasto >= fechaInicio && fechaGasto <= fechaFin;
+            } catch (e) {
+              console.error("Error parseando fecha:", g.fecha, e);
+            }
+            return {
+              id: g._id,
+              fechaOriginal: g.fecha,
+              fechaParseada: fechaGasto ? fechaGasto.toISOString().split('T')[0] : 'error',
+              rangoEsperado: `${fechaInicioMes} a ${fechaFinHoy}`,
+              enRango: enRango,
+              localidad: g.localidad,
+              monto: g.monto,
+              divisa: g.divisa
+            };
+          });
+          console.log("Ejemplos de gastos verified (primeros 10):", ejemplos);
           
           const gastosFiltrados = Array.isArray(dataGastos)
             ? dataGastos.filter((g: any) => {

@@ -508,8 +508,23 @@ export function useResumenData() {
     
     // Mostrar algunas fechas de gastos para debug
     if (gastos.length > 0) {
-      const fechasUnicas = [...new Set(gastos.map(g => g.fecha).slice(0, 10))];
-      console.log("useResumenData - Primeras fechas de gastos (muestra):", fechasUnicas);
+      const gastosVerified = gastos.filter(g => g.estado === "verified");
+      console.log("useResumenData - Total gastos verified:", gastosVerified.length);
+      
+      // Mostrar ejemplos de gastos verified con sus fechas
+      const ejemplosGastos = gastosVerified.slice(0, 5).map(g => ({
+        id: g._id,
+        fecha: g.fecha,
+        localidad: g.localidad,
+        estado: g.estado,
+        monto: g.monto,
+        divisa: g.divisa
+      }));
+      console.log("useResumenData - Ejemplos de gastos verified:", ejemplosGastos);
+      
+      // Mostrar fechas únicas de gastos verified
+      const fechasUnicasVerified = [...new Set(gastosVerified.map(g => g.fecha))].slice(0, 10);
+      console.log("useResumenData - Fechas únicas de gastos verified (muestra):", fechasUnicasVerified);
     }
     
     farmacias.forEach((farm) => {
@@ -523,12 +538,17 @@ export function useResumenData() {
           try {
             // Si la fecha viene en formato DD/MM/YYYY, convertirla
             let fechaGasto: Date;
-            if (g.fecha.includes('/')) {
+            if (typeof g.fecha === 'string' && g.fecha.includes('/')) {
               // Formato DD/MM/YYYY
-              const [dia, mes, año] = g.fecha.split('/');
-              fechaGasto = new Date(parseInt(año), parseInt(mes) - 1, parseInt(dia));
+              const partes = g.fecha.split('/');
+              if (partes.length === 3) {
+                const [dia, mes, año] = partes;
+                fechaGasto = new Date(parseInt(año), parseInt(mes) - 1, parseInt(dia));
+              } else {
+                fechaGasto = new Date(g.fecha);
+              }
             } else {
-              // Formato YYYY-MM-DD
+              // Formato YYYY-MM-DD o Date object
               fechaGasto = new Date(g.fecha);
             }
             
@@ -541,6 +561,19 @@ export function useResumenData() {
             fechaFin.setHours(0, 0, 0, 0);
             
             enRango = fechaGasto >= fechaInicio && fechaGasto <= fechaFin;
+            
+            // Debug para los primeros gastos de esta farmacia
+            if (tieneLocalidad && esVerificado) {
+              console.log(`useResumenData - Debug gasto ${g._id} (${farm.nombre}):`, {
+                fechaOriginal: g.fecha,
+                fechaParseada: fechaGasto.toISOString().split('T')[0],
+                fechaInicio: fechaInicio.toISOString().split('T')[0],
+                fechaFin: fechaFin.toISOString().split('T')[0],
+                enRango: enRango,
+                tieneLocalidad: tieneLocalidad,
+                esVerificado: esVerificado
+              });
+            }
           } catch (e) {
             console.error("Error al parsear fecha del gasto:", g.fecha, e);
             enRango = false;
