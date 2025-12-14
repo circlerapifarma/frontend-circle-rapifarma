@@ -56,8 +56,9 @@ interface InventarioItem {
 }
 
 interface Gasto {
+  _id?: string;
   localidad: string; // ID de la farmacia
-  estado: "verified" | "pending";
+  estado: "verified" | "pending" | "wait" | "denied";
   fecha: string;
   divisa: "Bs" | "USD";
   tasa?: number | string;
