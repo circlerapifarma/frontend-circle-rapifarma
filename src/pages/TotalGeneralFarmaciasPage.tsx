@@ -165,7 +165,37 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
           const gastosFiltrados = Array.isArray(dataGastos)
             ? dataGastos.filter((g: any) => {
                 const esVerificado = g.estado === 'verified';
-                const enRango = g.fecha >= fechaInicioMes && g.fecha <= fechaFinHoy;
+                
+                // Comparar fechas correctamente - convertir a Date para comparación
+                let enRango = false;
+                if (g.fecha) {
+                  try {
+                    // Si la fecha viene en formato DD/MM/YYYY, convertirla
+                    let fechaGasto: Date;
+                    if (g.fecha.includes('/')) {
+                      // Formato DD/MM/YYYY
+                      const [dia, mes, año] = g.fecha.split('/');
+                      fechaGasto = new Date(parseInt(año), parseInt(mes) - 1, parseInt(dia));
+                    } else {
+                      // Formato YYYY-MM-DD
+                      fechaGasto = new Date(g.fecha);
+                    }
+                    
+                    const fechaInicio = new Date(fechaInicioMes);
+                    const fechaFin = new Date(fechaFinHoy);
+                    
+                    // Comparar solo la fecha (sin hora)
+                    fechaGasto.setHours(0, 0, 0, 0);
+                    fechaInicio.setHours(0, 0, 0, 0);
+                    fechaFin.setHours(0, 0, 0, 0);
+                    
+                    enRango = fechaGasto >= fechaInicio && fechaGasto <= fechaFin;
+                  } catch (e) {
+                    console.error("Error al parsear fecha del gasto:", g.fecha, e);
+                    enRango = false;
+                  }
+                }
+                
                 if (esVerificado && !enRango) {
                   console.log(`Gasto ${g._id} está verified pero fuera de rango:`, {
                     fecha: g.fecha,
