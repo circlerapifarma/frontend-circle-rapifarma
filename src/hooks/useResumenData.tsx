@@ -494,6 +494,9 @@ export function useResumenData() {
     const resultado: { [key: string]: number } = {};
     // Calcular rango del mes actual hasta el día de hoy dinámicamente
     const now = new Date();
+    console.log("useResumenData - Fecha actual del sistema:", now);
+    console.log("useResumenData - Año:", now.getFullYear(), "Mes:", now.getMonth() + 1, "Día:", now.getDate());
+    
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const fechaInicioMes = firstDayOfMonth.toISOString().split("T")[0];
@@ -502,6 +505,12 @@ export function useResumenData() {
     console.log("useResumenData - Total gastos:", gastos.length);
     console.log("useResumenData - Rango de fechas:", fechaInicioMes, "a", fechaFinHoy);
     console.log("useResumenData - Farmacias:", farmacias.length);
+    
+    // Mostrar algunas fechas de gastos para debug
+    if (gastos.length > 0) {
+      const fechasUnicas = [...new Set(gastos.map(g => g.fecha).slice(0, 10))];
+      console.log("useResumenData - Primeras fechas de gastos (muestra):", fechasUnicas);
+    }
     
     farmacias.forEach((farm) => {
       const gastosFiltrados = gastos.filter((g) => {
