@@ -63,12 +63,12 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
   const [fechaFin, setFechaFin] = useState<string>("");
 
   useEffect(() => {
-    // Por defecto, mes actual
+    // Por defecto, mes actual hasta el día de hoy
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     setFechaInicio(firstDay.toISOString().slice(0, 10));
-    setFechaFin(lastDay.toISOString().slice(0, 10));
+    setFechaFin(today.toISOString().slice(0, 10));
   }, []);
 
   useEffect(() => {

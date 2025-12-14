@@ -137,8 +137,8 @@ export function useResumenData() {
   const setMesActual = useCallback(() => {
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    setDateRange(firstDay, lastDay);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    setDateRange(firstDay, today);
   }, [setDateRange]);
 
   useEffect(() => {
