@@ -68,6 +68,8 @@ const ResumeCardFarmacia: React.FC<ResumeCardFarmaciaProps> = ({
   };
 
   const totalConGastos = totalVentas - gastos - cuentasPagadas;
+  // Utilidad Neta = Venta (verde) - Costo de Cuadres - Gastos Verificados
+  const utilidadNeta = totalVentas - totalCosto - gastos;
   const showMissing = faltantes > 0 && faltantes !== null;
   const showSurplus = sobrantes > 0 && sobrantes !== null;
   return (
@@ -186,24 +188,46 @@ const ResumeCardFarmacia: React.FC<ResumeCardFarmaciaProps> = ({
         </div>
 
         <>
-          <div className="flex justify-between items-center py-1 border-b border-gray-100">
-            <span className="flex items-center gap-2">
-              <i className="fas fa-minus-circle text-red-600"></i> Gastos
-              Verificados:
-            </span>
-            <span className="font-semibold text-red-600">
-              {formatCurrency(gastos)}
-            </span>
-          </div>
-          <div className="flex justify-between items-center py-1 border-b border-gray-100">
-            <span className="flex items-center gap-2">
-              <i className="fas fa-hand-holding-usd text-orange-600"></i>{" "}
-              Cuentas por Pagar:
-            </span>
-            <span className="font-semibold text-orange-600">
-              {formatCurrency(cuentasPorPagarActivas)}
-            </span>
-          </div>
+        <div className="flex justify-between items-center py-1 border-b border-gray-100">
+          <span className="flex items-center gap-2">
+            <i className="fas fa-minus-circle text-red-600"></i> Gastos
+            Verificados:
+          </span>
+          <span className="font-semibold text-red-600">
+            {formatCurrency(gastos)}
+          </span>
+        </div>
+        
+        {/* Utilidad Neta - Resultado llamativo */}
+        <div className={`flex justify-between items-center py-3 mt-2 mb-2 rounded-lg px-3 border-2 ${
+          utilidadNeta >= 0 
+            ? "bg-green-50 border-green-400" 
+            : "bg-red-50 border-red-400"
+        }`}>
+          <span className={`flex items-center gap-2 font-bold text-lg ${
+            utilidadNeta >= 0 ? "text-green-800" : "text-red-800"
+          }`}>
+            <i className={`fas ${
+              utilidadNeta >= 0 ? "fa-arrow-trend-up text-green-600" : "fa-arrow-trend-down text-red-600"
+            }`}></i>
+            Utilidad Neta:
+          </span>
+          <span className={`font-extrabold text-xl ${
+            utilidadNeta >= 0 ? "text-green-700" : "text-red-700"
+          }`}>
+            {formatCurrency(utilidadNeta)}
+          </span>
+        </div>
+        
+        <div className="flex justify-between items-center py-1 border-b border-gray-100">
+          <span className="flex items-center gap-2">
+            <i className="fas fa-hand-holding-usd text-orange-600"></i>{" "}
+            Cuentas por Pagar:
+          </span>
+          <span className="font-semibold text-orange-600">
+            {formatCurrency(cuentasPorPagarActivas)}
+          </span>
+        </div>
           <div className="flex justify-between items-center py-1 border-b border-gray-100">
             <span className="flex items-center gap-2">
               <i className="fas fa-check-circle text-green-600"></i> Monto
