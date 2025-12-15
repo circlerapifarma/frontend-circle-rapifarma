@@ -34,7 +34,8 @@ const PERMISOS = [
   "acceso_admin",
   "gestionar_usuarios",
   "ver_inventarios",
-  "gestionar_cuentas_por_pagar"
+  "gestionar_cuentas_por_pagar",
+  "bancos"
 ];
 
 const UsuariosAdminPage: React.FC = () => {

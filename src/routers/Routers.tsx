@@ -39,6 +39,8 @@ import ProveedoresPage from "@/pages/ProveedoresPage";
 import UsuariosAdminPage from "@/pages/UsuariosAdminPage";
 import ListasComparativasPage from "@/pages/ListasComparativasPage";
 import OrdenCompraPage from "@/pages/OrdenCompraPage";
+import BancosPage from "@/pages/BancosPage";
+import MovimientosBancosPage from "@/pages/MovimientosBancosPage";
 
 const AppRouter = () => (
   <Routes>
@@ -324,6 +326,22 @@ const AppRouter = () => (
       element={
         <PermissionRoute permiso="orden_compra">
           <OrdenCompraPage />
+        </PermissionRoute>
+      }
+    />
+    <Route
+      path="/bancos"
+      element={
+        <PermissionRoute permiso="bancos">
+          <BancosPage />
+        </PermissionRoute>
+      }
+    />
+    <Route
+      path="/movimientos-bancos"
+      element={
+        <PermissionRoute permiso="bancos">
+          <MovimientosBancosPage />
         </PermissionRoute>
       }
     />

@@ -165,6 +165,11 @@ const allLinks: LinkCategory[] = [
         showCount: true,
       },
       {
+        to: "/bancos",
+        label: "Bancos",
+        permiso: "bancos",
+      },
+      {
         to: "/listas-comparativas",
         label: "Listas Comparativas",
         permiso: "listas_comparativas",
