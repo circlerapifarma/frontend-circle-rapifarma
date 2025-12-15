@@ -24,7 +24,11 @@ export interface Movimiento {
   tipo: "deposito" | "transferencia" | "cheque" | "retiro";
   concepto?: "cuentas_pagadas" | "transferencia" | "retiro_efectivo" | "ingreso_venta" | "gasto_tarjeta_debito" | string; // Concepto del movimiento
   tipoPago?: "efectivoBs" | "efectivoUsd" | "debito" | "credito" | "zelle" | "pagoMovil"; // Tipo de pago para depósitos
-  monto: number;
+  monto: number; // Monto en la moneda del banco
+  montoOriginal?: number; // Monto original antes de conversión (para depósitos en Bs)
+  montoUsd?: number; // Monto en USD (calculado si el banco es en Bs)
+  tipoMonedaBanco?: "USD" | "Bs"; // Tipo de moneda del banco
+  tasaUsada?: number; // Tasa de cambio usada para la conversión
   detalles: string;
   nombreTitular?: string; // Para transferencias y cheques
   fecha: string;
