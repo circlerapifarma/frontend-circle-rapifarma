@@ -617,6 +617,41 @@ const BancosPage: React.FC = () => {
                   />
                 </div>
               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Tipo de Moneda *
+                  </label>
+                  <select
+                    name="tipoMoneda"
+                    value={formData.tipoMoneda}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                    required
+                  >
+                    <option value="USD">USD (Dólares)</option>
+                    <option value="Bs">Bs (Bolívares)</option>
+                  </select>
+                </div>
+                {formData.tipoMoneda === "Bs" && (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Tasa de Cambio del Día * (Bs por USD)
+                    </label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      name="tasa"
+                      value={formData.tasa}
+                      onChange={handleChange}
+                      required={formData.tipoMoneda === "Bs"}
+                      placeholder="Ej: 40.50"
+                      className="text-sm"
+                    />
+                  </div>
+                )}
+              </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-2">
                   Farmacias que utilizan este banco * (Seleccione una o más)
