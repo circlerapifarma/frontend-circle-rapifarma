@@ -110,7 +110,7 @@ const HistorialMovimientosModal: React.FC<HistorialMovimientosModalProps> = ({
                 key={movimiento._id}
                 className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
               >
-                <div className="flex justify-between items-start mb-2">
+                  <div className="flex justify-between items-start mb-2">
                   <div className="flex items-center gap-2">
                     <span
                       className={`px-2 py-1 rounded text-xs font-semibold ${getTipoColor(
@@ -123,10 +123,21 @@ const HistorialMovimientosModal: React.FC<HistorialMovimientosModalProps> = ({
                       {formatDate(movimiento.fecha)}
                     </span>
                   </div>
-                  <span className={`text-lg ${getMontoColor(movimiento.tipo)}`}>
+                  <div className={`text-lg ${getMontoColor(movimiento.tipo)} text-right`}>
                     {movimiento.tipo === "deposito" ? "+" : "-"}
-                    {formatCurrency(movimiento.monto)}
-                  </span>
+                    {movimiento.tipoMonedaBanco === "Bs" && movimiento.montoOriginal ? (
+                      <div className="flex flex-col">
+                        <span>{movimiento.montoOriginal.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs</span>
+                        {movimiento.montoUsd && (
+                          <span className="text-xs text-gray-500">
+                            ({formatCurrency(movimiento.montoUsd)})
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      formatCurrency(movimiento.monto)
+                    )}
+                  </div>
                 </div>
                 <div className="mt-2">
                   <p className="text-sm text-gray-700">{movimiento.detalles}</p>

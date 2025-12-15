@@ -345,8 +345,21 @@ const MovimientosBancosPage: React.FC = () => {
                         movimiento.tipo === "deposito" ? "text-green-600" : "text-red-600"
                       }`}
                     >
-                      {movimiento.tipo === "deposito" ? "+" : "-"}
-                      {formatCurrency(movimiento.monto)}
+                      <div className="flex flex-col">
+                        {movimiento.tipo === "deposito" ? "+" : "-"}
+                        {movimiento.tipoMonedaBanco === "Bs" && movimiento.montoOriginal ? (
+                          <>
+                            <span>{movimiento.montoOriginal.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs</span>
+                            {movimiento.montoUsd && (
+                              <span className="text-xs text-gray-500">
+                                ({formatCurrency(movimiento.montoUsd)})
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          formatCurrency(movimiento.monto)
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-700">{movimiento.detalles}</td>
                     <td className="px-4 py-3 text-sm text-gray-700">
