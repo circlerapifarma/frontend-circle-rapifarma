@@ -201,7 +201,6 @@ const BancosPage: React.FC = () => {
       nombreBanco: "",
       cedulaRif: "",
       tipoMoneda: "USD",
-      tasa: "",
       farmacias: [],
     });
   };
@@ -216,7 +215,6 @@ const BancosPage: React.FC = () => {
       const dataToSend = {
         ...formData,
         // No enviar tasa al crear/editar banco, se solicita en cada operación
-        tasa: undefined,
       };
       if (editingBanco && editingBanco._id) {
         await actualizarBanco(editingBanco._id, dataToSend);
