@@ -581,26 +581,24 @@ const BancosPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Nombre del Titular *
+                    Nombre del Titular
                   </label>
                   <Input
                     name="nombreTitular"
                     value={formData.nombreTitular}
                     onChange={handleChange}
-                    required
                     placeholder="Juan Pérez"
                     className="text-sm"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Cédula o RIF *
+                    Cédula o RIF
                   </label>
                   <Input
                     name="cedulaRif"
                     value={formData.cedulaRif}
                     onChange={handleChange}
-                    required
                     placeholder="V-12345678"
                     className="text-sm"
                   />

@@ -73,10 +73,20 @@ export function useBancos() {
         headers.Authorization = `Bearer ${token}`;
       }
 
+      // Preparar datos para enviar (no incluir disponibleUsd, se calcula en el backend)
+      const bancoToSend = {
+        ...banco,
+        disponible: 0,
+        // El backend acepta nombreBanco o nombre, usamos nombreBanco
+        nombreBanco: banco.nombreBanco,
+      };
+      // Eliminar disponibleUsd si existe (se calcula en el backend)
+      delete (bancoToSend as any).disponibleUsd;
+
       const res = await fetch(`${API_BASE_URL}/bancos`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ ...banco, disponible: 0 }),
+        body: JSON.stringify(bancoToSend),
       });
       if (!res.ok) {
         const data = await res.json();
