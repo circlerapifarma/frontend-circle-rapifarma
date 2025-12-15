@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useBancos } from "@/hooks/useBancos";
 import type { Movimiento } from "@/hooks/useBancos";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Search, Filter } from "lucide-react";
+import { Filter } from "lucide-react";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 

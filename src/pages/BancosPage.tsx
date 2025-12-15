@@ -10,8 +10,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Trash2, Edit, Plus, Search, DollarSign, ArrowRightLeft, FileText, History, List, Filter } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Trash2, Edit, Plus, DollarSign, ArrowRightLeft, FileText, History, List, Filter } from "lucide-react";
+import { Link } from "react-router";
 import DepositoModal from "@/components/bancos/DepositoModal";
 import TransferenciaModal from "@/components/bancos/TransferenciaModal";
 import ChequeModal from "@/components/bancos/ChequeModal";
@@ -42,7 +42,6 @@ const BancosPage: React.FC = () => {
   const [bancoSeleccionado, setBancoSeleccionado] = useState<Banco | null>(null);
   const [editingBanco, setEditingBanco] = useState<Banco | null>(null);
   const [bancoToDelete, setBancoToDelete] = useState<Banco | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
   const [filtroBanco, setFiltroBanco] = useState<string>("");
   const [filtroFarmacia, setFiltroFarmacia] = useState<string>("");
   const [farmacias, setFarmacias] = useState<{ id: string; nombre: string }[]>([]);
@@ -297,14 +296,6 @@ const BancosPage: React.FC = () => {
     setHistorialModalOpen(true);
   };
 
-  // Filtrar bancos por término de búsqueda
-  const bancosFiltrados = bancos.filter(
-    (banco) =>
-      banco.nombreBanco.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      banco.nombreTitular.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      banco.numeroCuenta.includes(searchTerm) ||
-      banco.cedulaRif.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   if (loading) {
     return (
