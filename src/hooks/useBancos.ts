@@ -18,7 +18,7 @@ async function extraerMensajeError(response: Response): Promise<string> {
             const campo = e.loc?.[e.loc.length - 1] || "campo";
             const campoLegible = campo
               .replace(/([A-Z])/g, ' $1')
-              .replace(/^./, str => str.toUpperCase())
+              .replace(/^./, (str: string) => str.toUpperCase())
               .trim();
             return `${campoLegible}: ${e.msg || e.message || "Error de validación"}`;
           })
