@@ -166,7 +166,8 @@ export function useBancos() {
     monto: number,
     detalles: string,
     farmacia?: string,
-    tipoPago?: "efectivoBs" | "efectivoUsd" | "debito" | "credito" | "zelle" | "pagoMovil"
+    tipoPago?: "efectivoBs" | "efectivoUsd" | "debito" | "credito" | "zelle" | "pagoMovil",
+    tasa?: number
   ) => {
     setError(null);
     try {
@@ -178,10 +179,15 @@ export function useBancos() {
         headers.Authorization = `Bearer ${token}`;
       }
 
+      const payload: any = { monto, detalles, farmacia, tipoPago };
+      if (tasa && tasa > 0) {
+        payload.tasa = tasa;
+      }
+
       const res = await fetch(`${API_BASE_URL}/bancos/${bancoId}/deposito`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ monto, detalles, farmacia, tipoPago }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -199,7 +205,8 @@ export function useBancos() {
     bancoId: string,
     monto: number,
     detalles: string,
-    nombreTitular: string
+    nombreTitular: string,
+    tasa?: number
   ) => {
     setError(null);
     try {
@@ -211,10 +218,15 @@ export function useBancos() {
         headers.Authorization = `Bearer ${token}`;
       }
 
+      const payload: any = { monto, detalles, nombreTitular };
+      if (tasa && tasa > 0) {
+        payload.tasa = tasa;
+      }
+
       const res = await fetch(`${API_BASE_URL}/bancos/${bancoId}/transferencia`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ monto, detalles, nombreTitular }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -232,7 +244,8 @@ export function useBancos() {
     bancoId: string,
     monto: number,
     detalles: string,
-    nombreTitular: string
+    nombreTitular: string,
+    tasa?: number
   ) => {
     setError(null);
     try {
@@ -244,10 +257,15 @@ export function useBancos() {
         headers.Authorization = `Bearer ${token}`;
       }
 
+      const payload: any = { monto, detalles, nombreTitular };
+      if (tasa && tasa > 0) {
+        payload.tasa = tasa;
+      }
+
       const res = await fetch(`${API_BASE_URL}/bancos/${bancoId}/cheque`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ monto, detalles, nombreTitular }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const data = await res.json();

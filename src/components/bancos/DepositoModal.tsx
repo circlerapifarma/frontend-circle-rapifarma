@@ -15,12 +15,14 @@ interface DepositoModalProps {
     monto: number,
     detalles: string,
     farmacia?: string,
-    tipoPago?: "efectivoBs" | "efectivoUsd" | "debito" | "credito" | "zelle" | "pagoMovil"
+    tipoPago?: "efectivoBs" | "efectivoUsd" | "debito" | "credito" | "zelle" | "pagoMovil",
+    tasa?: number
   ) => Promise<void>;
 }
 
 const DepositoModal: React.FC<DepositoModalProps> = ({ open, onClose, banco, onDeposito }) => {
   const [monto, setMonto] = useState("");
+  const [tasa, setTasa] = useState("");
   const [detalles, setDetalles] = useState("");
   const [farmacia, setFarmacia] = useState("");
   const [tipoPago, setTipoPago] = useState<"efectivoBs" | "efectivoUsd" | "debito" | "credito" | "zelle" | "pagoMovil" | "">("");
@@ -59,6 +61,10 @@ const DepositoModal: React.FC<DepositoModalProps> = ({ open, onClose, banco, onD
       alert("Por favor seleccione el tipo de pago");
       return;
     }
+    if (banco.tipoMoneda === "Bs" && (!tasa || parseFloat(tasa) <= 0)) {
+      alert("Por favor ingrese la tasa de cambio del día");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -67,9 +73,11 @@ const DepositoModal: React.FC<DepositoModalProps> = ({ open, onClose, banco, onD
         parseFloat(monto),
         detalles,
         farmacia || undefined,
-        tipoPago || undefined
+        tipoPago || undefined,
+        banco.tipoMoneda === "Bs" ? parseFloat(tasa) : undefined
       );
       setMonto("");
+      setTasa("");
       setDetalles("");
       setFarmacia("");
       setTipoPago("");
@@ -98,7 +106,7 @@ const DepositoModal: React.FC<DepositoModalProps> = ({ open, onClose, banco, onD
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Monto (USD) *
+                Monto ({banco.tipoMoneda === "Bs" ? "Bs" : "USD"}) *
               </label>
               <Input
                 type="number"
@@ -109,7 +117,31 @@ const DepositoModal: React.FC<DepositoModalProps> = ({ open, onClose, banco, onD
                 required
                 placeholder="0.00"
               />
+              {banco.tipoMoneda === "Bs" && monto && tasa && parseFloat(tasa) > 0 && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Equivalente en USD: ${(parseFloat(monto) / parseFloat(tasa)).toFixed(2)}
+                </p>
+              )}
             </div>
+            {banco.tipoMoneda === "Bs" && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tasa de Cambio del Día * (Bs por USD)
+                </label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={tasa}
+                  onChange={(e) => setTasa(e.target.value)}
+                  required
+                  placeholder="Ej: 40.50"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Ingrese cuántos Bs equivalen a 1 USD
+                </p>
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Farmacia (Opcional)

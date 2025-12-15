@@ -54,7 +54,6 @@ const BancosPage: React.FC = () => {
     nombreBanco: "",
     cedulaRif: "",
     tipoMoneda: "USD" as "USD" | "Bs",
-    tasa: "",
     farmacias: [] as string[],
   });
 
@@ -177,7 +176,6 @@ const BancosPage: React.FC = () => {
         nombreBanco: banco.nombreBanco,
         cedulaRif: banco.cedulaRif,
         tipoMoneda: banco.tipoMoneda || "USD",
-        tasa: banco.tasa?.toString() || "",
         farmacias: banco.farmacias || [],
       });
     } else {
@@ -188,7 +186,6 @@ const BancosPage: React.FC = () => {
         nombreBanco: "",
         cedulaRif: "",
         tipoMoneda: "USD",
-        tasa: "",
         farmacias: [],
       });
     }
@@ -215,14 +212,11 @@ const BancosPage: React.FC = () => {
       alert("Por favor seleccione al menos una farmacia que utilizará este banco");
       return;
     }
-    if (formData.tipoMoneda === "Bs" && (!formData.tasa || parseFloat(formData.tasa) <= 0)) {
-      alert("Por favor ingrese la tasa de cambio del día");
-      return;
-    }
     try {
       const dataToSend = {
         ...formData,
-        tasa: formData.tipoMoneda === "Bs" ? parseFloat(formData.tasa) : undefined,
+        // No enviar tasa al crear/editar banco, se solicita en cada operación
+        tasa: undefined,
       };
       if (editingBanco && editingBanco._id) {
         await actualizarBanco(editingBanco._id, dataToSend);
@@ -617,40 +611,23 @@ const BancosPage: React.FC = () => {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Tipo de Moneda *
-                  </label>
-                  <select
-                    name="tipoMoneda"
-                    value={formData.tipoMoneda}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                    required
-                  >
-                    <option value="USD">USD (Dólares)</option>
-                    <option value="Bs">Bs (Bolívares)</option>
-                  </select>
-                </div>
-                {formData.tipoMoneda === "Bs" && (
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Tasa de Cambio del Día * (Bs por USD)
-                    </label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      name="tasa"
-                      value={formData.tasa}
-                      onChange={handleChange}
-                      required={formData.tipoMoneda === "Bs"}
-                      placeholder="Ej: 40.50"
-                      className="text-sm"
-                    />
-                  </div>
-                )}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Tipo de Moneda *
+                </label>
+                <select
+                  name="tipoMoneda"
+                  value={formData.tipoMoneda}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                  required
+                >
+                  <option value="USD">USD (Dólares)</option>
+                  <option value="Bs">Bs (Bolívares)</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  La tasa de cambio se solicitará al realizar operaciones (depósitos, transferencias, cheques, retiros)
+                </p>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-2">

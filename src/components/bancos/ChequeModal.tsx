@@ -8,11 +8,12 @@ interface ChequeModalProps {
   open: boolean;
   onClose: () => void;
   banco: Banco;
-  onCheque: (bancoId: string, monto: number, detalles: string, nombreTitular: string) => Promise<void>;
+  onCheque: (bancoId: string, monto: number, detalles: string, nombreTitular: string, tasa?: number) => Promise<void>;
 }
 
 const ChequeModal: React.FC<ChequeModalProps> = ({ open, onClose, banco, onCheque }) => {
   const [monto, setMonto] = useState("");
+  const [tasa, setTasa] = useState("");
   const [detalles, setDetalles] = useState("");
   const [nombreTitular, setNombreTitular] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,7 +24,15 @@ const ChequeModal: React.FC<ChequeModalProps> = ({ open, onClose, banco, onChequ
       alert("Por favor ingrese un monto válido");
       return;
     }
-    if (parseFloat(monto) > (banco.disponible || 0)) {
+    // Validar saldo: si es Bs, comparar con disponible; si es USD, comparar con disponibleUsd
+    const montoComparar = banco.tipoMoneda === "Bs" && tasa && parseFloat(tasa) > 0
+      ? parseFloat(monto) / parseFloat(tasa)
+      : parseFloat(monto);
+    const disponibleComparar = banco.tipoMoneda === "Bs" && banco.disponibleUsd
+      ? banco.disponibleUsd
+      : banco.disponible || 0;
+    
+    if (montoComparar > disponibleComparar) {
       alert("El monto excede el disponible del banco");
       return;
     }
@@ -35,11 +44,22 @@ const ChequeModal: React.FC<ChequeModalProps> = ({ open, onClose, banco, onChequ
       alert("Por favor ingrese el nombre del titular");
       return;
     }
+    if (banco.tipoMoneda === "Bs" && (!tasa || parseFloat(tasa) <= 0)) {
+      alert("Por favor ingrese la tasa de cambio del día");
+      return;
+    }
 
     setLoading(true);
     try {
-      await onCheque(banco._id!, parseFloat(monto), detalles, nombreTitular);
+      await onCheque(
+        banco._id!,
+        parseFloat(monto),
+        detalles,
+        nombreTitular,
+        banco.tipoMoneda === "Bs" ? parseFloat(tasa) : undefined
+      );
       setMonto("");
+      setTasa("");
       setDetalles("");
       setNombreTitular("");
       onClose();
@@ -64,23 +84,54 @@ const ChequeModal: React.FC<ChequeModalProps> = ({ open, onClose, banco, onChequ
                 Banco: {banco.nombreBanco}
               </label>
               <p className="text-xs text-gray-500">Cuenta: {banco.numeroCuenta}</p>
-              <p className="text-xs text-gray-500">Disponible: ${banco.disponible?.toFixed(2) || "0.00"}</p>
+              <p className="text-xs text-gray-500">
+                Disponible: {banco.tipoMoneda === "Bs" 
+                  ? `${banco.disponible?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "0.00"} Bs`
+                  : `$${banco.disponible?.toFixed(2) || "0.00"}`
+                }
+                {banco.tipoMoneda === "Bs" && banco.disponibleUsd && (
+                  <span className="ml-2">(${banco.disponibleUsd.toFixed(2)} USD)</span>
+                )}
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Monto (USD) *
+                Monto ({banco.tipoMoneda === "Bs" ? "Bs" : "USD"}) *
               </label>
               <Input
                 type="number"
                 step="0.01"
                 min="0.01"
-                max={banco.disponible || 0}
                 value={monto}
                 onChange={(e) => setMonto(e.target.value)}
                 required
                 placeholder="0.00"
               />
+              {banco.tipoMoneda === "Bs" && monto && tasa && parseFloat(tasa) > 0 && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Equivalente en USD: ${(parseFloat(monto) / parseFloat(tasa)).toFixed(2)}
+                </p>
+              )}
             </div>
+            {banco.tipoMoneda === "Bs" && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tasa de Cambio del Día * (Bs por USD)
+                </label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={tasa}
+                  onChange={(e) => setTasa(e.target.value)}
+                  required
+                  placeholder="Ej: 40.50"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Ingrese cuántos Bs equivalen a 1 USD
+                </p>
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Nombre del Titular *
