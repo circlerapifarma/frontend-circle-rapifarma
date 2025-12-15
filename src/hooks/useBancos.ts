@@ -2,6 +2,51 @@ import { useState, useEffect } from "react";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+/**
+ * Extrae mensaje de error de cualquier formato de respuesta
+ */
+async function extraerMensajeError(response: Response): Promise<string> {
+  try {
+    const errorData = await response.json();
+    
+    // Error 422 (Validación)
+    if (response.status === 422) {
+      if (Array.isArray(errorData.detail)) {
+        // Formato: Array de errores de Pydantic
+        return errorData.detail
+          .map((e: any) => {
+            const campo = e.loc?.[e.loc.length - 1] || "campo";
+            const campoLegible = campo
+              .replace(/([A-Z])/g, ' $1')
+              .replace(/^./, str => str.toUpperCase())
+              .trim();
+            return `${campoLegible}: ${e.msg || e.message || "Error de validación"}`;
+          })
+          .join('\n');
+      }
+      // Formato: String simple
+      return typeof errorData.detail === 'string' 
+        ? errorData.detail 
+        : JSON.stringify(errorData.detail);
+    }
+
+    // Otros errores
+    if (errorData.detail) {
+      return typeof errorData.detail === 'string' 
+        ? errorData.detail 
+        : JSON.stringify(errorData.detail);
+    }
+
+    if (errorData.message) {
+      return errorData.message;
+    }
+
+    return `Error ${response.status}: ${response.statusText}`;
+  } catch (e) {
+    return `Error ${response.status}: ${response.statusText}`;
+  }
+}
+
 export interface Banco {
   _id?: string;
   numeroCuenta: string;
@@ -93,8 +138,8 @@ export function useBancos() {
         body: JSON.stringify(bancoToSend),
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail || "Error al crear banco");
+        const mensajeError = await extraerMensajeError(res);
+        throw new Error(mensajeError);
       }
       const nuevoBanco = await res.json();
       await fetchBancos(); // Refrescar lista
@@ -123,8 +168,8 @@ export function useBancos() {
         body: JSON.stringify(banco),
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail || "Error al actualizar banco");
+        const mensajeError = await extraerMensajeError(res);
+        throw new Error(mensajeError);
       }
       const bancoActualizado = await res.json();
       await fetchBancos(); // Refrescar lista
@@ -150,8 +195,8 @@ export function useBancos() {
         headers,
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail || "Error al eliminar banco");
+        const mensajeError = await extraerMensajeError(res);
+        throw new Error(mensajeError);
       }
       await fetchBancos(); // Refrescar lista
     } catch (err: any) {
@@ -190,8 +235,8 @@ export function useBancos() {
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail || "Error al realizar depósito");
+        const mensajeError = await extraerMensajeError(res);
+        throw new Error(mensajeError);
       }
       await fetchBancos(); // Refrescar lista
     } catch (err: any) {
@@ -229,8 +274,8 @@ export function useBancos() {
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail || "Error al realizar transferencia");
+        const mensajeError = await extraerMensajeError(res);
+        throw new Error(mensajeError);
       }
       await fetchBancos(); // Refrescar lista
     } catch (err: any) {
@@ -268,8 +313,8 @@ export function useBancos() {
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail || "Error al emitir cheque");
+        const mensajeError = await extraerMensajeError(res);
+        throw new Error(mensajeError);
       }
       await fetchBancos(); // Refrescar lista
     } catch (err: any) {

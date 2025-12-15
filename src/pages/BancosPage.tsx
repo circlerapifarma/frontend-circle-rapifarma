@@ -222,7 +222,10 @@ const BancosPage: React.FC = () => {
         await crearBanco(dataToSend);
       }
       handleCloseModal();
-    } catch (err) {
+      alert("Banco guardado exitosamente");
+    } catch (err: any) {
+      const mensajeError = err.message || "Error al guardar banco";
+      alert(mensajeError);
       console.error("Error al guardar banco:", err);
     }
   };
