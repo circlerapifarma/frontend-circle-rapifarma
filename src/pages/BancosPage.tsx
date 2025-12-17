@@ -230,8 +230,8 @@ const BancosPage: React.FC = () => {
     try {
       const dataToSend = {
         ...formData,
-        // La tasa no se solicita en UI; para bancos en Bs enviamos 1 por defecto para evitar 422
-        tasa: formData.tipoMoneda === "Bs" ? 1 : undefined,
+        // No enviamos tasa; el backend ya no la requiere al crear
+        tasa: undefined,
       };
       if (editingBanco && editingBanco._id) {
         await actualizarBanco(editingBanco._id, dataToSend);
