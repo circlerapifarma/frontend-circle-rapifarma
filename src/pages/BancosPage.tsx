@@ -10,8 +10,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Trash2, Edit, Plus, DollarSign, ArrowRightLeft, FileText, History, List, Filter } from "lucide-react";
-import { Link } from "react-router";
+import { Trash2, Edit, Plus, DollarSign, ArrowRightLeft, FileText, History, Filter } from "lucide-react";
 import DepositoModal from "@/components/bancos/DepositoModal";
 import TransferenciaModal from "@/components/bancos/TransferenciaModal";
 import ChequeModal from "@/components/bancos/ChequeModal";
@@ -370,12 +369,6 @@ const BancosPage: React.FC = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Gestión de Bancos</h1>
         <div className="flex gap-2">
-          <Link to="/movimientos-bancos">
-            <Button variant="outline" className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300">
-              <List className="w-4 h-4 mr-2" />
-              Ver Movimientos
-            </Button>
-          </Link>
           <Button onClick={() => handleOpenModal()} className="bg-green-600 hover:bg-green-700">
             <Plus className="w-4 h-4 mr-2" />
             Agregar Banco
@@ -406,6 +399,7 @@ const BancosPage: React.FC = () => {
                 setFiltroBanco(e.target.value);
                 const banco = bancos.find((b) => b._id === e.target.value);
                 setBancoSeleccionado(banco || null);
+                loadMovimientos(e.target.value, filtroFarmacia || undefined);
               }}
             >
               <option value="">Seleccione un banco</option>
@@ -421,7 +415,10 @@ const BancosPage: React.FC = () => {
             <select
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={filtroFarmacia}
-              onChange={(e) => setFiltroFarmacia(e.target.value)}
+              onChange={(e) => {
+                setFiltroFarmacia(e.target.value);
+                loadMovimientos(filtroBanco || undefined, e.target.value || undefined);
+              }}
             >
               <option value="">Todas las farmacias</option>
               {farmacias.map((farmacia) => (
@@ -531,11 +528,7 @@ const BancosPage: React.FC = () => {
       </div>
 
       {/* Lista de movimientos filtrados */}
-      {loadingMovimientos ? (
-        <div className="text-center py-12">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-        </div>
-      ) : movimientos.length > 0 ? (
+      {bancoSeleccionado ? (
         <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
           <div className="p-4 border-b border-gray-200 space-y-3">
             <h3 className="text-lg font-semibold text-gray-800">Movimientos Filtrados</h3>
@@ -585,58 +578,72 @@ const BancosPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {movimientos.map((movimiento) => (
-                  <tr key={movimiento._id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm text-gray-700">{formatDate(movimiento.fecha)}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700">
-                      {getFarmaciaNombre(movimiento.farmacia)}
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      <span
-                        className={`px-2 py-1 rounded text-xs font-semibold ${getConceptColorClass(movimiento.concepto, movimiento.tipo)}`}
-                      >
-                        {getConceptoLabel(movimiento.concepto, movimiento.tipo, movimiento.tipoPago)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-700">
-                      {getTipoPagoLabel(movimiento.tipoPago)}
-                    </td>
-                    <td
-                      className={`px-4 py-3 text-sm font-semibold ${
-                        movimiento.tipo === "deposito" ? "text-green-600" : "text-red-600"
-                      }`}
-                    >
-                      <div className="flex flex-col">
-                        {movimiento.tipo === "deposito" ? "+" : "-"}
-                        {movimiento.tipoMonedaBanco === "Bs" && movimiento.montoOriginal ? (
-                          <>
-                            <span>{movimiento.montoOriginal.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs</span>
-                            {movimiento.montoUsd && (
-                              <span className="text-xs text-gray-500">
-                                ({formatCurrency(movimiento.montoUsd)})
-                              </span>
-                            )}
-                          </>
-                        ) : (
-                          formatCurrency(movimiento.monto)
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{movimiento.detalles}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700">
-                      {movimiento.nombreTitular || "N/A"}
+                {loadingMovimientos ? (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-6 text-center text-sm text-gray-500">
+                      Cargando movimientos...
                     </td>
                   </tr>
-                ))}
+                ) : movimientos.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-6 text-center text-sm text-gray-500">
+                      No hay movimientos para este banco
+                    </td>
+                  </tr>
+                ) : (
+                  movimientos.map((movimiento) => (
+                    <tr key={movimiento._id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-sm text-gray-700">{formatDate(movimiento.fecha)}</td>
+                      <td className="px-4 py-3 text-sm text-gray-700">
+                        {getFarmaciaNombre(movimiento.farmacia)}
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <span
+                          className={`px-2 py-1 rounded text-xs font-semibold ${getConceptColorClass(movimiento.concepto, movimiento.tipo)}`}
+                        >
+                          {getConceptoLabel(movimiento.concepto, movimiento.tipo, movimiento.tipoPago)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-700">
+                        {getTipoPagoLabel(movimiento.tipoPago)}
+                      </td>
+                      <td
+                        className={`px-4 py-3 text-sm font-semibold ${
+                          movimiento.tipo === "deposito" ? "text-green-600" : "text-red-600"
+                        }`}
+                      >
+                        <div className="flex flex-col">
+                          {movimiento.tipo === "deposito" ? "+" : "-"}
+                          {movimiento.tipoMonedaBanco === "Bs" && movimiento.montoOriginal ? (
+                            <>
+                              <span>{movimiento.montoOriginal.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs</span>
+                              {movimiento.montoUsd && (
+                                <span className="text-xs text-gray-500">
+                                  ({formatCurrency(movimiento.montoUsd)})
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            formatCurrency(movimiento.monto)
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-700">{movimiento.detalles}</td>
+                      <td className="px-4 py-3 text-sm text-gray-700">
+                        {movimiento.nombreTitular || "N/A"}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
         </div>
-      ) : filtroBanco || filtroFarmacia ? (
+      ) : (
         <div className="text-center py-12 text-gray-500">
-          No hay movimientos con los filtros seleccionados
+          Seleccione un banco para ver su historial de movimientos
         </div>
-      ) : null}
+      )}
 
       {/* Modal para crear/editar banco - Compacto */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
