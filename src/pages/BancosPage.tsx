@@ -54,6 +54,13 @@ const BancosPage: React.FC = () => {
     nombreBanco: "",
     cedulaRif: "",
     tipoMoneda: "USD" as "USD" | "Bs",
+    metodoPagoDefault: "pagoMovil" as
+      | "pagoMovil"
+      | "debito"
+      | "credito"
+      | "transferencia"
+      | "efectivoBs"
+      | "efectivoUsd",
     tasa: "",
     farmacias: [] as string[],
   });
@@ -177,6 +184,9 @@ const BancosPage: React.FC = () => {
         nombreBanco: banco.nombreBanco,
         cedulaRif: banco.cedulaRif,
         tipoMoneda: banco.tipoMoneda || "USD",
+        metodoPagoDefault:
+          (banco as any).metodoPagoDefault ||
+          "pagoMovil",
         tasa: banco.tasa?.toString() || "",
         farmacias: banco.farmacias || [],
       });
@@ -188,6 +198,7 @@ const BancosPage: React.FC = () => {
         nombreBanco: "",
         cedulaRif: "",
         tipoMoneda: "USD",
+        metodoPagoDefault: "pagoMovil",
         tasa: "",
         farmacias: [],
       });
@@ -204,6 +215,7 @@ const BancosPage: React.FC = () => {
       nombreBanco: "",
       cedulaRif: "",
       tipoMoneda: "USD",
+    metodoPagoDefault: "pagoMovil",
     tasa: "",
       farmacias: [],
     });
@@ -215,14 +227,11 @@ const BancosPage: React.FC = () => {
       alert("Por favor seleccione al menos una farmacia que utilizará este banco");
       return;
     }
-    if (formData.tipoMoneda === "Bs" && (!formData.tasa || parseFloat(formData.tasa) <= 0)) {
-      alert("Si el banco es en Bs, la tasa de cambio es obligatoria y debe ser mayor a 0");
-      return;
-    }
     try {
       const dataToSend = {
         ...formData,
-        tasa: formData.tipoMoneda === "Bs" ? parseFloat(formData.tasa) : undefined,
+        // La tasa no se solicita en UI; para bancos en Bs enviamos 1 por defecto para evitar 422
+        tasa: formData.tipoMoneda === "Bs" ? 1 : undefined,
       };
       if (editingBanco && editingBanco._id) {
         await actualizarBanco(editingBanco._id, dataToSend);
@@ -634,26 +643,27 @@ const BancosPage: React.FC = () => {
                   <option value="USD">USD (Dólares)</option>
                   <option value="Bs">Bs (Bolívares)</option>
                 </select>
-              </div>
-            {formData.tipoMoneda === "Bs" && (
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Tasa de Cambio del Día * (Bs por USD)
-                </label>
-                <Input
-                  name="tasa"
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  value={formData.tasa}
-                  onChange={handleChange}
-                  required
-                  placeholder="Ej: 40.50"
-                  className="text-sm"
-                />
-                <p className="text-xs text-gray-500 mt-1">Requerida si el banco es en bolívares</p>
-              </div>
-            )}
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Método de Pago por Defecto *
+              </label>
+              <select
+                name="metodoPagoDefault"
+                value={formData.metodoPagoDefault}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                required
+              >
+                <option value="pagoMovil">Pago Móvil</option>
+                <option value="debito">Punto débito</option>
+                <option value="credito">Punto crédito</option>
+                <option value="transferencia">Transferencia</option>
+                <option value="efectivoBs">Efectivo Bs</option>
+                <option value="efectivoUsd">Efectivo $</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">Se usará como método por defecto para movimientos</p>
+            </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-2">
                   Farmacias que utilizan este banco * (Seleccione una o más)
