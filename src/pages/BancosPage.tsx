@@ -57,7 +57,8 @@ const BancosPage: React.FC = () => {
       | "credito"
       | "transferencia"
       | "efectivoBs"
-      | "efectivoUsd",
+      | "efectivoUsd"
+      | "zelle",
     tasa: "",
     farmacias: [] as string[],
   });
@@ -739,6 +740,7 @@ const BancosPage: React.FC = () => {
                 <option value="transferencia">Transferencia</option>
                 <option value="efectivoBs">Efectivo Bs</option>
                 <option value="efectivoUsd">Efectivo $</option>
+                <option value="zelle">Zelle</option>
               </select>
               <p className="text-xs text-gray-500 mt-1">Se usará como método por defecto para movimientos</p>
             </div>

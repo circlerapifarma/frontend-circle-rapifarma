@@ -57,7 +57,14 @@ export interface Banco {
   disponible: number; // Saldo disponible (en la moneda del banco)
   tasa?: number; // Tasa de cambio del día (solo si tipoMoneda es "Bs")
   disponibleUsd?: number; // Saldo disponible en USD (calculado si tipoMoneda es "Bs")
-  metodoPagoDefault?: "pagoMovil" | "debito" | "credito" | "transferencia" | "efectivoBs" | "efectivoUsd";
+  metodoPagoDefault?:
+    | "pagoMovil"
+    | "debito"
+    | "credito"
+    | "transferencia"
+    | "efectivoBs"
+    | "efectivoUsd"
+    | "zelle";
   farmacias?: string[]; // IDs de las farmacias que utilizan este banco
   createdAt?: string;
   updatedAt?: string;
