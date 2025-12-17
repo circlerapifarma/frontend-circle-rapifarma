@@ -15,7 +15,6 @@ import { Link } from "react-router";
 import DepositoModal from "@/components/bancos/DepositoModal";
 import TransferenciaModal from "@/components/bancos/TransferenciaModal";
 import ChequeModal from "@/components/bancos/ChequeModal";
-import HistorialMovimientosModal from "@/components/bancos/HistorialMovimientosModal";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -38,7 +37,6 @@ const BancosPage: React.FC = () => {
   const [depositoModalOpen, setDepositoModalOpen] = useState(false);
   const [transferenciaModalOpen, setTransferenciaModalOpen] = useState(false);
   const [chequeModalOpen, setChequeModalOpen] = useState(false);
-  const [historialModalOpen, setHistorialModalOpen] = useState(false);
   const [bancoSeleccionado, setBancoSeleccionado] = useState<Banco | null>(null);
   const [editingBanco, setEditingBanco] = useState<Banco | null>(null);
   const [bancoToDelete, setBancoToDelete] = useState<Banco | null>(null);
@@ -89,10 +87,10 @@ const BancosPage: React.FC = () => {
     }
   }, [filtroBanco, filtroFarmacia]);
 
-  const loadMovimientos = async () => {
+  const loadMovimientos = async (bancoId?: string, farmaciaId?: string) => {
     setLoadingMovimientos(true);
     try {
-      const data = await fetchMovimientos(filtroBanco || undefined, filtroFarmacia || undefined);
+      const data = await fetchMovimientos(bancoId || filtroBanco || undefined, farmaciaId || filtroFarmacia || undefined);
       setMovimientos(data);
     } catch (err: any) {
       console.error("Error al cargar movimientos:", err);
@@ -140,6 +138,9 @@ const BancosPage: React.FC = () => {
         ingreso_venta: "Ingreso por Venta",
         gasto_tarjeta_debito: "Gasto por Tarjeta Débito",
         cheque: "Cheque",
+        pago_factura: "Pago de factura",
+        deposito_cuadre: "Depósito por cierre de caja",
+        retiro: "Retiro",
       };
       return conceptos[concepto] || concepto;
     }
@@ -154,6 +155,30 @@ const BancosPage: React.FC = () => {
       return "Depósito";
     }
     return getTipoLabel(tipo || "");
+  };
+
+  const getConceptColorClass = (concepto?: string, tipo?: string) => {
+    const conceptoLower = (concepto || "").toLowerCase();
+    const tipoLower = (tipo || "").toLowerCase();
+
+    const esDeposito =
+      tipoLower === "deposito" ||
+      conceptoLower === "ingreso_venta" ||
+      conceptoLower === "deposito_cuadre";
+
+    const esRetiroOGasto =
+      tipoLower === "retiro" ||
+      conceptoLower === "retiro" ||
+      conceptoLower === "retiro_efectivo" ||
+      conceptoLower === "gasto_tarjeta_debito" ||
+      conceptoLower === "pago_factura" ||
+      conceptoLower === "cuentas_pagadas";
+
+    if (esDeposito) return "bg-green-100 text-green-800";
+    if (esRetiroOGasto) return "bg-red-100 text-red-800";
+    if (tipoLower === "transferencia") return "bg-blue-100 text-blue-800";
+    if (tipoLower === "cheque") return "bg-purple-100 text-purple-800";
+    return "bg-gray-100 text-gray-800";
   };
 
   const getTipoPagoLabel = (tipo?: string) => {
@@ -174,6 +199,26 @@ const BancosPage: React.FC = () => {
     const farmacia = farmacias.find((f) => f.id === farmaciaId);
     return farmacia?.nombre || farmaciaId;
   };
+
+  const getSignedAmount = (mov: Movimiento) => {
+    // Depósitos suman, transferencias/cheques/retiros restan
+    const sign = mov.tipo === "deposito" ? 1 : -1;
+    // Usar monto en la moneda del banco
+    return sign * (mov.montoUsd || mov.monto || 0);
+  };
+
+  const totalesPorFarmacia = React.useMemo(() => {
+    const map = new Map<string, number>();
+    movimientos.forEach((mov) => {
+      const key = mov.farmacia || "N/A";
+      map.set(key, (map.get(key) || 0) + getSignedAmount(mov));
+    });
+    return map;
+  }, [movimientos]);
+
+  const totalDisponibleCalculado = React.useMemo(() => {
+    return movimientos.reduce((acc, mov) => acc + getSignedAmount(mov), 0);
+  }, [movimientos]);
 
   const handleOpenModal = (banco?: Banco) => {
     if (banco) {
@@ -304,8 +349,11 @@ const BancosPage: React.FC = () => {
   };
 
   const handleHistorial = (banco: Banco) => {
+    const bancoId = banco._id || "";
     setBancoSeleccionado(banco);
-    setHistorialModalOpen(true);
+    setFiltroBanco(bancoId);
+    setFiltroFarmacia("");
+    loadMovimientos(bancoId, "");
   };
 
 
@@ -489,9 +537,40 @@ const BancosPage: React.FC = () => {
         </div>
       ) : movimientos.length > 0 ? (
         <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-800 p-4 border-b border-gray-200">
-            Movimientos Filtrados
-          </h3>
+          <div className="p-4 border-b border-gray-200 space-y-3">
+            <h3 className="text-lg font-semibold text-gray-800">Movimientos Filtrados</h3>
+
+            {/* Resumen superior */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                <p className="text-xs text-blue-700 font-semibold uppercase">Saldo disponible (calculado)</p>
+                <p className="text-xl font-bold text-blue-800">
+                  {formatCurrency(totalDisponibleCalculado)}
+                </p>
+                {bancoSeleccionado?.tipoMoneda === "Bs" && bancoSeleccionado.tasa && bancoSeleccionado.tasa > 0 && (
+                  <p className="text-xs text-gray-600 mt-1">
+                    ≈ {formatCurrency(totalDisponibleCalculado / bancoSeleccionado.tasa)} (USD)
+                  </p>
+                )}
+              </div>
+              <div className="bg-green-50 border border-green-200 rounded-md p-3 md:col-span-2">
+                <p className="text-xs text-green-700 font-semibold uppercase mb-2">Saldo por farmacia (calculado)</p>
+                <div className="flex flex-wrap gap-2">
+                  {Array.from(totalesPorFarmacia.entries()).map(([farmId, valor]) => (
+                    <span
+                      key={farmId}
+                      className="px-2 py-1 rounded-full text-xs font-semibold bg-white border border-green-200 text-green-800"
+                    >
+                      {getFarmaciaNombre(farmId)}: {formatCurrency(valor)}
+                    </span>
+                  ))}
+                  {totalesPorFarmacia.size === 0 && (
+                    <span className="text-xs text-gray-500">Sin movimientos</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50">
@@ -514,15 +593,7 @@ const BancosPage: React.FC = () => {
                     </td>
                     <td className="px-4 py-3 text-sm">
                       <span
-                        className={`px-2 py-1 rounded text-xs font-semibold ${
-                          movimiento.tipo === "deposito"
-                            ? "bg-green-100 text-green-800"
-                            : movimiento.tipo === "transferencia"
-                            ? "bg-blue-100 text-blue-800"
-                            : movimiento.tipo === "cheque"
-                            ? "bg-purple-100 text-purple-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
+                        className={`px-2 py-1 rounded text-xs font-semibold ${getConceptColorClass(movimiento.concepto, movimiento.tipo)}`}
                       >
                         {getConceptoLabel(movimiento.concepto, movimiento.tipo, movimiento.tipoPago)}
                       </span>
@@ -760,15 +831,6 @@ const BancosPage: React.FC = () => {
             }}
             banco={bancoSeleccionado}
             onCheque={emitirCheque}
-          />
-          <HistorialMovimientosModal
-            open={historialModalOpen}
-            onClose={() => {
-              setHistorialModalOpen(false);
-              setBancoSeleccionado(null);
-            }}
-            banco={bancoSeleccionado}
-            fetchMovimientos={fetchMovimientos}
           />
         </>
       )}
