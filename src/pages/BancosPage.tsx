@@ -54,6 +54,7 @@ const BancosPage: React.FC = () => {
     nombreBanco: "",
     cedulaRif: "",
     tipoMoneda: "USD" as "USD" | "Bs",
+    tasa: "",
     farmacias: [] as string[],
   });
 
@@ -176,6 +177,7 @@ const BancosPage: React.FC = () => {
         nombreBanco: banco.nombreBanco,
         cedulaRif: banco.cedulaRif,
         tipoMoneda: banco.tipoMoneda || "USD",
+        tasa: banco.tasa?.toString() || "",
         farmacias: banco.farmacias || [],
       });
     } else {
@@ -186,6 +188,7 @@ const BancosPage: React.FC = () => {
         nombreBanco: "",
         cedulaRif: "",
         tipoMoneda: "USD",
+        tasa: "",
         farmacias: [],
       });
     }
@@ -201,6 +204,7 @@ const BancosPage: React.FC = () => {
       nombreBanco: "",
       cedulaRif: "",
       tipoMoneda: "USD",
+    tasa: "",
       farmacias: [],
     });
   };
@@ -211,10 +215,14 @@ const BancosPage: React.FC = () => {
       alert("Por favor seleccione al menos una farmacia que utilizará este banco");
       return;
     }
+    if (formData.tipoMoneda === "Bs" && (!formData.tasa || parseFloat(formData.tasa) <= 0)) {
+      alert("Si el banco es en Bs, la tasa de cambio es obligatoria y debe ser mayor a 0");
+      return;
+    }
     try {
       const dataToSend = {
         ...formData,
-        // No enviar tasa al crear/editar banco, se solicita en cada operación
+        tasa: formData.tipoMoneda === "Bs" ? parseFloat(formData.tasa) : undefined,
       };
       if (editingBanco && editingBanco._id) {
         await actualizarBanco(editingBanco._id, dataToSend);
@@ -626,10 +634,26 @@ const BancosPage: React.FC = () => {
                   <option value="USD">USD (Dólares)</option>
                   <option value="Bs">Bs (Bolívares)</option>
                 </select>
-                <p className="text-xs text-gray-500 mt-1">
-                  La tasa de cambio se solicitará al realizar operaciones (depósitos, transferencias, cheques, retiros)
-                </p>
               </div>
+            {formData.tipoMoneda === "Bs" && (
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Tasa de Cambio del Día * (Bs por USD)
+                </label>
+                <Input
+                  name="tasa"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={formData.tasa}
+                  onChange={handleChange}
+                  required
+                  placeholder="Ej: 40.50"
+                  className="text-sm"
+                />
+                <p className="text-xs text-gray-500 mt-1">Requerida si el banco es en bolívares</p>
+              </div>
+            )}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-2">
                   Farmacias que utilizan este banco * (Seleccione una o más)
