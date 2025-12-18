@@ -45,6 +45,7 @@ const ListasComparativasPage: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filtroProveedor, setFiltroProveedor] = useState("");
+  const [filtroCostoPorEncima, setFiltroCostoPorEncima] = useState(false);
   const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showCarritoModal, setShowCarritoModal] = useState(false);
@@ -571,7 +572,7 @@ const ListasComparativasPage: React.FC = () => {
   
   // Aplicar filtros locales a productosAgrupados (después de agrupar)
   const productosAgrupadosFiltrados = productosAgrupados.filter((grupo) => {
-    const { mejorPrecio } = grupo;
+    const { mejorPrecio, mejorCosto } = grupo;
     
     // Filtro por término de búsqueda
     if (searchTerm) {
@@ -588,6 +589,26 @@ const ListasComparativasPage: React.FC = () => {
     // Filtro por proveedor
     if (filtroProveedor) {
       if (mejorPrecio.proveedorId !== filtroProveedor) {
+        return false;
+      }
+    }
+    
+    // Filtro: Solo productos donde mi costo está por encima del precio del proveedor
+    if (filtroCostoPorEncima) {
+      // Verificar si hay algún costo en el grupo que esté por encima del precio
+      const tieneCostoPorEncima = grupo.todosLosPrecios.some((lista) => {
+        if (lista.miCosto && lista.precioNeto) {
+          return lista.miCosto > lista.precioNeto;
+        }
+        return false;
+      });
+      
+      // También verificar el mejorCosto del grupo
+      if (!tieneCostoPorEncima && mejorCosto && mejorPrecio.precioNeto) {
+        if (mejorCosto <= mejorPrecio.precioNeto) {
+          return false;
+        }
+      } else if (!tieneCostoPorEncima) {
         return false;
       }
     }
@@ -659,6 +680,7 @@ const ListasComparativasPage: React.FC = () => {
               onClick={() => {
                 setSearchTerm("");
                 setFiltroProveedor("");
+                setFiltroCostoPorEncima(false);
                 fetchListas();
               }}
               className="border-blue-300 text-blue-600 hover:bg-blue-50"
@@ -710,7 +732,7 @@ const ListasComparativasPage: React.FC = () => {
 
       {/* Filtros de búsqueda */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <Input
@@ -735,6 +757,19 @@ const ListasComparativasPage: React.FC = () => {
               ))}
             </select>
           </div>
+          <div className="flex items-center">
+            <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50 w-full">
+              <input
+                type="checkbox"
+                checked={filtroCostoPorEncima}
+                onChange={(e) => setFiltroCostoPorEncima(e.target.checked)}
+                className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                ⚠️ Mi costo por encima del proveedor
+              </span>
+            </label>
+          </div>
           <div>
             <Button
               variant="outline"
@@ -746,6 +781,11 @@ const ListasComparativasPage: React.FC = () => {
             </Button>
           </div>
         </div>
+        {filtroCostoPorEncima && (
+          <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+            <strong>Filtro activo:</strong> Mostrando solo productos donde tu costo es mayor que el precio del proveedor
+          </div>
+        )}
       </div>
 
       {/* Tabla de listas comparativas */}
@@ -770,6 +810,7 @@ const ListasComparativasPage: React.FC = () => {
                 onClick={() => {
                   setSearchTerm("");
                   setFiltroProveedor("");
+                  setFiltroCostoPorEncima(false);
                   fetchListas();
                 }}
                 className="mt-2"
@@ -789,6 +830,7 @@ const ListasComparativasPage: React.FC = () => {
             onClick={() => {
               setSearchTerm("");
               setFiltroProveedor("");
+              setFiltroCostoPorEncima(false);
             }}
             className="mt-2"
           >
