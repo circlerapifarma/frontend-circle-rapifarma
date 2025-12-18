@@ -1523,27 +1523,74 @@ const ListasComparativasPage: React.FC = () => {
                         <p className="text-sm text-gray-600">
                           Precio: {formatCurrency(lista.precioNeto)} | Existencia en Proveedor: <span className="font-semibold">{lista.existencia || 0}</span>
                         </p>
+                        {lista.miCosto && (
+                          <p className="text-sm text-gray-600 mt-1">
+                            Mi Costo: <span className="font-semibold text-blue-600">{formatCurrency(lista.miCosto)}</span>
+                          </p>
+                        )}
                       </div>
                     </div>
                     
                     {lista.existencias && Array.isArray(lista.existencias) && lista.existencias.length > 0 ? (
                       <div className="mt-3">
+                        <div className="mb-3 p-2 bg-blue-50 rounded border border-blue-200">
+                          <p className="text-sm font-semibold text-blue-700 mb-1">
+                            Mi Costo Promedio: {formatCurrency(lista.miCosto || null)}
+                          </p>
+                          {lista.miCosto && lista.precioNeto && (
+                            <p className="text-xs text-blue-600">
+                              {lista.miCosto > lista.precioNeto 
+                                ? `⚠️ Tu costo es ${((lista.miCosto - lista.precioNeto) / lista.precioNeto * 100).toFixed(1)}% mayor que el precio del proveedor`
+                                : `✅ Tu costo es ${((lista.precioNeto - lista.miCosto) / lista.precioNeto * 100).toFixed(1)}% menor que el precio del proveedor`
+                              }
+                            </p>
+                          )}
+                        </div>
                         <p className="text-sm font-medium text-gray-700 mb-2">Existencias en mis Farmacias:</p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 gap-2">
                           {lista.existencias.map((exist: ExistenciaPorFarmacia, existIdx: number) => (
-                            <div key={existIdx} className="bg-gray-50 p-2 rounded flex justify-between items-center">
-                              <span className="text-sm font-medium">{exist.farmaciaNombre}:</span>
-                              <span className="text-sm font-semibold text-green-600">{exist.existencia}</span>
+                            <div key={existIdx} className="bg-gray-50 p-3 rounded border border-gray-200">
+                              <div className="flex justify-between items-center">
+                                <div className="flex-1">
+                                  <span className="text-sm font-semibold text-gray-800">{exist.farmaciaNombre}</span>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                  {exist.costo !== undefined && exist.costo !== null && (
+                                    <div className="text-right">
+                                      <span className="text-xs text-gray-500 block">Costo:</span>
+                                      <span className="text-sm font-semibold text-blue-600">{formatCurrency(exist.costo)}</span>
+                                    </div>
+                                  )}
+                                  <div className="text-right">
+                                    <span className="text-xs text-gray-500 block">Existencia:</span>
+                                    <span className="text-sm font-semibold text-green-600">{exist.existencia}</span>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
                           ))}
                         </div>
-                        <div className="mt-2 pt-2 border-t">
-                          <p className="text-sm text-gray-600">
-                            <span className="font-medium">Total en mis Farmacias:</span>{" "}
+                        <div className="mt-3 pt-3 border-t space-y-1">
+                          <p className="text-sm text-gray-600 flex justify-between">
+                            <span className="font-medium">Total en mis Farmacias:</span>
                             <span className="font-semibold text-green-600">
-                              {lista.existencias.reduce((sum, e) => sum + e.existencia, 0)}
+                              {lista.existencias.reduce((sum, e) => sum + e.existencia, 0)} unidades
                             </span>
                           </p>
+                          {lista.existencias.some(e => e.costo !== undefined && e.costo !== null) && (
+                            <p className="text-sm text-gray-600 flex justify-between">
+                              <span className="font-medium">Costo Promedio Ponderado:</span>
+                              <span className="font-semibold text-blue-600">
+                                {(() => {
+                                  const existenciasConCosto = lista.existencias.filter(e => e.costo !== undefined && e.costo !== null && e.existencia > 0);
+                                  if (existenciasConCosto.length === 0) return "N/A";
+                                  const totalCosto = existenciasConCosto.reduce((sum, e) => sum + (e.costo! * e.existencia), 0);
+                                  const totalExistencia = existenciasConCosto.reduce((sum, e) => sum + e.existencia, 0);
+                                  return formatCurrency(totalCosto / totalExistencia);
+                                })()}
+                              </span>
+                            </p>
+                          )}
                         </div>
                       </div>
                     ) : (

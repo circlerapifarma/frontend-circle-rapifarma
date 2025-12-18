@@ -7,6 +7,7 @@ export interface ExistenciaPorFarmacia {
   farmacia: string;
   farmaciaNombre: string;
   existencia: number;
+  costo?: number; // Costo del producto en esta farmacia específica
 }
 
 export interface ListaComparativa {
