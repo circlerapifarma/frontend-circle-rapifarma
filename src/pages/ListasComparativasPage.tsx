@@ -90,6 +90,27 @@ const ListasComparativasPage: React.FC = () => {
     todosLosPrecios: ListaComparativa[];
   } | null>(null);
 
+  // Pre-calcular datos procesados del modal para evitar cálculos en cada render
+  const listasProcesadasModal = useMemo(() => {
+    if (!productoDetalles) return [];
+    
+    return productoDetalles.todosLosPrecios.map((lista) => {
+      const existenciasConCosto = lista.existencias?.filter(e => e.costo !== undefined && e.costo !== null && e.existencia > 0) || [];
+      const totalExistencia = lista.existencias?.reduce((sum, e) => sum + e.existencia, 0) || 0;
+      const totalCosto = existenciasConCosto.reduce((sum, e) => sum + (e.costo! * e.existencia), 0);
+      const costoPromedioPonderado = existenciasConCosto.length > 0 && totalExistencia > 0 
+        ? totalCosto / totalExistencia 
+        : null;
+      
+      return {
+        ...lista,
+        totalExistencia,
+        costoPromedioPonderado,
+        tieneCostos: existenciasConCosto.length > 0
+      };
+    });
+  }, [productoDetalles]);
+
   // Cargar datos iniciales solo una vez
   useEffect(() => {
     let mounted = true;
@@ -1509,39 +1530,19 @@ const ListasComparativasPage: React.FC = () => {
           <DialogHeader>
             <DialogTitle>Existencias por Sucursal</DialogTitle>
           </DialogHeader>
-          {productoDetalles && (() => {
-            // Pre-calcular datos procesados para evitar cálculos en cada render
-            const listasProcesadas = useMemo(() => {
-              return productoDetalles.todosLosPrecios.map((lista) => {
-                const existenciasConCosto = lista.existencias?.filter(e => e.costo !== undefined && e.costo !== null && e.existencia > 0) || [];
-                const totalExistencia = lista.existencias?.reduce((sum, e) => sum + e.existencia, 0) || 0;
-                const totalCosto = existenciasConCosto.reduce((sum, e) => sum + (e.costo! * e.existencia), 0);
-                const costoPromedioPonderado = existenciasConCosto.length > 0 && totalExistencia > 0 
-                  ? totalCosto / totalExistencia 
-                  : null;
-                
-                return {
-                  ...lista,
-                  totalExistencia,
-                  costoPromedioPonderado,
-                  tieneCostos: existenciasConCosto.length > 0
-                };
-              });
-            }, [productoDetalles.todosLosPrecios]);
-
-            return (
-              <div className="space-y-4">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="font-semibold text-lg">{productoDetalles.descripcion}</p>
-                  <div className="grid grid-cols-2 gap-2 mt-2 text-sm text-gray-600">
-                    <p><span className="font-medium">Código:</span> {productoDetalles.codigo}</p>
-                    <p><span className="font-medium">Laboratorio:</span> {productoDetalles.laboratorio}</p>
-                  </div>
+          {productoDetalles && (
+            <div className="space-y-4">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="font-semibold text-lg">{productoDetalles.descripcion}</p>
+                <div className="grid grid-cols-2 gap-2 mt-2 text-sm text-gray-600">
+                  <p><span className="font-medium">Código:</span> {productoDetalles.codigo}</p>
+                  <p><span className="font-medium">Laboratorio:</span> {productoDetalles.laboratorio}</p>
                 </div>
-                
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-gray-700">Existencias por Sucursal y Proveedor:</h3>
-                  {listasProcesadas.map((lista, idx) => (
+              </div>
+              
+              <div className="space-y-4">
+                <h3 className="font-semibold text-gray-700">Existencias por Sucursal y Proveedor:</h3>
+                {listasProcesadasModal.map((lista, idx) => (
                   <div key={lista._id || idx} className="border rounded-lg p-4">
                     <div className="flex justify-between items-start mb-3">
                       <div>
@@ -1619,11 +1620,10 @@ const ListasComparativasPage: React.FC = () => {
                       </div>
                     )}
                   </div>
-                  ))}
-                </div>
+                ))}
               </div>
-            );
-          })()}
+            </div>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => {
               setShowDetallesModal(false);
