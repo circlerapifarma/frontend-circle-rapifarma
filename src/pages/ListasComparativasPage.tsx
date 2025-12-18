@@ -138,7 +138,7 @@ const ListasComparativasPage: React.FC = () => {
           proveedorId: filtroProveedor || undefined,
         });
       }
-    }, 500); // Aumentar debounce a 500ms para reducir llamadas
+    }, 300); // Debounce de 300ms para reducir llamadas al servidor
 
     return () => clearTimeout(timeoutId);
   }, [searchTerm, filtroProveedor]);

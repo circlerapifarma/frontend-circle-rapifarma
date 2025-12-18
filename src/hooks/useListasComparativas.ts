@@ -40,6 +40,48 @@ export interface Proveedor {
   descuentosComerciales: number;
 }
 
+// Caché simple (5 minutos)
+const CACHE_KEY = 'listas_comparativas_cache';
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+
+const getCachedData = (): ListaComparativa[] | null => {
+  try {
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (!cached) return null;
+    
+    const { data, timestamp } = JSON.parse(cached);
+    const now = Date.now();
+    
+    if (now - timestamp > CACHE_DURATION) {
+      localStorage.removeItem(CACHE_KEY);
+      return null;
+    }
+    
+    return data;
+  } catch (e) {
+    return null;
+  }
+};
+
+const setCachedData = (data: ListaComparativa[]) => {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({
+      data,
+      timestamp: Date.now()
+    }));
+  } catch (e) {
+    console.error("Error al guardar en caché:", e);
+  }
+};
+
+const invalidarCache = () => {
+  try {
+    localStorage.removeItem(CACHE_KEY);
+  } catch (e) {
+    console.error("Error al invalidar caché:", e);
+  }
+};
+
 export function useListasComparativas() {
   const [listas, setListas] = useState<ListaComparativa[]>([]);
   const [proveedores, setProveedores] = useState<Proveedor[]>([]);
@@ -86,7 +128,7 @@ export function useListasComparativas() {
     }
   };
 
-  // Obtener todas las listas comparativas (optimizado)
+  // Obtener todas las listas comparativas (optimizado con caché)
   const fetchListas = async (filtros?: {
     codigo?: string;
     nombre?: string;
@@ -95,6 +137,15 @@ export function useListasComparativas() {
   }) => {
     // Evitar múltiples llamadas simultáneas
     if (loading) return;
+    
+    // Verificar caché solo si no hay filtros
+    if (!filtros || Object.keys(filtros).length === 0) {
+      const cached = getCachedData();
+      if (cached) {
+        setListas(cached);
+        return;
+      }
+    }
     
     setLoading(true);
     setError(null);
@@ -146,6 +197,10 @@ export function useListasComparativas() {
       // Asegurarse de que data es un array
       if (Array.isArray(data)) {
         setListas(data);
+        // Guardar en caché solo si no hay filtros
+        if (!filtros || Object.keys(filtros).length === 0) {
+          setCachedData(data);
+        }
       } else {
         console.error("La respuesta del servidor no es un array:", data);
         setListas([]);
@@ -461,6 +516,7 @@ export function useListasComparativas() {
         xhr.onload = () => {
           if (xhr.status >= 200 && xhr.status < 300) {
             try {
+              invalidarCache(); // Invalidar caché después de subir
               const data = JSON.parse(xhr.responseText);
               
               // Verificar si el backend guardó items correctamente
@@ -543,6 +599,7 @@ export function useListasComparativas() {
 
   // Eliminar lista
   const eliminarLista = async (id: string) => {
+    invalidarCache(); // Invalidar caché después de eliminar
     setError(null);
     try {
       const token = localStorage.getItem("token");
@@ -569,6 +626,7 @@ export function useListasComparativas() {
 
   // Eliminar todas las listas de un proveedor
   const eliminarListasPorProveedor = async (proveedorId: string) => {
+    invalidarCache(); // Invalidar caché después de eliminar
     setError(null);
     try {
       const token = localStorage.getItem("token");
