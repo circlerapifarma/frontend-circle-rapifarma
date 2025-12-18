@@ -897,16 +897,19 @@ const ListasComparativasPage: React.FC = () => {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => {
-                                  // Usar setTimeout para no bloquear el hilo principal
-                                  setTimeout(() => {
+                                  // Usar requestAnimationFrame para mejor rendimiento
+                                  requestAnimationFrame(() => {
                                     setProductoDetalles({
                                       descripcion: mejorPrecio.descripcion,
                                       codigo: mejorPrecio.codigo || "N/A",
                                       laboratorio: mejorPrecio.laboratorio || "N/A",
                                       todosLosPrecios: todosLosPrecios
                                     });
-                                    setShowDetallesModal(true);
-                                  }, 0);
+                                    // Abrir modal en el siguiente frame
+                                    requestAnimationFrame(() => {
+                                      setShowDetallesModal(true);
+                                    });
+                                  });
                                 }}
                                 className="text-xs text-blue-600 hover:text-blue-800 border-blue-300 hover:bg-blue-50 w-fit"
                               >
@@ -972,16 +975,19 @@ const ListasComparativasPage: React.FC = () => {
                               variant="outline"
                               size="sm"
                               onClick={() => {
-                                // Usar setTimeout para no bloquear el hilo principal
-                                setTimeout(() => {
+                                // Usar requestAnimationFrame para mejor rendimiento
+                                requestAnimationFrame(() => {
                                   setProductoDetalles({
                                     descripcion: mejorPrecio.descripcion,
                                     codigo: mejorPrecio.codigo || "N/A",
                                     laboratorio: mejorPrecio.laboratorio || "N/A",
                                     todosLosPrecios: todosLosPrecios
                                   });
-                                  setShowDetallesModal(true);
-                                }, 0);
+                                  // Abrir modal en el siguiente frame
+                                  requestAnimationFrame(() => {
+                                    setShowDetallesModal(true);
+                                  });
+                                });
                               }}
                               className="text-purple-600 hover:text-purple-800"
                               title="Ver existencias por farmacia"
