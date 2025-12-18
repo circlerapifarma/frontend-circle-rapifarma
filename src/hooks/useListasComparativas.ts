@@ -407,6 +407,9 @@ export function useListasComparativas() {
     const LOTE_SIZE = 300; // Procesar en lotes de 300 items
     const lotes = [];
     
+    // Invalidar caché antes de subir
+    invalidarCache();
+    
     // Dividir items en lotes
     for (let i = 0; i < items.length; i += LOTE_SIZE) {
       lotes.push(items.slice(i, i + LOTE_SIZE));
