@@ -203,6 +203,17 @@ export function useListasComparativas() {
       const data = await res.json();
       // Asegurarse de que data es un array
       if (Array.isArray(data)) {
+        // Debug: verificar si las existencias están llegando
+        if (data.length > 0) {
+          const primeraLista = data[0];
+          if (primeraLista.existencias === undefined || !Array.isArray(primeraLista.existencias)) {
+            console.warn("⚠️ Las listas no incluyen existencias por farmacia. Verificar backend:", {
+              codigo: primeraLista.codigo,
+              tieneExistencias: primeraLista.existencias !== undefined,
+              esArray: Array.isArray(primeraLista.existencias)
+            });
+          }
+        }
         setListas(data);
         // Guardar en caché solo si no hay filtros
         if (!filtros || Object.keys(filtros).length === 0) {
