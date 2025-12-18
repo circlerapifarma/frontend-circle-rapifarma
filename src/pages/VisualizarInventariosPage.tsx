@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
 
 interface FarmaciaChip {
@@ -33,6 +33,48 @@ interface InventarioItemExcel {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+// Caché simple (5 minutos) para inventarios
+const CACHE_KEY_INVENTARIOS = 'inventarios_cache';
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+
+const getCachedInventarios = (): InventarioItem[] | null => {
+  try {
+    const cached = localStorage.getItem(CACHE_KEY_INVENTARIOS);
+    if (!cached) return null;
+    
+    const { data, timestamp } = JSON.parse(cached);
+    const now = Date.now();
+    
+    if (now - timestamp > CACHE_DURATION) {
+      localStorage.removeItem(CACHE_KEY_INVENTARIOS);
+      return null;
+    }
+    
+    return data;
+  } catch (e) {
+    return null;
+  }
+};
+
+const setCachedInventarios = (data: InventarioItem[]) => {
+  try {
+    localStorage.setItem(CACHE_KEY_INVENTARIOS, JSON.stringify({
+      data,
+      timestamp: Date.now()
+    }));
+  } catch (e) {
+    console.error("Error al guardar inventarios en caché:", e);
+  }
+};
+
+const invalidarCacheInventarios = () => {
+  try {
+    localStorage.removeItem(CACHE_KEY_INVENTARIOS);
+  } catch (e) {
+    console.error("Error al invalidar caché de inventarios:", e);
+  }
+};
+
 const VisualizarInventariosPage: React.FC = () => {
   const [items, setItems] = useState<InventarioItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -51,6 +93,14 @@ const VisualizarInventariosPage: React.FC = () => {
   const [excelError, setExcelError] = useState<string | null>(null);
 
   const fetchInventarios = async () => {
+    // Verificar caché primero
+    const cached = getCachedInventarios();
+    if (cached && cached.length > 0) {
+      // Mostrar datos del caché inmediatamente
+      setItems(cached);
+      // Continuar cargando en background para actualizar
+    }
+    
     setLoading(true);
     setError(null);
     try {
@@ -62,6 +112,8 @@ const VisualizarInventariosPage: React.FC = () => {
       if (!res.ok) throw new Error("Error al obtener inventarios");
       const data = await res.json();
       setItems(data);
+      // Guardar en caché
+      setCachedInventarios(data);
     } catch (err: any) {
       setError(err.message || "Error al obtener inventarios");
     } finally {
@@ -210,7 +262,8 @@ const VisualizarInventariosPage: React.FC = () => {
       setExcelData([]);
       setShowExcelModal(false);
       
-      // Recargar inventarios
+      // Invalidar caché y recargar inventarios
+      invalidarCacheInventarios();
       await fetchInventarios();
       
       alert(`Inventario guardado correctamente. Se procesaron ${excelData.length} items.`);
@@ -318,7 +371,8 @@ const VisualizarInventariosPage: React.FC = () => {
         throw new Error(`Error al eliminar ${failed.length} de ${itemsFarmacia.length} items`);
       }
 
-      // Recargar inventarios
+      // Invalidar caché y recargar inventarios
+      invalidarCacheInventarios();
       await fetchInventarios();
       setShowDeleteModal(false);
       setPendingDeleteFarmacia(null);
@@ -337,67 +391,73 @@ const VisualizarInventariosPage: React.FC = () => {
     setShowDeleteModal(true);
   };
 
-  // Filtrar items
-  const itemsFiltrados = items
-    .filter(item => !selectedFarmacia || item.farmacia === selectedFarmacia)
-    .filter(item => {
-      if (!articuloFiltro) return true;
-      const filtro = articuloFiltro.toLowerCase();
-      return (
-        item.codigo?.toLowerCase().includes(filtro) ||
-        item.descripcion?.toLowerCase().includes(filtro) ||
-        item.laboratorio?.toLowerCase().includes(filtro)
-      );
-    });
+  // Filtrar items con useMemo para optimizar rendimiento
+  const itemsFiltrados = useMemo(() => {
+    return items
+      .filter(item => !selectedFarmacia || item.farmacia === selectedFarmacia)
+      .filter(item => {
+        if (!articuloFiltro) return true;
+        const filtro = articuloFiltro.toLowerCase();
+        return (
+          item.codigo?.toLowerCase().includes(filtro) ||
+          item.descripcion?.toLowerCase().includes(filtro) ||
+          item.laboratorio?.toLowerCase().includes(filtro)
+        );
+      });
+  }, [items, selectedFarmacia, articuloFiltro]);
 
-  // Calcular totales
-  const totalGeneral = itemsFiltrados.reduce((sum, item) => {
-    return sum + (item.existencia * item.costo);
-  }, 0);
-  
-  const totalItems = itemsFiltrados.length;
-  
-  // Totales por farmacia (con Total Cantidad y SKU)
-  const totalesPorFarmacia = itemsFiltrados.reduce((acc, item) => {
-    const farmaciaNombre = farmacias.find(f => f.id === item.farmacia)?.nombre || item.farmacia;
-    if (!acc[farmaciaNombre]) {
-      acc[farmaciaNombre] = { 
-        total: 0, 
-        items: 0, 
-        farmaciaId: item.farmacia,
-        totalCantidad: 0,
-        codigos: new Set<string>()
+  // Calcular totales con useMemo para optimizar rendimiento
+  const { totalGeneral, totalItems, totalesPorFarmaciaFinal } = useMemo(() => {
+    const totalGeneral = itemsFiltrados.reduce((sum, item) => {
+      return sum + (item.existencia * item.costo);
+    }, 0);
+    
+    const totalItems = itemsFiltrados.length;
+    
+    // Totales por farmacia (con Total Cantidad y SKU)
+    const totalesPorFarmacia = itemsFiltrados.reduce((acc, item) => {
+      const farmaciaNombre = farmacias.find(f => f.id === item.farmacia)?.nombre || item.farmacia;
+      if (!acc[farmaciaNombre]) {
+        acc[farmaciaNombre] = { 
+          total: 0, 
+          items: 0, 
+          farmaciaId: item.farmacia,
+          totalCantidad: 0,
+          codigos: new Set<string>()
+        };
+      }
+      acc[farmaciaNombre].total += (item.existencia * item.costo);
+      acc[farmaciaNombre].items += 1;
+      acc[farmaciaNombre].totalCantidad += (item.existencia || 0);
+      if (item.codigo) {
+        acc[farmaciaNombre].codigos.add(item.codigo.toLowerCase().trim());
+      }
+      return acc;
+    }, {} as Record<string, { 
+      total: number; 
+      items: number; 
+      farmaciaId: string;
+      totalCantidad: number;
+      codigos: Set<string>;
+    }>);
+
+    // Convertir Sets a números para SKU
+    const totalesPorFarmaciaFinal = Object.entries(totalesPorFarmacia).reduce((acc, [farmacia, datos]) => {
+      acc[farmacia] = {
+        ...datos,
+        sku: datos.codigos.size
       };
-    }
-    acc[farmaciaNombre].total += (item.existencia * item.costo);
-    acc[farmaciaNombre].items += 1;
-    acc[farmaciaNombre].totalCantidad += (item.existencia || 0);
-    if (item.codigo) {
-      acc[farmaciaNombre].codigos.add(item.codigo.toLowerCase().trim());
-    }
-    return acc;
-  }, {} as Record<string, { 
-    total: number; 
-    items: number; 
-    farmaciaId: string;
-    totalCantidad: number;
-    codigos: Set<string>;
-  }>);
-
-  // Convertir Sets a números para SKU
-  const totalesPorFarmaciaFinal = Object.entries(totalesPorFarmacia).reduce((acc, [farmacia, datos]) => {
-    acc[farmacia] = {
-      ...datos,
-      sku: datos.codigos.size
-    };
-    return acc;
-  }, {} as Record<string, { 
-    total: number; 
-    items: number; 
-    farmaciaId: string;
-    totalCantidad: number;
-    sku: number;
-  }>);
+      return acc;
+    }, {} as Record<string, { 
+      total: number; 
+      items: number; 
+      farmaciaId: string;
+      totalCantidad: number;
+      sku: number;
+    }>);
+    
+    return { totalGeneral, totalItems, totalesPorFarmaciaFinal };
+  }, [itemsFiltrados, farmacias]);
 
   return (
     <div className="min-h-screen bg-slate-50 py-8">
