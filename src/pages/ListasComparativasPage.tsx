@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useListasComparativas, type ListaComparativa, type ExistenciaPorFarmacia } from "@/hooks/useListasComparativas";
 import { useProveedores } from "@/hooks/useProveedores";
 import { Button } from "@/components/ui/button";
@@ -834,13 +834,16 @@ const ListasComparativasPage: React.FC = () => {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => {
-                                  setProductoDetalles({
-                                    descripcion: mejorPrecio.descripcion,
-                                    codigo: mejorPrecio.codigo || "N/A",
-                                    laboratorio: mejorPrecio.laboratorio || "N/A",
-                                    todosLosPrecios: todosLosPrecios
-                                  });
-                                  setShowDetallesModal(true);
+                                  // Usar setTimeout para no bloquear el hilo principal
+                                  setTimeout(() => {
+                                    setProductoDetalles({
+                                      descripcion: mejorPrecio.descripcion,
+                                      codigo: mejorPrecio.codigo || "N/A",
+                                      laboratorio: mejorPrecio.laboratorio || "N/A",
+                                      todosLosPrecios: todosLosPrecios
+                                    });
+                                    setShowDetallesModal(true);
+                                  }, 0);
                                 }}
                                 className="text-xs text-blue-600 hover:text-blue-800 border-blue-300 hover:bg-blue-50 w-fit"
                               >
@@ -906,13 +909,16 @@ const ListasComparativasPage: React.FC = () => {
                               variant="outline"
                               size="sm"
                               onClick={() => {
-                                setProductoDetalles({
-                                  descripcion: mejorPrecio.descripcion,
-                                  codigo: mejorPrecio.codigo || "N/A",
-                                  laboratorio: mejorPrecio.laboratorio || "N/A",
-                                  todosLosPrecios: todosLosPrecios
-                                });
-                                setShowDetallesModal(true);
+                                // Usar setTimeout para no bloquear el hilo principal
+                                setTimeout(() => {
+                                  setProductoDetalles({
+                                    descripcion: mejorPrecio.descripcion,
+                                    codigo: mejorPrecio.codigo || "N/A",
+                                    laboratorio: mejorPrecio.laboratorio || "N/A",
+                                    todosLosPrecios: todosLosPrecios
+                                  });
+                                  setShowDetallesModal(true);
+                                }, 0);
                               }}
                               className="text-purple-600 hover:text-purple-800"
                               title="Ver existencias por farmacia"
@@ -1503,19 +1509,39 @@ const ListasComparativasPage: React.FC = () => {
           <DialogHeader>
             <DialogTitle>Existencias por Sucursal</DialogTitle>
           </DialogHeader>
-          {productoDetalles && (
-            <div className="space-y-4">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <p className="font-semibold text-lg">{productoDetalles.descripcion}</p>
-                <div className="grid grid-cols-2 gap-2 mt-2 text-sm text-gray-600">
-                  <p><span className="font-medium">Código:</span> {productoDetalles.codigo}</p>
-                  <p><span className="font-medium">Laboratorio:</span> {productoDetalles.laboratorio}</p>
-                </div>
-              </div>
-              
+          {productoDetalles && (() => {
+            // Pre-calcular datos procesados para evitar cálculos en cada render
+            const listasProcesadas = useMemo(() => {
+              return productoDetalles.todosLosPrecios.map((lista) => {
+                const existenciasConCosto = lista.existencias?.filter(e => e.costo !== undefined && e.costo !== null && e.existencia > 0) || [];
+                const totalExistencia = lista.existencias?.reduce((sum, e) => sum + e.existencia, 0) || 0;
+                const totalCosto = existenciasConCosto.reduce((sum, e) => sum + (e.costo! * e.existencia), 0);
+                const costoPromedioPonderado = existenciasConCosto.length > 0 && totalExistencia > 0 
+                  ? totalCosto / totalExistencia 
+                  : null;
+                
+                return {
+                  ...lista,
+                  totalExistencia,
+                  costoPromedioPonderado,
+                  tieneCostos: existenciasConCosto.length > 0
+                };
+              });
+            }, [productoDetalles.todosLosPrecios]);
+
+            return (
               <div className="space-y-4">
-                <h3 className="font-semibold text-gray-700">Existencias por Sucursal y Proveedor:</h3>
-                {productoDetalles.todosLosPrecios.map((lista, idx) => (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="font-semibold text-lg">{productoDetalles.descripcion}</p>
+                  <div className="grid grid-cols-2 gap-2 mt-2 text-sm text-gray-600">
+                    <p><span className="font-medium">Código:</span> {productoDetalles.codigo}</p>
+                    <p><span className="font-medium">Laboratorio:</span> {productoDetalles.laboratorio}</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-gray-700">Existencias por Sucursal y Proveedor:</h3>
+                  {listasProcesadas.map((lista, idx) => (
                   <div key={lista._id || idx} className="border rounded-lg p-4">
                     <div className="flex justify-between items-start mb-3">
                       <div>
@@ -1574,20 +1600,14 @@ const ListasComparativasPage: React.FC = () => {
                           <p className="text-sm text-gray-600 flex justify-between">
                             <span className="font-medium">Total en mis Farmacias:</span>
                             <span className="font-semibold text-green-600">
-                              {lista.existencias.reduce((sum, e) => sum + e.existencia, 0)} unidades
+                              {lista.totalExistencia} unidades
                             </span>
                           </p>
-                          {lista.existencias.some(e => e.costo !== undefined && e.costo !== null) && (
+                          {lista.tieneCostos && lista.costoPromedioPonderado !== null && (
                             <p className="text-sm text-gray-600 flex justify-between">
                               <span className="font-medium">Costo Promedio Ponderado:</span>
                               <span className="font-semibold text-blue-600">
-                                {(() => {
-                                  const existenciasConCosto = lista.existencias.filter(e => e.costo !== undefined && e.costo !== null && e.existencia > 0);
-                                  if (existenciasConCosto.length === 0) return "N/A";
-                                  const totalCosto = existenciasConCosto.reduce((sum, e) => sum + (e.costo! * e.existencia), 0);
-                                  const totalExistencia = existenciasConCosto.reduce((sum, e) => sum + e.existencia, 0);
-                                  return formatCurrency(totalCosto / totalExistencia);
-                                })()}
+                                {formatCurrency(lista.costoPromedioPonderado)}
                               </span>
                             </p>
                           )}
@@ -1599,10 +1619,11 @@ const ListasComparativasPage: React.FC = () => {
                       </div>
                     )}
                   </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
           <DialogFooter>
             <Button variant="outline" onClick={() => {
               setShowDetallesModal(false);
