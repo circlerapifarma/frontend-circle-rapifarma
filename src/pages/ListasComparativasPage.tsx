@@ -93,7 +93,6 @@ const ListasComparativasPage: React.FC = () => {
   // Cargar datos iniciales solo una vez
   useEffect(() => {
     let mounted = true;
-    let isInitialLoad = true;
     
     const cargarDatos = async () => {
       // Verificar token antes de cargar
@@ -112,8 +111,6 @@ const ListasComparativasPage: React.FC = () => {
       } catch (err: any) {
         console.error("Error al cargar datos iniciales:", err);
         // El error ya se maneja en fetchListas y se muestra en el estado 'error'
-      } finally {
-        isInitialLoad = false;
       }
     };
     
