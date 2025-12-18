@@ -204,7 +204,7 @@ export function useListasComparativas() {
       const data = await res.json();
       // Asegurarse de que data es un array
       if (Array.isArray(data)) {
-        // Debug: verificar si las existencias están llegando
+        // Debug: verificar si las existencias y costos están llegando
         if (data.length > 0) {
           const primeraLista = data[0];
           if (primeraLista.existencias === undefined || !Array.isArray(primeraLista.existencias)) {
@@ -212,6 +212,22 @@ export function useListasComparativas() {
               codigo: primeraLista.codigo,
               tieneExistencias: primeraLista.existencias !== undefined,
               esArray: Array.isArray(primeraLista.existencias)
+            });
+          } else if (primeraLista.existencias.length > 0) {
+            // Verificar que los costos estén llegando
+            const tieneCostos = primeraLista.existencias.some((e: any) => e.costo !== undefined && e.costo !== null);
+            const tieneMiCosto = primeraLista.miCosto !== undefined && primeraLista.miCosto !== null;
+            console.log("✅ Datos recibidos del backend:", {
+              codigo: primeraLista.codigo,
+              miCosto: primeraLista.miCosto,
+              tieneMiCosto,
+              existencias: primeraLista.existencias.length,
+              tieneCostos,
+              costosPorFarmacia: primeraLista.existencias.map((e: any) => ({
+                farmacia: e.farmaciaNombre,
+                costo: e.costo,
+                existencia: e.existencia
+              }))
             });
           }
         }
