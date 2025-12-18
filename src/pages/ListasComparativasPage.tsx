@@ -93,6 +93,7 @@ const ListasComparativasPage: React.FC = () => {
   // Cargar datos iniciales solo una vez
   useEffect(() => {
     let mounted = true;
+    let isInitialLoad = true;
     
     const cargarDatos = async () => {
       // Verificar token antes de cargar
@@ -106,14 +107,13 @@ const ListasComparativasPage: React.FC = () => {
       }
       
       try {
-        // Cargar listas y proveedores en paralelo
-        await Promise.all([
-          fetchListas(),
-          // fetchProveedores se llama automáticamente en useListasComparativas
-        ]);
+        // Cargar listas (fetchListas ya maneja el caché internamente)
+        await fetchListas();
       } catch (err: any) {
         console.error("Error al cargar datos iniciales:", err);
         // El error ya se maneja en fetchListas y se muestra en el estado 'error'
+      } finally {
+        isInitialLoad = false;
       }
     };
     
@@ -126,8 +126,11 @@ const ListasComparativasPage: React.FC = () => {
     };
   }, []); // Solo se ejecuta una vez al montar
 
-  // Búsqueda con debounce
+  // Búsqueda con debounce (solo si no es la carga inicial)
   useEffect(() => {
+    // Evitar ejecutar en la carga inicial (ya se maneja arriba)
+    if (!searchTerm && !filtroProveedor) return;
+    
     const timeoutId = setTimeout(() => {
       if (searchTerm || filtroProveedor) {
         buscarListas(searchTerm, {

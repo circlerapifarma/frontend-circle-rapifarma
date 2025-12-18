@@ -139,15 +139,22 @@ export function useListasComparativas() {
     if (loading) return;
     
     // Verificar caché solo si no hay filtros
+    let usarCache = false;
     if (!filtros || Object.keys(filtros).length === 0) {
       const cached = getCachedData();
-      if (cached) {
+      if (cached && cached.length > 0) {
+        // Mostrar datos del caché inmediatamente (sin mostrar loading)
         setListas(cached);
-        return;
+        usarCache = true;
+        // Continuar cargando en background para actualizar si hay cambios
+        // pero no bloquear la UI con el spinner
       }
     }
     
-    setLoading(true);
+    // Solo mostrar loading si no hay caché
+    if (!usarCache) {
+      setLoading(true);
+    }
     setError(null);
     try {
       const token = localStorage.getItem("token");
