@@ -41,6 +41,7 @@ const BancosPage: React.FC = () => {
   const [bancoToDelete, setBancoToDelete] = useState<Banco | null>(null);
   const [filtroBanco, setFiltroBanco] = useState<string>("");
   const [filtroFarmacia, setFiltroFarmacia] = useState<string>("");
+  const [filtroConcepto, setFiltroConcepto] = useState<string>("");
   const [farmacias, setFarmacias] = useState<{ id: string; nombre: string }[]>([]);
   const [movimientos, setMovimientos] = useState<Movimiento[]>([]);
   const [loadingMovimientos, setLoadingMovimientos] = useState(false);
@@ -400,7 +401,7 @@ const BancosPage: React.FC = () => {
           <Filter className="w-5 h-5 text-gray-600" />
           <h3 className="text-lg font-semibold text-gray-800">Filtros</h3>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Banco</label>
             <select
@@ -451,6 +452,27 @@ const BancosPage: React.FC = () => {
                   {farmacia.nombre}
                 </option>
               ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Concepto</label>
+            <select
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={filtroConcepto}
+              onChange={(e) => {
+                setFiltroConcepto(e.target.value);
+              }}
+            >
+              <option value="">Todos los conceptos</option>
+              <option value="deposito">Depósito</option>
+              <option value="retiro_por_cheque">Retiro por Cheque</option>
+              <option value="transferencia">Transferencia</option>
+              <option value="retiro_efectivo">Retiro en Efectivo</option>
+              <option value="ingreso_venta">Ingreso por Venta</option>
+              <option value="cuentas_pagadas">Cuentas Pagadas</option>
+              <option value="gasto_tarjeta_debito">Gasto por Tarjeta Débito</option>
+              <option value="pago_factura">Pago de factura</option>
+              <option value="deposito_cuadre">Depósito por cierre de caja</option>
             </select>
           </div>
         </div>
@@ -622,7 +644,26 @@ const BancosPage: React.FC = () => {
                     </td>
                   </tr>
                 ) : (
-                  movimientos.map((movimiento) => (
+                  movimientos
+                    .filter((movimiento) => {
+                      if (!filtroConcepto) return true;
+                      const conceptoLabel = getConceptoLabel(movimiento.concepto, movimiento.tipo);
+                      // Mapear valores del select a los conceptos reales
+                      const conceptoMap: Record<string, string> = {
+                        deposito: "Depósito",
+                        retiro_por_cheque: "Retiro por Cheque",
+                        transferencia: "Transferencia",
+                        retiro_efectivo: "Retiro en Efectivo",
+                        ingreso_venta: "Ingreso por Venta",
+                        cuentas_pagadas: "Cuentas Pagadas",
+                        gasto_tarjeta_debito: "Gasto por Tarjeta Débito",
+                        pago_factura: "Pago de factura",
+                        deposito_cuadre: "Depósito por cierre de caja",
+                      };
+                      const conceptoBuscado = conceptoMap[filtroConcepto] || filtroConcepto;
+                      return conceptoLabel === conceptoBuscado;
+                    })
+                    .map((movimiento) => (
                     <tr key={movimiento._id} className="hover:bg-gray-50">
                       <td className="px-4 py-3 text-sm text-gray-700">{formatDate(movimiento.fecha)}</td>
                       <td className="px-4 py-3 text-sm text-gray-700">
