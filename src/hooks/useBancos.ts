@@ -247,7 +247,23 @@ export function useBancos() {
         const mensajeError = await extraerMensajeError(res);
         throw new Error(mensajeError);
       }
-      await fetchBancos(); // Refrescar lista
+      const responseData = await res.json();
+      
+      // Actualizar solo el banco específico en la lista sin recargar todo
+      setBancos((prevBancos) =>
+        prevBancos.map((banco) =>
+          banco._id === bancoId
+            ? {
+                ...banco,
+                disponible: responseData.banco?.disponible ?? banco.disponible,
+                disponibleUsd: responseData.banco?.disponibleUsd ?? banco.disponibleUsd,
+              }
+            : banco
+        )
+      );
+      
+      // Retornar el banco actualizado para que el componente pueda usarlo
+      return responseData.banco || null;
     } catch (err: any) {
       setError(err.message || "Error al realizar depósito");
       throw err;

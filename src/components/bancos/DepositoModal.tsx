@@ -17,10 +17,11 @@ interface DepositoModalProps {
     farmacia?: string,
     tipoPago?: "efectivoBs" | "efectivoUsd" | "debito" | "credito" | "zelle" | "pagoMovil",
     tasa?: number
-  ) => Promise<void>;
+  ) => Promise<any>;
+  onDepositoSuccess?: (bancoActualizado: any) => void;
 }
 
-const DepositoModal: React.FC<DepositoModalProps> = ({ open, onClose, banco, onDeposito }) => {
+const DepositoModal: React.FC<DepositoModalProps> = ({ open, onClose, banco, onDeposito, onDepositoSuccess }) => {
   const [monto, setMonto] = useState("");
   const [tasa, setTasa] = useState("");
   const [detalles, setDetalles] = useState("");
@@ -74,7 +75,7 @@ const DepositoModal: React.FC<DepositoModalProps> = ({ open, onClose, banco, onD
         montoNeto = parseFloat(monto) * (1 - banco.porcentajeComision / 100);
       }
       
-      await onDeposito(
+      const bancoActualizado = await onDeposito(
         banco._id!,
         montoNeto, // Enviar monto neto (después de comisión)
         detalles,
@@ -82,13 +83,21 @@ const DepositoModal: React.FC<DepositoModalProps> = ({ open, onClose, banco, onD
         tipoPago || undefined,
         banco.tipoMoneda === "Bs" ? parseFloat(tasa) : undefined
       );
+      
+      // Limpiar formulario
       setMonto("");
       setTasa("");
       setDetalles("");
       setFarmacia("");
       setTipoPago("");
+      
+      // Notificar éxito y actualizar banco si hay callback
+      if (onDepositoSuccess && bancoActualizado) {
+        onDepositoSuccess(bancoActualizado);
+      }
+      
+      // Cerrar modal silenciosamente
       onClose();
-      alert("Depósito realizado exitosamente");
     } catch (error: any) {
       alert(error.message || "Error al realizar el depósito");
     } finally {

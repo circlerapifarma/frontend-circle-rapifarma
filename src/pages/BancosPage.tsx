@@ -842,10 +842,23 @@ const BancosPage: React.FC = () => {
             open={depositoModalOpen}
             onClose={() => {
               setDepositoModalOpen(false);
-              setBancoSeleccionado(null);
             }}
             banco={bancoSeleccionado}
             onDeposito={realizarDeposito}
+            onDepositoSuccess={(bancoActualizado) => {
+              // Actualizar banco seleccionado con los nuevos datos
+              if (bancoActualizado && bancoSeleccionado) {
+                setBancoSeleccionado({
+                  ...bancoSeleccionado,
+                  disponible: bancoActualizado.disponible ?? bancoSeleccionado.disponible,
+                  disponibleUsd: bancoActualizado.disponibleUsd ?? bancoSeleccionado.disponibleUsd,
+                });
+              }
+              // Recargar movimientos silenciosamente si están siendo mostrados
+              if (filtroBanco && bancoSeleccionado?._id) {
+                loadMovimientos(bancoSeleccionado._id, filtroFarmacia || undefined);
+              }
+            }}
           />
           <TransferenciaModal
             open={transferenciaModalOpen}
