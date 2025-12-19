@@ -138,7 +138,7 @@ const BancosPage: React.FC = () => {
         retiro_efectivo: "Retiro en Efectivo",
         ingreso_venta: "Ingreso por Venta",
         gasto_tarjeta_debito: "Gasto por Tarjeta Débito",
-        cheque: "Cheque",
+        cheque: "Retiro por Cheque",
         pago_factura: "Pago de factura",
         deposito_cuadre: "Depósito por cierre de caja",
         retiro: "Retiro",
@@ -146,13 +146,11 @@ const BancosPage: React.FC = () => {
       return conceptos[concepto] || concepto;
     }
     
-    // Si no hay concepto, inferir del tipo y tipoPago
-    if (tipo === "cheque") return "Cheque";
+    // Si no hay concepto, inferir del tipo de movimiento
+    if (tipo === "cheque") return "Retiro por Cheque";
     if (tipo === "transferencia") return "Transferencia";
     if (tipo === "retiro") return "Retiro en Efectivo";
     if (tipo === "deposito") {
-      if (tipoPago === "debito") return "Gasto por Tarjeta Débito";
-      if (tipoPago === "efectivoUsd" || tipoPago === "efectivoBs") return "Ingreso por Venta";
       return "Depósito";
     }
     return getTipoLabel(tipo || "");
