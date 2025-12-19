@@ -205,7 +205,13 @@ const BancosPage: React.FC = () => {
     // Depósitos suman, transferencias/cheques/retiros restan
     const sign = mov.tipo === "deposito" ? 1 : -1;
     // Usar monto en la moneda del banco
-    return sign * (mov.montoUsd || mov.monto || 0);
+    // Si el banco es en Bs, usar montoOriginal o monto (en Bs)
+    // Si el banco es en USD, usar montoUsd o monto (en USD)
+    if (bancoSeleccionado?.tipoMoneda === "Bs") {
+      return sign * (mov.montoOriginal || mov.monto || 0);
+    } else {
+      return sign * (mov.montoUsd || mov.monto || 0);
+    }
   };
 
   const totalesPorFarmacia = React.useMemo(() => {
@@ -545,7 +551,10 @@ const BancosPage: React.FC = () => {
               <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
                 <p className="text-xs text-blue-700 font-semibold uppercase">Saldo disponible (calculado)</p>
                 <p className="text-xl font-bold text-blue-800">
-                  {formatCurrency(totalDisponibleCalculado)}
+                  {bancoSeleccionado?.tipoMoneda === "Bs" 
+                    ? `${totalDisponibleCalculado.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs`
+                    : formatCurrency(totalDisponibleCalculado)
+                  }
                 </p>
                 {bancoSeleccionado?.tipoMoneda === "Bs" && bancoSeleccionado.tasa && bancoSeleccionado.tasa > 0 && (
                   <p className="text-xs text-gray-600 mt-1">
@@ -561,7 +570,10 @@ const BancosPage: React.FC = () => {
                       key={farmId}
                       className="px-2 py-1 rounded-full text-xs font-semibold bg-white border border-green-200 text-green-800"
                     >
-                      {getFarmaciaNombre(farmId)}: {formatCurrency(valor)}
+                      {getFarmaciaNombre(farmId)}: {bancoSeleccionado?.tipoMoneda === "Bs"
+                        ? `${valor.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs`
+                        : formatCurrency(valor)
+                      }
                     </span>
                   ))}
                   {totalesPorFarmacia.size === 0 && (
@@ -621,13 +633,19 @@ const BancosPage: React.FC = () => {
                       >
                         <div className="flex flex-col">
                           {movimiento.tipo === "deposito" ? "+" : "-"}
-                          {movimiento.tipoMonedaBanco === "Bs" && movimiento.montoOriginal ? (
+                          {bancoSeleccionado?.tipoMoneda === "Bs" ? (
                             <>
-                              <span>{movimiento.montoOriginal.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs</span>
-                              {movimiento.montoUsd && (
-                                <span className="text-xs text-gray-500">
-                                  ({formatCurrency(movimiento.montoUsd)})
-                                </span>
+                              {movimiento.montoOriginal ? (
+                                <>
+                                  <span>{movimiento.montoOriginal.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs</span>
+                                  {movimiento.montoUsd && (
+                                    <span className="text-xs text-gray-500">
+                                      ({formatCurrency(movimiento.montoUsd)})
+                                    </span>
+                                  )}
+                                </>
+                              ) : (
+                                <span>{movimiento.monto.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs</span>
                               )}
                             </>
                           ) : (
