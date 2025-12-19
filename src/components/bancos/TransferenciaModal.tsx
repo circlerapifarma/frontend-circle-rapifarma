@@ -56,9 +56,16 @@ const TransferenciaModal: React.FC<TransferenciaModalProps> = ({
 
     setLoading(true);
     try {
+      let montoAEnviar = parseFloat(monto);
+      
+      // Si el banco es en Bs, convertir a USD dividiendo por la tasa
+      if (banco.tipoMoneda === "Bs" && tasa && parseFloat(tasa) > 0) {
+        montoAEnviar = parseFloat(monto) / parseFloat(tasa);
+      }
+      
       await onTransferencia(
         banco._id!,
-        parseFloat(monto),
+        montoAEnviar, // Enviar monto en USD (después de conversión si es Bs)
         detalles,
         nombreTitular,
         banco.tipoMoneda === "Bs" ? parseFloat(tasa) : undefined

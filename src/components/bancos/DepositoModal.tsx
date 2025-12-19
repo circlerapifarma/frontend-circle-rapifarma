@@ -69,15 +69,22 @@ const DepositoModal: React.FC<DepositoModalProps> = ({ open, onClose, banco, onD
 
     setLoading(true);
     try {
+      let montoAEnviar = parseFloat(monto);
+      
+      // Si el banco es en Bs, convertir a USD dividiendo por la tasa
+      if (banco.tipoMoneda === "Bs" && tasa && parseFloat(tasa) > 0) {
+        montoAEnviar = parseFloat(monto) / parseFloat(tasa);
+      }
+      
       // Calcular monto neto (después de restar comisión)
-      let montoNeto = parseFloat(monto);
+      let montoNeto = montoAEnviar;
       if (banco.porcentajeComision && banco.porcentajeComision > 0) {
-        montoNeto = parseFloat(monto) * (1 - banco.porcentajeComision / 100);
+        montoNeto = montoAEnviar * (1 - banco.porcentajeComision / 100);
       }
       
       const bancoActualizado = await onDeposito(
         banco._id!,
-        montoNeto, // Enviar monto neto (después de comisión)
+        montoNeto, // Enviar monto neto en USD (después de comisión y conversión)
         detalles,
         farmacia || undefined,
         tipoPago || undefined,
