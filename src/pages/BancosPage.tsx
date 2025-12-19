@@ -744,9 +744,9 @@ const BancosPage: React.FC = () => {
                 <option value="debito">Punto débito</option>
                 <option value="credito">Punto crédito</option>
                 <option value="transferencia">Transferencia</option>
+                <option value="zelle">Zelle</option>
                 <option value="efectivoBs">Efectivo Bs</option>
                 <option value="efectivoUsd">Efectivo $</option>
-                <option value="zelle">Zelle</option>
               </select>
               <p className="text-xs text-gray-500 mt-1">Se usará como método por defecto para movimientos</p>
             </div>

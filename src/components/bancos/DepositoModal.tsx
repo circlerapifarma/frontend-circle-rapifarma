@@ -192,12 +192,12 @@ const DepositoModal: React.FC<DepositoModalProps> = ({ open, onClose, banco, onD
                 required
               >
                 <option value="">Seleccione tipo de pago</option>
-                <option value="efectivoBs">Efectivo Bs</option>
-                <option value="efectivoUsd">Efectivo USD</option>
+                <option value="pagoMovil">Pago Móvil</option>
                 <option value="debito">Débito</option>
                 <option value="credito">Crédito</option>
                 <option value="zelle">Zelle</option>
-                <option value="pagoMovil">Pago Móvil</option>
+                <option value="efectivoBs">Efectivo Bs</option>
+                <option value="efectivoUsd">Efectivo USD</option>
               </select>
             </div>
             <div>
