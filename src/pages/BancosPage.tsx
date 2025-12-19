@@ -60,6 +60,7 @@ const BancosPage: React.FC = () => {
       | "efectivoUsd"
       | "zelle",
     tasa: "",
+    porcentajeComision: "",
     farmacias: [] as string[],
   });
 
@@ -233,6 +234,7 @@ const BancosPage: React.FC = () => {
           (banco as any).metodoPagoDefault ||
           "pagoMovil",
         tasa: banco.tasa?.toString() || "",
+        porcentajeComision: banco.porcentajeComision?.toString() || "",
         farmacias: banco.farmacias || [],
       });
     } else {
@@ -245,6 +247,7 @@ const BancosPage: React.FC = () => {
         tipoMoneda: "USD",
         metodoPagoDefault: "pagoMovil",
         tasa: "",
+        porcentajeComision: "",
         farmacias: [],
       });
     }
@@ -262,6 +265,7 @@ const BancosPage: React.FC = () => {
       tipoMoneda: "USD",
     metodoPagoDefault: "pagoMovil",
     tasa: "",
+      porcentajeComision: "",
       farmacias: [],
     });
   };
@@ -277,6 +281,8 @@ const BancosPage: React.FC = () => {
         ...formData,
         // Mientras el backend siga validando tasa para bancos en Bs, enviamos 1 por defecto
         tasa: formData.tipoMoneda === "Bs" ? 1 : undefined,
+        // Convertir porcentajeComision a número si existe
+        porcentajeComision: formData.porcentajeComision ? parseFloat(formData.porcentajeComision) : undefined,
       };
       if (editingBanco && editingBanco._id) {
         await actualizarBanco(editingBanco._id, dataToSend);
@@ -743,6 +749,25 @@ const BancosPage: React.FC = () => {
                 <option value="zelle">Zelle</option>
               </select>
               <p className="text-xs text-gray-500 mt-1">Se usará como método por defecto para movimientos</p>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Porcentaje de Comisión por Punto (%)
+              </label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                max="100"
+                name="porcentajeComision"
+                value={formData.porcentajeComision}
+                onChange={handleChange}
+                placeholder="Ej: 2.5 (para 2.5%)"
+                className="text-sm"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Este porcentaje se restará automáticamente de cada depósito realizado a este banco
+              </p>
             </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-2">

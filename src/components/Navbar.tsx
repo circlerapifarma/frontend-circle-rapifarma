@@ -220,10 +220,45 @@ const Navbar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [permisosUsuario, setPermisosUsuario] = useState<string[]>([]);
   const [usuario, setUsuario] = useState<any>(null);
+  const [horaVenezuela, setHoraVenezuela] = useState<string>("");
+  const [fechaVenezuela, setFechaVenezuela] = useState<string>("");
   const location = useLocation();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const { totalProveedores, fetchTotalProveedores } = useProveedores();
+
+  // Actualizar hora de Venezuela en tiempo real
+  useEffect(() => {
+    const actualizarHora = () => {
+      const ahora = new Date();
+      // Venezuela está en UTC-4 (America/Caracas)
+      const horaVenezuela = new Date(ahora.toLocaleString("en-US", { timeZone: "America/Caracas" }));
+      
+      // Formatear hora: HH:MM:SS
+      const horas = horaVenezuela.getHours().toString().padStart(2, "0");
+      const minutos = horaVenezuela.getMinutes().toString().padStart(2, "0");
+      const segundos = horaVenezuela.getSeconds().toString().padStart(2, "0");
+      setHoraVenezuela(`${horas}:${minutos}:${segundos}`);
+      
+      // Formatear fecha: DD de MMMM de YYYY
+      const opcionesFecha: Intl.DateTimeFormatOptions = {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        timeZone: "America/Caracas"
+      };
+      const fechaFormateada = ahora.toLocaleDateString("es-VE", opcionesFecha);
+      setFechaVenezuela(fechaFormateada);
+    };
+
+    // Actualizar inmediatamente
+    actualizarHora();
+
+    // Actualizar cada segundo
+    const interval = setInterval(actualizarHora, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Effect for handling user data and permissions from localStorage
   useEffect(() => {
@@ -338,6 +373,14 @@ const Navbar = () => {
           <span>Rapifarma</span>
         </Link>
 
+        {/* Hora de Venezuela - Desktop */}
+        <div className="hidden sm:flex items-center gap-4">
+          <div className="text-right">
+            <div className="text-sm font-semibold text-gray-700">{fechaVenezuela}</div>
+            <div className="text-lg font-bold text-blue-600">{horaVenezuela}</div>
+          </div>
+        </div>
+
         {/* Desktop Menu (Dropdown) */}
         <div
           className="hidden sm:flex items-center gap-6 relative"
@@ -438,6 +481,14 @@ const Navbar = () => {
               </div>
             </motion.div>
           )}
+        </div>
+
+        {/* Hora de Venezuela - Mobile */}
+        <div className="sm:hidden flex items-center gap-2 mr-2">
+          <div className="text-right">
+            <div className="text-xs font-semibold text-gray-700">{fechaVenezuela}</div>
+            <div className="text-sm font-bold text-blue-600">{horaVenezuela}</div>
+          </div>
         </div>
 
         {/* Mobile Menu Button */}

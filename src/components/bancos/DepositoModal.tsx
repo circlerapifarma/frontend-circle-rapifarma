@@ -68,9 +68,15 @@ const DepositoModal: React.FC<DepositoModalProps> = ({ open, onClose, banco, onD
 
     setLoading(true);
     try {
+      // Calcular monto neto (después de restar comisión)
+      let montoNeto = parseFloat(monto);
+      if (banco.porcentajeComision && banco.porcentajeComision > 0) {
+        montoNeto = parseFloat(monto) * (1 - banco.porcentajeComision / 100);
+      }
+      
       await onDeposito(
         banco._id!,
-        parseFloat(monto),
+        montoNeto, // Enviar monto neto (después de comisión)
         detalles,
         farmacia || undefined,
         tipoPago || undefined,
@@ -121,6 +127,22 @@ const DepositoModal: React.FC<DepositoModalProps> = ({ open, onClose, banco, onD
                 <p className="text-xs text-gray-500 mt-1">
                   Equivalente en USD: ${(parseFloat(monto) / parseFloat(tasa)).toFixed(2)}
                 </p>
+              )}
+              {banco.porcentajeComision && banco.porcentajeComision > 0 && monto && parseFloat(monto) > 0 && (
+                <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
+                  <p className="text-xs font-semibold text-yellow-800 mb-1">
+                    Comisión por punto ({banco.porcentajeComision}%):
+                  </p>
+                  <p className="text-xs text-yellow-700">
+                    Monto ingresado: {parseFloat(monto).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {banco.tipoMoneda}
+                  </p>
+                  <p className="text-xs text-yellow-700">
+                    Comisión: {(parseFloat(monto) * banco.porcentajeComision / 100).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {banco.tipoMoneda}
+                  </p>
+                  <p className="text-xs font-semibold text-yellow-900 mt-1">
+                    Monto neto a depositar: {(parseFloat(monto) * (1 - banco.porcentajeComision / 100)).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {banco.tipoMoneda}
+                  </p>
+                </div>
               )}
             </div>
             {banco.tipoMoneda === "Bs" && (
