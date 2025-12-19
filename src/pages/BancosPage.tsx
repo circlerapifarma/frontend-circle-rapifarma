@@ -416,9 +416,20 @@ const BancosPage: React.FC = () => {
               <option value="">Seleccione un banco</option>
               {bancos.map((banco) => {
                 const metodoPago = getTipoPagoLabel((banco as any).metodoPagoDefault || "pagoMovil");
+                // Obtener información de farmacias asignadas
+                const farmaciasAsignadas = banco.farmacias || [];
+                let farmaciasTexto = "";
+                if (farmaciasAsignadas.length === 0) {
+                  farmaciasTexto = "Sin farmacias";
+                } else if (farmaciasAsignadas.length === 1) {
+                  farmaciasTexto = getFarmaciaNombre(farmaciasAsignadas[0]);
+                } else {
+                  // Mostrar primera farmacia + símbolo +
+                  farmaciasTexto = `${getFarmaciaNombre(farmaciasAsignadas[0])} +`;
+                }
                 return (
                   <option key={banco._id} value={banco._id}>
-                    {banco.nombreBanco} - {metodoPago} - {banco.numeroCuenta}
+                    {banco.nombreBanco} - {metodoPago} - {farmaciasTexto} - {banco.numeroCuenta}
                   </option>
                 );
               })}
