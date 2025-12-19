@@ -144,12 +144,27 @@ const DepositoModal: React.FC<DepositoModalProps> = ({ open, onClose, banco, onD
                   </p>
                   <p className="text-xs text-yellow-700">
                     Monto ingresado: {parseFloat(monto).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {banco.tipoMoneda}
+                    {banco.tipoMoneda === "Bs" && tasa && parseFloat(tasa) > 0 && (
+                      <span className="ml-1 text-gray-600">
+                        (${(parseFloat(monto) / parseFloat(tasa)).toFixed(2)} USD)
+                      </span>
+                    )}
                   </p>
                   <p className="text-xs text-yellow-700">
                     Comisión: {(parseFloat(monto) * banco.porcentajeComision / 100).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {banco.tipoMoneda}
+                    {banco.tipoMoneda === "Bs" && tasa && parseFloat(tasa) > 0 && (
+                      <span className="ml-1 text-gray-600">
+                        (${((parseFloat(monto) * banco.porcentajeComision / 100) / parseFloat(tasa)).toFixed(2)} USD)
+                      </span>
+                    )}
                   </p>
                   <p className="text-xs font-semibold text-yellow-900 mt-1">
                     Monto neto a depositar: {(parseFloat(monto) * (1 - banco.porcentajeComision / 100)).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {banco.tipoMoneda}
+                    {banco.tipoMoneda === "Bs" && tasa && parseFloat(tasa) > 0 && (
+                      <span className="ml-1 text-gray-600">
+                        (${((parseFloat(monto) * (1 - banco.porcentajeComision / 100)) / parseFloat(tasa)).toFixed(2)} USD)
+                      </span>
+                    )}
                   </p>
                 </div>
               )}

@@ -58,14 +58,15 @@ export interface Banco {
   tasa?: number; // Tasa de cambio del día (solo si tipoMoneda es "Bs")
   disponibleUsd?: number; // Saldo disponible en USD (calculado si tipoMoneda es "Bs")
   porcentajeComision?: number; // Porcentaje de comisión por punto (ej: 2.5 para 2.5%)
-  metodoPagoDefault?:
+  metodoPagoDefault?: (
     | "pagoMovil"
     | "debito"
     | "credito"
     | "transferencia"
     | "efectivoBs"
     | "efectivoUsd"
-    | "zelle";
+    | "zelle"
+  )[]; // Array de métodos de pago permitidos
   farmacias?: string[]; // IDs de las farmacias que utilizan este banco
   createdAt?: string;
   updatedAt?: string;

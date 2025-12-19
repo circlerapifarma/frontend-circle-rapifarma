@@ -52,14 +52,15 @@ const BancosPage: React.FC = () => {
     nombreBanco: "",
     cedulaRif: "",
     tipoMoneda: "USD" as "USD" | "Bs",
-    metodoPagoDefault: "pagoMovil" as
+    metodoPagoDefault: ["pagoMovil"] as (
       | "pagoMovil"
       | "debito"
       | "credito"
       | "transferencia"
       | "efectivoBs"
       | "efectivoUsd"
-      | "zelle",
+      | "zelle"
+    )[],
     tasa: "",
     porcentajeComision: "",
     farmacias: [] as string[],
@@ -69,13 +70,25 @@ const BancosPage: React.FC = () => {
     const fetchFarmacias = async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/farmacias`);
+        if (!res.ok) {
+          if (res.status === 502) {
+            console.error("Error 502: El servidor backend no está respondiendo. Verifique que el backend esté funcionando.");
+          } else if (res.status === 0 || res.status === 404) {
+            console.error("Error de conexión: No se puede conectar al backend. Verifique la URL y CORS.");
+          }
+          return;
+        }
         const data = await res.json();
         const lista = data.farmacias
           ? Object.entries(data.farmacias).map(([id, nombre]) => ({ id, nombre: String(nombre) }))
           : Object.entries(data).map(([id, nombre]) => ({ id, nombre: String(nombre) }));
         setFarmacias(lista);
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error al obtener farmacias:", err);
+        if (err.message?.includes("CORS") || err.message?.includes("Failed to fetch")) {
+          console.error("⚠️ Error de CORS: El backend necesita configurar CORS para permitir solicitudes desde el frontend.");
+          console.error("📋 Ver instrucciones en: INSTRUCCIONES_BACKEND_CORS_URGENTE.md");
+        }
       }
     };
     fetchFarmacias();
@@ -235,9 +248,11 @@ const BancosPage: React.FC = () => {
         nombreBanco: banco.nombreBanco,
         cedulaRif: banco.cedulaRif,
         tipoMoneda: banco.tipoMoneda || "USD",
-        metodoPagoDefault:
-          (banco as any).metodoPagoDefault ||
-          "pagoMovil",
+        metodoPagoDefault: Array.isArray((banco as any).metodoPagoDefault)
+          ? (banco as any).metodoPagoDefault
+          : (banco as any).metodoPagoDefault
+          ? [(banco as any).metodoPagoDefault]
+          : ["pagoMovil"],
         tasa: banco.tasa?.toString() || "",
         porcentajeComision: banco.porcentajeComision?.toString() || "",
         farmacias: banco.farmacias || [],
@@ -250,7 +265,7 @@ const BancosPage: React.FC = () => {
         nombreBanco: "",
         cedulaRif: "",
         tipoMoneda: "USD",
-        metodoPagoDefault: "pagoMovil",
+        metodoPagoDefault: ["pagoMovil"],
         tasa: "",
         porcentajeComision: "",
         farmacias: [],
@@ -268,7 +283,7 @@ const BancosPage: React.FC = () => {
       nombreBanco: "",
       cedulaRif: "",
       tipoMoneda: "USD",
-    metodoPagoDefault: "pagoMovil",
+      metodoPagoDefault: ["pagoMovil"],
     tasa: "",
       porcentajeComision: "",
       farmacias: [],
@@ -279,6 +294,10 @@ const BancosPage: React.FC = () => {
     e.preventDefault();
     if (formData.farmacias.length === 0) {
       alert("Por favor seleccione al menos una farmacia que utilizará este banco");
+      return;
+    }
+    if (formData.metodoPagoDefault.length === 0) {
+      alert("Por favor seleccione al menos un método de pago");
       return;
     }
     try {
@@ -339,6 +358,22 @@ const BancosPage: React.FC = () => {
         return {
           ...prev,
           farmacias: prev.farmacias.filter((id) => id !== farmaciaId),
+        };
+      }
+    });
+  };
+
+  const handleMetodoPagoChange = (metodo: "pagoMovil" | "debito" | "credito" | "transferencia" | "efectivoBs" | "efectivoUsd" | "zelle", checked: boolean) => {
+    setFormData((prev) => {
+      if (checked) {
+        return {
+          ...prev,
+          metodoPagoDefault: [...prev.metodoPagoDefault, metodo],
+        };
+      } else {
+        return {
+          ...prev,
+          metodoPagoDefault: prev.metodoPagoDefault.filter((m) => m !== metodo),
         };
       }
     });
@@ -416,7 +451,18 @@ const BancosPage: React.FC = () => {
             >
               <option value="">Seleccione un banco</option>
               {bancos.map((banco) => {
-                const metodoPago = getTipoPagoLabel((banco as any).metodoPagoDefault || "pagoMovil");
+                // Obtener métodos de pago (puede ser array o string para compatibilidad)
+                const metodosPago = Array.isArray((banco as any).metodoPagoDefault)
+                  ? (banco as any).metodoPagoDefault
+                  : (banco as any).metodoPagoDefault
+                  ? [(banco as any).metodoPagoDefault]
+                  : ["pagoMovil"];
+                const metodosPagoTexto = metodosPago.length === 1
+                  ? getTipoPagoLabel(metodosPago[0])
+                  : metodosPago.length > 1
+                  ? `${getTipoPagoLabel(metodosPago[0])} +${metodosPago.length - 1}`
+                  : "Sin métodos";
+                
                 // Obtener información de farmacias asignadas
                 const farmaciasAsignadas = banco.farmacias || [];
                 let farmaciasTexto = "";
@@ -430,7 +476,7 @@ const BancosPage: React.FC = () => {
                 }
                 return (
                   <option key={banco._id} value={banco._id}>
-                    {banco.nombreBanco} - {metodoPago} - {farmaciasTexto} - {banco.numeroCuenta}
+                    {banco.nombreBanco} - {metodosPagoTexto} - {farmaciasTexto} - {banco.numeroCuenta}
                   </option>
                 );
               })}
@@ -801,24 +847,74 @@ const BancosPage: React.FC = () => {
                 </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Método de Pago por Defecto *
+              <label className="block text-xs font-medium text-gray-700 mb-2">
+                Métodos de Pago Disponibles * (Seleccione uno o más)
               </label>
-              <select
-                name="metodoPagoDefault"
-                value={formData.metodoPagoDefault}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                required
-              >
-                <option value="pagoMovil">Pago Móvil</option>
-                <option value="debito">Punto debito/credito</option>
-                <option value="transferencia">Transferencia</option>
-                <option value="zelle">Zelle</option>
-                <option value="efectivoBs">Efectivo Bs</option>
-                <option value="efectivoUsd">Efectivo $</option>
-              </select>
-              <p className="text-xs text-gray-500 mt-1">Se usará como método por defecto para movimientos</p>
+              <div className="max-h-40 overflow-y-auto border border-gray-300 rounded-md p-2 bg-gray-50">
+                <label className="flex items-center space-x-2 py-1 hover:bg-gray-100 px-2 rounded cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.metodoPagoDefault.includes("pagoMovil")}
+                    onChange={(e) => handleMetodoPagoChange("pagoMovil", e.target.checked)}
+                    className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                  />
+                  <span className="text-sm text-gray-700">Pago Móvil</span>
+                </label>
+                <label className="flex items-center space-x-2 py-1 hover:bg-gray-100 px-2 rounded cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.metodoPagoDefault.includes("debito")}
+                    onChange={(e) => handleMetodoPagoChange("debito", e.target.checked)}
+                    className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                  />
+                  <span className="text-sm text-gray-700">Punto debito/credito</span>
+                </label>
+                <label className="flex items-center space-x-2 py-1 hover:bg-gray-100 px-2 rounded cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.metodoPagoDefault.includes("transferencia")}
+                    onChange={(e) => handleMetodoPagoChange("transferencia", e.target.checked)}
+                    className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                  />
+                  <span className="text-sm text-gray-700">Transferencia</span>
+                </label>
+                <label className="flex items-center space-x-2 py-1 hover:bg-gray-100 px-2 rounded cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.metodoPagoDefault.includes("zelle")}
+                    onChange={(e) => handleMetodoPagoChange("zelle", e.target.checked)}
+                    className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                  />
+                  <span className="text-sm text-gray-700">Zelle</span>
+                </label>
+                <label className="flex items-center space-x-2 py-1 hover:bg-gray-100 px-2 rounded cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.metodoPagoDefault.includes("efectivoBs")}
+                    onChange={(e) => handleMetodoPagoChange("efectivoBs", e.target.checked)}
+                    className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                  />
+                  <span className="text-sm text-gray-700">Efectivo Bs</span>
+                </label>
+                <label className="flex items-center space-x-2 py-1 hover:bg-gray-100 px-2 rounded cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.metodoPagoDefault.includes("efectivoUsd")}
+                    onChange={(e) => handleMetodoPagoChange("efectivoUsd", e.target.checked)}
+                    className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                  />
+                  <span className="text-sm text-gray-700">Efectivo $</span>
+                </label>
+              </div>
+              {formData.metodoPagoDefault.length === 0 && (
+                <p className="text-xs text-red-500 mt-1">Seleccione al menos un método de pago</p>
+              )}
+              {formData.metodoPagoDefault.length > 0 && (
+                <p className="text-xs text-green-600 mt-1">
+                  {formData.metodoPagoDefault.length} método(s) seleccionado(s)
+                </p>
+              )}
+              <p className="text-xs text-gray-500 mt-1">Seleccione los métodos de pago disponibles para este banco</p>
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">
