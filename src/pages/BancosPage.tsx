@@ -129,7 +129,7 @@ const BancosPage: React.FC = () => {
     return labels[tipo] || tipo;
   };
 
-  const getConceptoLabel = (concepto?: string, tipo?: string, tipoPago?: string) => {
+  const getConceptoLabel = (concepto?: string, tipo?: string) => {
     // Si hay concepto específico, usarlo
     if (concepto) {
       const conceptos: Record<string, string> = {
@@ -414,11 +414,14 @@ const BancosPage: React.FC = () => {
               }}
             >
               <option value="">Seleccione un banco</option>
-              {bancos.map((banco) => (
-                <option key={banco._id} value={banco._id}>
-                  {banco.nombreBanco} - {banco.numeroCuenta}
-                </option>
-              ))}
+              {bancos.map((banco) => {
+                const metodoPago = getTipoPagoLabel((banco as any).metodoPagoDefault || "pagoMovil");
+                return (
+                  <option key={banco._id} value={banco._id}>
+                    {banco.nombreBanco} - {metodoPago} - {banco.numeroCuenta}
+                  </option>
+                );
+              })}
             </select>
           </div>
           <div>
@@ -618,7 +621,7 @@ const BancosPage: React.FC = () => {
                         <span
                           className={`px-2 py-1 rounded text-xs font-semibold ${getConceptColorClass(movimiento.concepto, movimiento.tipo)}`}
                         >
-                          {getConceptoLabel(movimiento.concepto, movimiento.tipo, movimiento.tipoPago)}
+                          {getConceptoLabel(movimiento.concepto, movimiento.tipo)}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-700">
