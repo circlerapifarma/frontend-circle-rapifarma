@@ -8,6 +8,7 @@ interface ChequeModalProps {
   open: boolean;
   onClose: () => void;
   banco: Banco;
+  tasaPromedio?: number; // Tasa promedio calculada desde los movimientos
   onCheque: (
     bancoId: string,
     monto: number,
@@ -18,23 +19,11 @@ interface ChequeModalProps {
   ) => Promise<void>;
 }
 
-const ChequeModal: React.FC<ChequeModalProps> = ({ open, onClose, banco, onCheque }) => {
+const ChequeModal: React.FC<ChequeModalProps> = ({ open, onClose, banco, tasaPromedio, onCheque }) => {
   const [monto, setMonto] = useState("");
-  const [tasa, setTasa] = useState("");
   const [detalles, setDetalles] = useState("");
   const [nombreTitular, setNombreTitular] = useState("");
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (open) {
-      // Inicializar tasa con la tasa del banco si existe (solo como sugerencia)
-      if (banco.tipoMoneda === "Bs" && banco.tasa) {
-        setTasa(banco.tasa.toString());
-      } else {
-        setTasa("");
-      }
-    }
-  }, [open, banco]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,14 +32,14 @@ const ChequeModal: React.FC<ChequeModalProps> = ({ open, onClose, banco, onChequ
       return;
     }
 
-    // Validar tasa si el banco es en Bs
+    // Usar tasa promedio si el banco es en Bs
     let tasaUsada: number | undefined = undefined;
     if (banco.tipoMoneda === "Bs") {
-      if (!tasa || parseFloat(tasa) <= 0) {
-        alert("Por favor ingrese la tasa del día para emitir el cheque");
+      if (!tasaPromedio || tasaPromedio <= 0) {
+        alert("No se puede calcular la tasa promedio. Por favor verifique que haya movimientos en el banco.");
         return;
       }
-      tasaUsada = parseFloat(tasa);
+      tasaUsada = tasaPromedio;
     }
 
     // Validar saldo: comparar directamente con el disponible del banco
@@ -89,7 +78,6 @@ const ChequeModal: React.FC<ChequeModalProps> = ({ open, onClose, banco, onChequ
         tasaUsada // Tasa usada (solo si banco es Bs)
       );
       setMonto("");
-      setTasa("");
       setDetalles("");
       setNombreTitular("");
       onClose();
@@ -120,6 +108,11 @@ const ChequeModal: React.FC<ChequeModalProps> = ({ open, onClose, banco, onChequ
                   : `$${banco.disponible?.toFixed(2) || "0.00"}`
                 }
               </p>
+              {banco.tipoMoneda === "Bs" && tasaPromedio && tasaPromedio > 0 && (
+                <p className="text-xs text-gray-500">
+                  Tasa promedio: {tasaPromedio.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -134,26 +127,12 @@ const ChequeModal: React.FC<ChequeModalProps> = ({ open, onClose, banco, onChequ
                 required
                 placeholder="0.00"
               />
-            </div>
-            {banco.tipoMoneda === "Bs" && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tasa del Día *
-                </label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  value={tasa}
-                  onChange={(e) => setTasa(e.target.value)}
-                  required
-                  placeholder="Ej: 1.00"
-                />
+              {banco.tipoMoneda === "Bs" && tasaPromedio && tasaPromedio > 0 && monto && parseFloat(monto) > 0 && (
                 <p className="text-xs text-gray-500 mt-1">
-                  Ingrese la tasa de cambio del día para convertir Bs a USD
+                  Equivalente en USD: {(parseFloat(monto) / tasaPromedio).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
                 </p>
-              </div>
-            )}
+              )}
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Nombre del Titular *

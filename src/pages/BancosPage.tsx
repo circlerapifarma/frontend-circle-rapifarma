@@ -1163,6 +1163,7 @@ const BancosPage: React.FC = () => {
               setBancoSeleccionado(null);
             }}
             banco={bancoSeleccionado}
+            tasaPromedio={bancoSeleccionado?.tipoMoneda === "Bs" ? tasaPromedio : undefined}
             onTransferencia={realizarTransferencia}
           />
           <ChequeModal
@@ -1172,6 +1173,7 @@ const BancosPage: React.FC = () => {
               setBancoSeleccionado(null);
             }}
             banco={bancoSeleccionado}
+            tasaPromedio={bancoSeleccionado?.tipoMoneda === "Bs" ? tasaPromedio : undefined}
             onCheque={emitirCheque}
           />
         </>
