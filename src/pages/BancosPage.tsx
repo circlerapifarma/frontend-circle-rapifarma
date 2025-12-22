@@ -656,15 +656,24 @@ const BancosPage: React.FC = () => {
                 <p className="text-xs text-green-700 font-semibold uppercase mb-2">Saldo por farmacia (calculado)</p>
                 <div className="flex flex-wrap gap-2">
                   {Array.from(totalesPorFarmacia.entries()).map(([farmId, valor]) => (
-                    <span
+                    <div
                       key={farmId}
                       className="px-2 py-1 rounded-full text-xs font-semibold bg-white border border-green-200 text-green-800"
                     >
                       {getFarmaciaNombre(farmId)}: {bancoSeleccionado?.tipoMoneda === "Bs"
-                        ? `${valor.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs`
+                        ? (
+                          <>
+                            <span>{valor.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs</span>
+                            {bancoSeleccionado.tasa && bancoSeleccionado.tasa > 0 && (
+                              <span className="text-gray-600 ml-1">
+                                ({formatCurrency(valor / bancoSeleccionado.tasa)})
+                              </span>
+                            )}
+                          </>
+                        )
                         : formatCurrency(valor)
                       }
-                    </span>
+                    </div>
                   ))}
                   {totalesPorFarmacia.size === 0 && (
                     <span className="text-xs text-gray-500">Sin movimientos</span>
