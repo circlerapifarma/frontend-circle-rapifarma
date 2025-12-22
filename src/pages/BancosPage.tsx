@@ -249,6 +249,30 @@ const BancosPage: React.FC = () => {
     });
   }, [movimientos, filtroConcepto]);
 
+  // Calcular monto en USD de un movimiento
+  const getMontoUsd = (mov: Movimiento) => {
+    if (bancoSeleccionado?.tipoMoneda === "Bs") {
+      // Si tiene montoOriginal y tasaUsada, calcular USD desde ahí
+      if (mov.montoOriginal && mov.tasaUsada && mov.tasaUsada > 0) {
+        return mov.montoOriginal / mov.tasaUsada;
+      }
+      // Si tiene montoUsd, usarlo
+      if (mov.montoUsd) {
+        return mov.montoUsd;
+      }
+      // Fallback: usar monto (asumiendo que ya está en USD)
+      return mov.monto || 0;
+    } else {
+      // Para bancos en USD, usar monto directamente
+      return mov.monto || 0;
+    }
+  };
+
+  const getSignedAmountUsd = (mov: Movimiento) => {
+    const sign = mov.tipo === "deposito" ? 1 : -1;
+    return sign * getMontoUsd(mov);
+  };
+
   const totalesPorFarmacia = React.useMemo(() => {
     const map = new Map<string, number>();
     movimientosFiltrados.forEach((mov) => {
@@ -258,8 +282,21 @@ const BancosPage: React.FC = () => {
     return map;
   }, [movimientosFiltrados]);
 
+  const totalesPorFarmaciaUsd = React.useMemo(() => {
+    const map = new Map<string, number>();
+    movimientosFiltrados.forEach((mov) => {
+      const key = mov.farmacia || "N/A";
+      map.set(key, (map.get(key) || 0) + getSignedAmountUsd(mov));
+    });
+    return map;
+  }, [movimientosFiltrados]);
+
   const totalDisponibleCalculado = React.useMemo(() => {
     return movimientosFiltrados.reduce((acc, mov) => acc + getSignedAmount(mov), 0);
+  }, [movimientosFiltrados]);
+
+  const totalDisponibleCalculadoUsd = React.useMemo(() => {
+    return movimientosFiltrados.reduce((acc, mov) => acc + getSignedAmountUsd(mov), 0);
   }, [movimientosFiltrados]);
 
   const handleOpenModal = (banco?: Banco) => {
@@ -668,35 +705,36 @@ const BancosPage: React.FC = () => {
                     : formatCurrency(totalDisponibleCalculado)
                   }
                 </p>
-                {bancoSeleccionado?.tipoMoneda === "Bs" && bancoSeleccionado.tasa && bancoSeleccionado.tasa > 0 && (
+                {bancoSeleccionado?.tipoMoneda === "Bs" && (
                   <p className="text-xs text-gray-600 mt-1">
-                    ≈ {formatCurrency(totalDisponibleCalculado / bancoSeleccionado.tasa)} (USD)
+                    ≈ {formatCurrency(totalDisponibleCalculadoUsd)} (USD)
                   </p>
                 )}
               </div>
               <div className="bg-green-50 border border-green-200 rounded-md p-3 md:col-span-2">
                 <p className="text-xs text-green-700 font-semibold uppercase mb-2">Saldo por farmacia (calculado)</p>
                 <div className="flex flex-wrap gap-2">
-                  {Array.from(totalesPorFarmacia.entries()).map(([farmId, valor]) => (
-                    <div
-                      key={farmId}
-                      className="px-2 py-1 rounded-full text-xs font-semibold bg-white border border-green-200 text-green-800"
-                    >
-                      {getFarmaciaNombre(farmId)}: {bancoSeleccionado?.tipoMoneda === "Bs"
-                        ? (
-                          <>
-                            <span>{valor.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs</span>
-                            {bancoSeleccionado.tasa && bancoSeleccionado.tasa > 0 && (
+                  {Array.from(totalesPorFarmacia.entries()).map(([farmId, valor]) => {
+                    const valorUsd = totalesPorFarmaciaUsd.get(farmId) || 0;
+                    return (
+                      <div
+                        key={farmId}
+                        className="px-2 py-1 rounded-full text-xs font-semibold bg-white border border-green-200 text-green-800"
+                      >
+                        {getFarmaciaNombre(farmId)}: {bancoSeleccionado?.tipoMoneda === "Bs"
+                          ? (
+                            <>
+                              <span>{valor.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs</span>
                               <span className="text-gray-600 ml-1">
-                                ({formatCurrency(valor / bancoSeleccionado.tasa)})
+                                ({formatCurrency(valorUsd)})
                               </span>
-                            )}
-                          </>
-                        )
-                        : formatCurrency(valor)
-                      }
-                    </div>
-                  ))}
+                            </>
+                          )
+                          : formatCurrency(valor)
+                        }
+                      </div>
+                    );
+                  })}
                   {totalesPorFarmacia.size === 0 && (
                     <span className="text-xs text-gray-500">Sin movimientos</span>
                   )}
