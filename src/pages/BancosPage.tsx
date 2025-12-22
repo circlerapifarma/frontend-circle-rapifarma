@@ -475,10 +475,10 @@ const BancosPage: React.FC = () => {
                   // Mostrar primera farmacia + símbolo +
                   farmaciasTexto = `${getFarmaciaNombre(farmaciasAsignadas[0])} +`;
                 }
-                const nombreBancoMostrar = banco.nombreBanco || banco.numeroCuenta || "Sin nombre";
+                const nombreBancoMostrar = banco.nombreBanco || "Sin nombre";
                 return (
                   <option key={banco._id} value={banco._id}>
-                    {nombreBancoMostrar} - {metodosPagoTexto} - {farmaciasTexto} - {banco.numeroCuenta}
+                    {nombreBancoMostrar} - Cuenta: {banco.numeroCuenta} - {metodosPagoTexto} - {farmaciasTexto}
                   </option>
                 );
               })}

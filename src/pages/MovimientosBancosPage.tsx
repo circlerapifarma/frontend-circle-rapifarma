@@ -246,11 +246,14 @@ const MovimientosBancosPage: React.FC = () => {
               onChange={(e) => setFiltroBanco(e.target.value)}
             >
               <option value="">Todos los bancos</option>
-              {bancos.map((banco) => (
-                <option key={banco._id} value={banco._id}>
-                  {banco.nombreBanco} - {banco.numeroCuenta}
-                </option>
-              ))}
+              {bancos.map((banco) => {
+                const nombreBancoMostrar = banco.nombreBanco || "Sin nombre";
+                return (
+                  <option key={banco._id} value={banco._id}>
+                    {nombreBancoMostrar} - Cuenta: {banco.numeroCuenta}
+                  </option>
+                );
+              })}
             </select>
           </div>
           <div>
