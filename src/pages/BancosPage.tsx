@@ -302,10 +302,16 @@ const BancosPage: React.FC = () => {
       return;
     }
     try {
-      const dataToSend = {
-        ...formData,
+      const dataToSend: any = {
+        numeroCuenta: formData.numeroCuenta,
+        nombreBanco: formData.nombreBanco, // Asegurar que nombreBanco se envíe
+        nombreTitular: formData.nombreTitular || undefined,
+        cedulaRif: formData.cedulaRif || undefined,
+        tipoMoneda: formData.tipoMoneda,
+        metodoPagoDefault: formData.metodoPagoDefault,
+        farmacias: formData.farmacias,
         // Mientras el backend siga validando tasa para bancos en Bs, enviamos 1 por defecto
-        tasa: formData.tipoMoneda === "Bs" ? 1 : undefined,
+        tasa: formData.tipoMoneda === "Bs" ? (formData.tasa ? parseFloat(formData.tasa) : 1) : undefined,
         // Convertir porcentajeComision a número si existe
         porcentajeComision: formData.porcentajeComision ? parseFloat(formData.porcentajeComision) : undefined,
       };

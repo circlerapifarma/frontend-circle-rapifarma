@@ -289,7 +289,9 @@ export function useBancos() {
     bancoId: string,
     monto: number,
     detalles: string,
-    nombreTitular: string
+    nombreTitular: string,
+    montoOriginalBs?: number,
+    tasa?: number
   ) => {
     setError(null);
     try {
@@ -302,6 +304,12 @@ export function useBancos() {
       }
 
       const payload: any = { monto, detalles, nombreTitular };
+      
+      // Si se proporciona monto original en Bs y tasa, enviarlos al backend
+      if (montoOriginalBs !== undefined && tasa !== undefined && tasa > 0) {
+        payload.montoOriginal = montoOriginalBs;
+        payload.tasa = tasa;
+      }
 
       const res = await fetch(`${API_BASE_URL}/bancos/${bancoId}/transferencia`, {
         method: "POST",
@@ -324,7 +332,9 @@ export function useBancos() {
     bancoId: string,
     monto: number,
     detalles: string,
-    nombreTitular: string
+    nombreTitular: string,
+    montoOriginalBs?: number,
+    tasa?: number
   ) => {
     setError(null);
     try {
@@ -337,6 +347,12 @@ export function useBancos() {
       }
 
       const payload: any = { monto, detalles, nombreTitular };
+      
+      // Si se proporciona monto original en Bs y tasa, enviarlos al backend
+      if (montoOriginalBs !== undefined && tasa !== undefined && tasa > 0) {
+        payload.montoOriginal = montoOriginalBs;
+        payload.tasa = tasa;
+      }
 
       const res = await fetch(`${API_BASE_URL}/bancos/${bancoId}/cheque`, {
         method: "POST",

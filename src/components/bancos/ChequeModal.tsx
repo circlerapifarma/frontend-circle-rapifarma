@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,14 @@ interface ChequeModalProps {
   open: boolean;
   onClose: () => void;
   banco: Banco;
-  onCheque: (bancoId: string, monto: number, detalles: string, nombreTitular: string, tasa?: number) => Promise<void>;
+  onCheque: (
+    bancoId: string,
+    monto: number,
+    detalles: string,
+    nombreTitular: string,
+    montoOriginalBs?: number,
+    tasa?: number
+  ) => Promise<void>;
 }
 
 const ChequeModal: React.FC<ChequeModalProps> = ({ open, onClose, banco, onCheque }) => {
@@ -18,24 +25,41 @@ const ChequeModal: React.FC<ChequeModalProps> = ({ open, onClose, banco, onChequ
   const [nombreTitular, setNombreTitular] = useState("");
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (open) {
+      // Inicializar tasa con la tasa del banco si existe (solo como sugerencia)
+      if (banco.tipoMoneda === "Bs" && banco.tasa) {
+        setTasa(banco.tasa.toString());
+      } else {
+        setTasa("");
+      }
+    }
+  }, [open, banco]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!monto || parseFloat(monto) <= 0) {
       alert("Por favor ingrese un monto válido");
       return;
     }
-    // Validar saldo: si es Bs, comparar con disponible; si es USD, comparar con disponibleUsd
-    const montoComparar = banco.tipoMoneda === "Bs" && tasa && parseFloat(tasa) > 0
-      ? parseFloat(monto) / parseFloat(tasa)
-      : parseFloat(monto);
-    const disponibleComparar = banco.tipoMoneda === "Bs" && banco.disponibleUsd
-      ? banco.disponibleUsd
-      : banco.disponible || 0;
-    
-    if (montoComparar > disponibleComparar) {
+
+    // Validar tasa si el banco es en Bs
+    let tasaUsada: number | undefined = undefined;
+    if (banco.tipoMoneda === "Bs") {
+      if (!tasa || parseFloat(tasa) <= 0) {
+        alert("Por favor ingrese la tasa del día para emitir el cheque");
+        return;
+      }
+      tasaUsada = parseFloat(tasa);
+    }
+
+    // Validar saldo: comparar directamente con el disponible del banco
+    const montoAValidar = banco.tipoMoneda === "Bs" ? parseFloat(monto) : parseFloat(monto);
+    if (montoAValidar > (banco.disponible || 0)) {
       alert("El monto excede el disponible del banco");
       return;
     }
+
     if (!detalles.trim()) {
       alert("Por favor ingrese los detalles del cheque");
       return;
@@ -44,26 +68,25 @@ const ChequeModal: React.FC<ChequeModalProps> = ({ open, onClose, banco, onChequ
       alert("Por favor ingrese el nombre del titular");
       return;
     }
-    if (banco.tipoMoneda === "Bs" && (!tasa || parseFloat(tasa) <= 0)) {
-      alert("Por favor ingrese la tasa de cambio del día");
-      return;
-    }
 
     setLoading(true);
     try {
       let montoAEnviar = parseFloat(monto);
-      
+      let montoOriginalBs: number | undefined = undefined;
+
       // Si el banco es en Bs, convertir a USD dividiendo por la tasa
-      if (banco.tipoMoneda === "Bs" && tasa && parseFloat(tasa) > 0) {
-        montoAEnviar = parseFloat(monto) / parseFloat(tasa);
+      if (banco.tipoMoneda === "Bs" && tasaUsada && tasaUsada > 0) {
+        montoOriginalBs = montoAEnviar;
+        montoAEnviar = montoOriginalBs / tasaUsada;
       }
-      
+
       await onCheque(
         banco._id!,
-        montoAEnviar, // Enviar monto en USD (después de conversión si es Bs)
+        montoAEnviar, // Monto en USD (convertido si banco es Bs)
         detalles,
         nombreTitular,
-        banco.tipoMoneda === "Bs" ? parseFloat(tasa) : undefined
+        montoOriginalBs, // Monto original en Bs (solo si banco es Bs)
+        tasaUsada // Tasa usada (solo si banco es Bs)
       );
       setMonto("");
       setTasa("");
@@ -96,9 +119,6 @@ const ChequeModal: React.FC<ChequeModalProps> = ({ open, onClose, banco, onChequ
                   ? `${banco.disponible?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "0.00"} Bs`
                   : `$${banco.disponible?.toFixed(2) || "0.00"}`
                 }
-                {banco.tipoMoneda === "Bs" && banco.disponibleUsd && (
-                  <span className="ml-2">(${banco.disponibleUsd.toFixed(2)} USD)</span>
-                )}
               </p>
             </div>
             <div>
@@ -114,16 +134,11 @@ const ChequeModal: React.FC<ChequeModalProps> = ({ open, onClose, banco, onChequ
                 required
                 placeholder="0.00"
               />
-              {banco.tipoMoneda === "Bs" && monto && tasa && parseFloat(tasa) > 0 && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Equivalente en USD: ${(parseFloat(monto) / parseFloat(tasa)).toFixed(2)}
-                </p>
-              )}
             </div>
             {banco.tipoMoneda === "Bs" && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tasa de Cambio del Día * (Bs por USD)
+                  Tasa del Día *
                 </label>
                 <Input
                   type="number"
@@ -132,10 +147,10 @@ const ChequeModal: React.FC<ChequeModalProps> = ({ open, onClose, banco, onChequ
                   value={tasa}
                   onChange={(e) => setTasa(e.target.value)}
                   required
-                  placeholder="Ej: 40.50"
+                  placeholder="Ej: 1.00"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Ingrese cuántos Bs equivalen a 1 USD
+                  Ingrese la tasa de cambio del día para convertir Bs a USD
                 </p>
               </div>
             )}
