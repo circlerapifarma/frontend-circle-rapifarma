@@ -353,11 +353,15 @@ const MovimientosBancosPage: React.FC = () => {
                         {movimiento.tipoMonedaBanco === "Bs" && movimiento.montoOriginal ? (
                           <>
                             <span>{movimiento.montoOriginal.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs</span>
-                            {movimiento.montoUsd && (
+                            {movimiento.tasaUsada && movimiento.tasaUsada > 0 ? (
+                              <span className="text-xs text-gray-500">
+                                ({formatCurrency(movimiento.montoOriginal / movimiento.tasaUsada)})
+                              </span>
+                            ) : movimiento.montoUsd ? (
                               <span className="text-xs text-gray-500">
                                 ({formatCurrency(movimiento.montoUsd)})
                               </span>
-                            )}
+                            ) : null}
                           </>
                         ) : (
                           formatCurrency(movimiento.monto)
