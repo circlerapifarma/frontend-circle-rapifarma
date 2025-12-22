@@ -252,7 +252,7 @@ const BancosPage: React.FC = () => {
   // Calcular monto en USD de un movimiento
   const getMontoUsd = (mov: Movimiento) => {
     if (bancoSeleccionado?.tipoMoneda === "Bs") {
-      // Si tiene montoOriginal y tasaUsada, calcular USD desde ahí
+      // Si tiene montoOriginal y tasaUsada, calcular USD desde ahí (prioridad)
       if (mov.montoOriginal && mov.tasaUsada && mov.tasaUsada > 0) {
         return mov.montoOriginal / mov.tasaUsada;
       }
@@ -260,7 +260,7 @@ const BancosPage: React.FC = () => {
       if (mov.montoUsd) {
         return mov.montoUsd;
       }
-      // Fallback: usar monto (asumiendo que ya está en USD)
+      // Si solo tiene monto y es un banco en Bs, asumir que el monto ya está en USD (del backend)
       return mov.monto || 0;
     } else {
       // Para bancos en USD, usar monto directamente
@@ -299,12 +299,21 @@ const BancosPage: React.FC = () => {
     return movimientosFiltrados.reduce((acc, mov) => acc + getSignedAmountUsd(mov), 0);
   }, [movimientosFiltrados]);
 
+  // Calcular disponible en Bs basado en TODOS los movimientos (no filtrados)
+  const disponibleBsCalculado = React.useMemo(() => {
+    if (bancoSeleccionado?.tipoMoneda !== "Bs") {
+      return bancoSeleccionado?.disponible || 0;
+    }
+    // Sumar todos los montos en Bs de todos los movimientos (depósitos suman, otros restan)
+    return movimientos.reduce((acc, mov) => acc + getSignedAmount(mov), 0);
+  }, [movimientos, bancoSeleccionado]);
+
   // Calcular disponible USD y tasa promedio de TODOS los movimientos (no filtrados)
   const disponibleUsdCalculado = React.useMemo(() => {
     if (bancoSeleccionado?.tipoMoneda !== "Bs") {
       return bancoSeleccionado?.disponibleUsd || 0;
     }
-    // Sumar todos los montos en USD de todos los movimientos
+    // Sumar todos los montos en USD de todos los movimientos (depósitos suman, otros restan)
     return movimientos.reduce((acc, mov) => acc + getSignedAmountUsd(mov), 0);
   }, [movimientos, bancoSeleccionado]);
 
@@ -319,21 +328,31 @@ const BancosPage: React.FC = () => {
     
     movimientos.forEach((mov) => {
       const sign = mov.tipo === "deposito" ? 1 : -1;
-      if (mov.montoOriginal && mov.tasaUsada && mov.tasaUsada > 0) {
-        totalBs += sign * mov.montoOriginal;
-        totalUsd += sign * (mov.montoOriginal / mov.tasaUsada);
-      } else if (mov.montoOriginal && mov.montoUsd) {
-        totalBs += sign * mov.montoOriginal;
-        totalUsd += sign * mov.montoUsd;
+      
+      // Calcular monto en Bs
+      let montoBs = 0;
+      if (mov.montoOriginal) {
+        montoBs = mov.montoOriginal;
+      } else if (bancoSeleccionado?.tipoMoneda === "Bs") {
+        // Si no hay montoOriginal pero el banco es en Bs, usar monto como Bs
+        montoBs = mov.monto || 0;
+      }
+      
+      // Calcular monto en USD
+      let montoUsd = getMontoUsd(mov);
+      
+      if (montoBs > 0 && montoUsd > 0) {
+        totalBs += sign * montoBs;
+        totalUsd += sign * montoUsd;
       }
     });
     
     // Tasa promedio = totalBs / totalUsd
-    if (totalUsd > 0) {
-      return totalBs / totalUsd;
+    if (totalUsd !== 0 && Math.abs(totalUsd) > 0.01) {
+      return Math.abs(totalBs) / Math.abs(totalUsd);
     }
     
-    // Si no hay movimientos, usar la tasa del banco
+    // Si no hay movimientos o no se puede calcular, usar la tasa del banco
     return bancoSeleccionado?.tasa || 1;
   }, [movimientos, bancoSeleccionado]);
 
@@ -655,7 +674,7 @@ const BancosPage: React.FC = () => {
                 {bancoSeleccionado.tipoMoneda === "Bs" ? (
                   <div className="mt-2 space-y-1">
                     <p className="text-lg font-bold text-yellow-600">
-                      Disponible: {bancoSeleccionado.disponible?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "0.00"} Bs
+                      Disponible: {disponibleBsCalculado.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs
                     </p>
                     <p className="text-lg font-bold text-green-600">
                       Disponible USD: {formatCurrency(disponibleUsdCalculado)}
