@@ -24,6 +24,7 @@ interface DepositoModalProps {
 
 const DepositoModal: React.FC<DepositoModalProps> = ({ open, onClose, banco, onDeposito, onDepositoSuccess }) => {
   const [monto, setMonto] = useState("");
+  const [tasa, setTasa] = useState("");
   const [detalles, setDetalles] = useState("");
   const [farmacia, setFarmacia] = useState("");
   const [tipoPago, setTipoPago] = useState<"efectivoBs" | "efectivoUsd" | "debito" | "credito" | "zelle" | "pagoMovil" | "">("");
@@ -45,8 +46,14 @@ const DepositoModal: React.FC<DepositoModalProps> = ({ open, onClose, banco, onD
         }
       };
       fetchFarmacias();
+      // Inicializar tasa con la tasa del banco si existe (solo como sugerencia)
+      if (banco.tipoMoneda === "Bs" && banco.tasa) {
+        setTasa(banco.tasa.toString());
+      } else {
+        setTasa("");
+      }
     }
-  }, [open]);
+  }, [open, banco]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,20 +71,24 @@ const DepositoModal: React.FC<DepositoModalProps> = ({ open, onClose, banco, onD
     }
 
     // Validar tasa si el banco es en Bs
-    if (banco.tipoMoneda === "Bs" && (!banco.tasa || banco.tasa <= 0)) {
-      alert("El banco requiere una tasa de cambio válida para realizar depósitos en Bs");
-      return;
+    let tasaUsada: number | undefined = undefined;
+    if (banco.tipoMoneda === "Bs") {
+      if (!tasa || parseFloat(tasa) <= 0) {
+        alert("Por favor ingrese la tasa del día para realizar el depósito");
+        return;
+      }
+      tasaUsada = parseFloat(tasa);
     }
 
     setLoading(true);
     try {
       let montoAEnviar = parseFloat(monto);
       
-      // Si el banco es en Bs, convertir a USD dividiendo por la tasa
+      // Si el banco es en Bs, convertir a USD dividiendo por la tasa ingresada
       let montoOriginalBs: number | undefined = undefined;
-      if (banco.tipoMoneda === "Bs" && banco.tasa && banco.tasa > 0) {
+      if (banco.tipoMoneda === "Bs" && tasaUsada && tasaUsada > 0) {
         montoOriginalBs = montoAEnviar;
-        montoAEnviar = montoOriginalBs / banco.tasa;
+        montoAEnviar = montoOriginalBs / tasaUsada;
       }
       
       // Calcular monto neto (después de restar comisión)
@@ -93,11 +104,12 @@ const DepositoModal: React.FC<DepositoModalProps> = ({ open, onClose, banco, onD
         farmacia || undefined,
         tipoPago || undefined,
         montoOriginalBs, // Solo enviar si banco es Bs
-        banco.tipoMoneda === "Bs" ? banco.tasa : undefined // Solo enviar tasa si banco es Bs
+        tasaUsada // Tasa ingresada por el usuario (solo si banco es Bs)
       );
       
       // Limpiar formulario
       setMonto("");
+      setTasa("");
       setDetalles("");
       setFarmacia("");
       setTipoPago("");
@@ -143,16 +155,16 @@ const DepositoModal: React.FC<DepositoModalProps> = ({ open, onClose, banco, onD
                 required
                 placeholder="0.00"
               />
-              {banco.tipoMoneda === "Bs" && banco.tasa && banco.tasa > 0 && monto && parseFloat(monto) > 0 && (
+              {banco.tipoMoneda === "Bs" && tasa && parseFloat(tasa) > 0 && monto && parseFloat(monto) > 0 && (
                 <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
                   <p className="text-xs font-semibold text-blue-800 mb-1">
-                    Conversión (Tasa: {banco.tasa}):
+                    Conversión (Tasa: {parseFloat(tasa).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}):
                   </p>
                   <p className="text-xs text-blue-700">
                     Monto en Bs: {parseFloat(monto).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs
                   </p>
                   <p className="text-xs text-blue-700">
-                    Equivalente en USD: {(parseFloat(monto) / banco.tasa).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                    Equivalente en USD: {(parseFloat(monto) / parseFloat(tasa)).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
                   </p>
                 </div>
               )}
@@ -161,16 +173,16 @@ const DepositoModal: React.FC<DepositoModalProps> = ({ open, onClose, banco, onD
                   <p className="text-xs font-semibold text-yellow-800 mb-1">
                     Comisión por punto ({banco.porcentajeComision}%):
                   </p>
-                  {banco.tipoMoneda === "Bs" && banco.tasa && banco.tasa > 0 ? (
+                  {banco.tipoMoneda === "Bs" && tasa && parseFloat(tasa) > 0 ? (
                     <>
                       <p className="text-xs text-yellow-700">
-                        Monto en USD (después de conversión): {(parseFloat(monto) / banco.tasa).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                        Monto en USD (después de conversión): {(parseFloat(monto) / parseFloat(tasa)).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
                       </p>
                       <p className="text-xs text-yellow-700">
-                        Comisión: {((parseFloat(monto) / banco.tasa) * banco.porcentajeComision / 100).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                        Comisión: {((parseFloat(monto) / parseFloat(tasa)) * banco.porcentajeComision / 100).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
                       </p>
                       <p className="text-xs font-semibold text-yellow-900 mt-1">
-                        Monto neto a depositar: {((parseFloat(monto) / banco.tasa) * (1 - banco.porcentajeComision / 100)).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                        Monto neto a depositar: {((parseFloat(monto) / parseFloat(tasa)) * (1 - banco.porcentajeComision / 100)).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
                       </p>
                       <p className="text-xs text-yellow-700 mt-1">
                         (Monto original en Bs: {parseFloat(monto).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs)
@@ -192,6 +204,25 @@ const DepositoModal: React.FC<DepositoModalProps> = ({ open, onClose, banco, onD
                 </div>
               )}
             </div>
+            {banco.tipoMoneda === "Bs" && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tasa del Día *
+                </label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={tasa}
+                  onChange={(e) => setTasa(e.target.value)}
+                  required
+                  placeholder="Ej: 1.00"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Ingrese la tasa de cambio del día para convertir Bs a USD
+                </p>
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Farmacia (Opcional)
