@@ -227,18 +227,40 @@ const BancosPage: React.FC = () => {
     }
   };
 
+  // Filtrar movimientos según el filtro de concepto
+  const movimientosFiltrados = React.useMemo(() => {
+    return movimientos.filter((movimiento) => {
+      if (!filtroConcepto) return true;
+      const conceptoLabel = getConceptoLabel(movimiento.concepto, movimiento.tipo);
+      // Mapear valores del select a los conceptos reales
+      const conceptoMap: Record<string, string> = {
+        deposito: "Depósito",
+        retiro_por_cheque: "Retiro por Cheque",
+        transferencia: "Transferencia",
+        retiro_efectivo: "Retiro en Efectivo",
+        ingreso_venta: "Ingreso por Venta",
+        cuentas_pagadas: "Cuentas Pagadas",
+        gasto_tarjeta_debito: "Gasto por Tarjeta Débito",
+        pago_factura: "Pago de factura",
+        deposito_cuadre: "Depósito por cierre de caja",
+      };
+      const conceptoBuscado = conceptoMap[filtroConcepto] || filtroConcepto;
+      return conceptoLabel === conceptoBuscado;
+    });
+  }, [movimientos, filtroConcepto]);
+
   const totalesPorFarmacia = React.useMemo(() => {
     const map = new Map<string, number>();
-    movimientos.forEach((mov) => {
+    movimientosFiltrados.forEach((mov) => {
       const key = mov.farmacia || "N/A";
       map.set(key, (map.get(key) || 0) + getSignedAmount(mov));
     });
     return map;
-  }, [movimientos]);
+  }, [movimientosFiltrados]);
 
   const totalDisponibleCalculado = React.useMemo(() => {
-    return movimientos.reduce((acc, mov) => acc + getSignedAmount(mov), 0);
-  }, [movimientos]);
+    return movimientosFiltrados.reduce((acc, mov) => acc + getSignedAmount(mov), 0);
+  }, [movimientosFiltrados]);
 
   const handleOpenModal = (banco?: Banco) => {
     if (banco) {
@@ -702,33 +724,17 @@ const BancosPage: React.FC = () => {
                       Cargando movimientos...
                     </td>
                   </tr>
-                ) : movimientos.length === 0 ? (
+                ) : movimientosFiltrados.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-4 py-6 text-center text-sm text-gray-500">
-                      No hay movimientos para este banco
+                      {movimientos.length === 0 
+                        ? "No hay movimientos para este banco"
+                        : "No hay movimientos que coincidan con el filtro seleccionado"
+                      }
                     </td>
                   </tr>
                 ) : (
-                  movimientos
-                    .filter((movimiento) => {
-                      if (!filtroConcepto) return true;
-                      const conceptoLabel = getConceptoLabel(movimiento.concepto, movimiento.tipo);
-                      // Mapear valores del select a los conceptos reales
-                      const conceptoMap: Record<string, string> = {
-                        deposito: "Depósito",
-                        retiro_por_cheque: "Retiro por Cheque",
-                        transferencia: "Transferencia",
-                        retiro_efectivo: "Retiro en Efectivo",
-                        ingreso_venta: "Ingreso por Venta",
-                        cuentas_pagadas: "Cuentas Pagadas",
-                        gasto_tarjeta_debito: "Gasto por Tarjeta Débito",
-                        pago_factura: "Pago de factura",
-                        deposito_cuadre: "Depósito por cierre de caja",
-                      };
-                      const conceptoBuscado = conceptoMap[filtroConcepto] || filtroConcepto;
-                      return conceptoLabel === conceptoBuscado;
-                    })
-                    .map((movimiento) => (
+                  movimientosFiltrados.map((movimiento) => (
                     <tr key={movimiento._id} className="hover:bg-gray-50">
                       <td className="px-4 py-3 text-sm text-gray-700">{formatDate(movimiento.fecha)}</td>
                       <td className="px-4 py-3 text-sm text-gray-700">
