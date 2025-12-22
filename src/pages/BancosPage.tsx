@@ -299,6 +299,44 @@ const BancosPage: React.FC = () => {
     return movimientosFiltrados.reduce((acc, mov) => acc + getSignedAmountUsd(mov), 0);
   }, [movimientosFiltrados]);
 
+  // Calcular disponible USD y tasa promedio de TODOS los movimientos (no filtrados)
+  const disponibleUsdCalculado = React.useMemo(() => {
+    if (bancoSeleccionado?.tipoMoneda !== "Bs") {
+      return bancoSeleccionado?.disponibleUsd || 0;
+    }
+    // Sumar todos los montos en USD de todos los movimientos
+    return movimientos.reduce((acc, mov) => acc + getSignedAmountUsd(mov), 0);
+  }, [movimientos, bancoSeleccionado]);
+
+  // Calcular tasa promedio ponderada basada en todos los movimientos
+  const tasaPromedio = React.useMemo(() => {
+    if (bancoSeleccionado?.tipoMoneda !== "Bs") {
+      return bancoSeleccionado?.tasa || 1;
+    }
+    
+    let totalBs = 0;
+    let totalUsd = 0;
+    
+    movimientos.forEach((mov) => {
+      const sign = mov.tipo === "deposito" ? 1 : -1;
+      if (mov.montoOriginal && mov.tasaUsada && mov.tasaUsada > 0) {
+        totalBs += sign * mov.montoOriginal;
+        totalUsd += sign * (mov.montoOriginal / mov.tasaUsada);
+      } else if (mov.montoOriginal && mov.montoUsd) {
+        totalBs += sign * mov.montoOriginal;
+        totalUsd += sign * mov.montoUsd;
+      }
+    });
+    
+    // Tasa promedio = totalBs / totalUsd
+    if (totalUsd > 0) {
+      return totalBs / totalUsd;
+    }
+    
+    // Si no hay movimientos, usar la tasa del banco
+    return bancoSeleccionado?.tasa || 1;
+  }, [movimientos, bancoSeleccionado]);
+
   const handleOpenModal = (banco?: Banco) => {
     if (banco) {
       setEditingBanco(banco);
@@ -619,12 +657,10 @@ const BancosPage: React.FC = () => {
                     <p className="text-lg font-bold text-yellow-600">
                       Disponible: {bancoSeleccionado.disponible?.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "0.00"} Bs
                     </p>
-                    {bancoSeleccionado.tasa && bancoSeleccionado.tasa > 0 && (
-                      <p className="text-lg font-bold text-green-600">
-                        Disponible USD: {formatCurrency((bancoSeleccionado.disponible || 0) / bancoSeleccionado.tasa)}
-                        <span className="text-xs text-gray-500 ml-2">(Tasa: {bancoSeleccionado.tasa})</span>
-                      </p>
-                    )}
+                    <p className="text-lg font-bold text-green-600">
+                      Disponible USD: {formatCurrency(disponibleUsdCalculado)}
+                      <span className="text-xs text-gray-500 ml-2">(Tasa promedio: {tasaPromedio.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })})</span>
+                    </p>
                   </div>
                 ) : (
                   <p className="text-lg font-bold text-green-600 mt-2">
