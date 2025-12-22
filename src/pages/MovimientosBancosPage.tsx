@@ -361,7 +361,14 @@ const MovimientosBancosPage: React.FC = () => {
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{movimiento.detalles}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700">
+                      {movimiento.detalles}
+                      {movimiento.tipoMonedaBanco === "Bs" && movimiento.tasaUsada && (
+                        <span className="block text-xs text-gray-500 mt-1">
+                          Tasa: {movimiento.tasaUsada}
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-sm text-gray-700">
                       {movimiento.nombreTitular || "N/A"}
                     </td>

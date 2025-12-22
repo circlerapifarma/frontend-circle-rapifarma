@@ -218,11 +218,12 @@ const BancosPage: React.FC = () => {
     const sign = mov.tipo === "deposito" ? 1 : -1;
     // Usar monto en la moneda del banco
     // Si el banco es en Bs, usar montoOriginal o monto (en Bs)
-    // Si el banco es en USD, usar montoUsd o monto (en USD)
+    // Si el banco es en USD, usar monto (en USD) - nunca usar montoOriginal ni conversiones
     if (bancoSeleccionado?.tipoMoneda === "Bs") {
       return sign * (mov.montoOriginal || mov.monto || 0);
     } else {
-      return sign * (mov.montoUsd || mov.monto || 0);
+      // Para bancos en USD, siempre usar monto directamente (ya está en USD)
+      return sign * (mov.monto || 0);
     }
   };
 
@@ -474,9 +475,10 @@ const BancosPage: React.FC = () => {
                   // Mostrar primera farmacia + símbolo +
                   farmaciasTexto = `${getFarmaciaNombre(farmaciasAsignadas[0])} +`;
                 }
+                const nombreBancoMostrar = banco.nombreBanco || banco.numeroCuenta || "Sin nombre";
                 return (
                   <option key={banco._id} value={banco._id}>
-                    {banco.nombreBanco} - {metodosPagoTexto} - {farmaciasTexto} - {banco.numeroCuenta}
+                    {nombreBancoMostrar} - {metodosPagoTexto} - {farmaciasTexto} - {banco.numeroCuenta}
                   </option>
                 );
               })}
@@ -528,7 +530,9 @@ const BancosPage: React.FC = () => {
           <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
             <div className="flex justify-between items-start mb-4">
               <div>
-                <h3 className="text-lg font-bold text-gray-800">{bancoSeleccionado.nombreBanco}</h3>
+                <h3 className="text-lg font-bold text-gray-800">
+                  {bancoSeleccionado.nombreBanco || bancoSeleccionado.numeroCuenta || "Sin nombre"}
+                </h3>
                 <p className="text-sm text-gray-600">Cuenta: {bancoSeleccionado.numeroCuenta}</p>
                 <p className="text-sm text-gray-600">Titular: {bancoSeleccionado.nombreTitular}</p>
                 <p className="text-sm text-gray-600">
@@ -752,7 +756,14 @@ const BancosPage: React.FC = () => {
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-700">{movimiento.detalles}</td>
+                      <td className="px-4 py-3 text-sm text-gray-700">
+                        {movimiento.detalles}
+                        {bancoSeleccionado?.tipoMoneda === "Bs" && movimiento.tasaUsada && (
+                          <span className="block text-xs text-gray-500 mt-1">
+                            Tasa: {movimiento.tasaUsada}
+                          </span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-sm text-gray-700">
                         {movimiento.nombreTitular || "N/A"}
                       </td>

@@ -111,6 +111,15 @@ export function useBancos() {
       const res = await fetch(`${API_BASE_URL}/bancos`, { headers });
       if (!res.ok) throw new Error("Error al obtener bancos");
       const data = await res.json();
+      // Debug: Verificar que los bancos tengan nombreBanco
+      if (Array.isArray(data) && data.length > 0) {
+        console.log("🔍 Datos de bancos recibidos:", data.map(b => ({
+          _id: b._id,
+          nombreBanco: b.nombreBanco,
+          nombreTitular: b.nombreTitular,
+          numeroCuenta: b.numeroCuenta
+        })));
+      }
       setBancos(data);
     } catch (err: any) {
       setError(err.message || "Error al obtener bancos");
@@ -222,6 +231,7 @@ export function useBancos() {
     detalles: string,
     farmacia?: string,
     tipoPago?: "efectivoBs" | "efectivoUsd" | "debito" | "credito" | "zelle" | "pagoMovil",
+    montoOriginalBs?: number,
     tasa?: number
   ) => {
     setError(null);
@@ -235,7 +245,10 @@ export function useBancos() {
       }
 
       const payload: any = { monto, detalles, farmacia, tipoPago };
-      if (tasa && tasa > 0) {
+      
+      // Si se proporciona monto original en Bs y tasa, enviarlos al backend
+      if (montoOriginalBs !== undefined && tasa !== undefined && tasa > 0) {
+        payload.montoOriginal = montoOriginalBs;
         payload.tasa = tasa;
       }
 
@@ -276,8 +289,7 @@ export function useBancos() {
     bancoId: string,
     monto: number,
     detalles: string,
-    nombreTitular: string,
-    tasa?: number
+    nombreTitular: string
   ) => {
     setError(null);
     try {
@@ -290,9 +302,6 @@ export function useBancos() {
       }
 
       const payload: any = { monto, detalles, nombreTitular };
-      if (tasa && tasa > 0) {
-        payload.tasa = tasa;
-      }
 
       const res = await fetch(`${API_BASE_URL}/bancos/${bancoId}/transferencia`, {
         method: "POST",
@@ -315,8 +324,7 @@ export function useBancos() {
     bancoId: string,
     monto: number,
     detalles: string,
-    nombreTitular: string,
-    tasa?: number
+    nombreTitular: string
   ) => {
     setError(null);
     try {
@@ -329,9 +337,6 @@ export function useBancos() {
       }
 
       const payload: any = { monto, detalles, nombreTitular };
-      if (tasa && tasa > 0) {
-        payload.tasa = tasa;
-      }
 
       const res = await fetch(`${API_BASE_URL}/bancos/${bancoId}/cheque`, {
         method: "POST",
