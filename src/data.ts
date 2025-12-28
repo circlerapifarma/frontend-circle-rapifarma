@@ -226,7 +226,7 @@ export const usuarios: Usuario[] = [
         correo: "admin@rapifarma.com",
         contraseña: "admin123",
         permisos: ["admin", "ver_cuadres", "eliminar_cuadres","añadir_cuadres"],
-        accesos: ["santa elena", "milagro norte", "san martin", "sur america", "las alicias", "san carlos", "san ignacio", "rapifarma"]
+        accesos: ["santa elena", "milagro norte", "san martin", "sur america", "las alicias", "san carlos", "san ignacio", "rapifarma", "virginia", "santo tomas"]
     },
     {
         id: 2,
