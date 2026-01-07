@@ -1,114 +1,94 @@
-import React, { useEffect, useState } from "react";
-import type { CuentaPorPagar } from "@/pages/cuentasPorPagar/visualizarCuentas/FilaCuentaPorPagar";
+import React, { useState } from "react";
 
 interface Props {
-  farmaciaId: string;
-  fechaInicio?: string;
-  fechaFin?: string;
+  data: any[]; // Recibe los datos ya cargados y filtrados por fecha desde el padre
 }
 
-const ListaCuentasPorPagarFarmacia: React.FC<Props> = ({ farmaciaId, fechaInicio, fechaFin }) => {
-  const [cuentas, setCuentas] = useState<CuentaPorPagar[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+const ListaCuentasPorPagarFarmacia: React.FC<Props> = ({ data }) => {
   const [proveedorFiltro, setProveedorFiltro] = useState("");
 
-  useEffect(() => {
-    const fetchCuentas = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-        const token = localStorage.getItem("token");
-        const headers: Record<string, string> = {};
-        if (token) headers["Authorization"] = `Bearer ${token}`;
-        const res = await fetch(`${API_BASE_URL}/cuentas-por-pagar`, { headers });
-        if (!res.ok) throw new Error("Error al cargar cuentas por pagar");
-        const data = await res.json();
-        // Filtrar por farmaciaId si se provee
-        let cuentasFiltradas = farmaciaId ? data.filter((c: any) => c.farmacia === farmaciaId) : data;
-        setCuentas(cuentasFiltradas);
-      } catch (err: any) {
-        setError(err.message || "Error desconocido");
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (farmaciaId) fetchCuentas();
-  }, [farmaciaId]);
-
-  // Chip visual para el estado
+  // Chip visual para el estado con mejores colores
   const EstadoChip: React.FC<{ estatus: string }> = ({ estatus }) => {
-    let color = "bg-gray-200 text-gray-700";
-    if (estatus === "wait") color = "bg-yellow-100 text-yellow-700 border border-yellow-400";
-    else if (estatus === "activa") color = "bg-blue-100 text-blue-700 border border-blue-400";
-    else if (estatus === "pagada") color = "bg-green-100 text-green-700 border border-green-400";
-    else if (estatus === "anulada" || estatus === "inactiva") color = "bg-red-100 text-red-700 border border-red-400";
+    const config: Record<string, string> = {
+      wait: "bg-yellow-100 text-yellow-700 border-yellow-300",
+      activa: "bg-blue-100 text-blue-700 border-blue-300",
+      pagada: "bg-green-100 text-green-700 border-green-300",
+      anulada: "bg-red-100 text-red-700 border-red-300",
+      inactiva: "bg-red-100 text-red-700 border-red-300",
+    };
+    const style = config[estatus] || "bg-gray-100 text-gray-700 border-gray-300";
+    
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-bold shadow-sm ${color}`}>{estatus.charAt(0).toUpperCase() + estatus.slice(1)}</span>
+      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border shadow-sm ${style}`}>
+        {estatus.toUpperCase()}
+      </span>
     );
   };
 
-  if (loading) return <div>Cargando cuentas por pagar...</div>;
-  if (error) return <div className="text-red-600">{error}</div>;
+  // Filtrado local por nombre de proveedor
+  const cuentasFiltradas = data.filter((cuenta) =>
+    cuenta.proveedor.toLowerCase().includes(proveedorFiltro.toLowerCase())
+  );
 
   return (
-    <div>
-      <div className="mb-4">
+    <div className="space-y-4">
+      {/* Buscador interno por proveedor */}
+      <div className="flex items-center gap-2">
         <input
           type="text"
-          placeholder="Buscar proveedor..."
+          placeholder="Filtrar por proveedor en estos resultados..."
           value={proveedorFiltro}
-          onChange={e => setProveedorFiltro(e.target.value)}
-          className="border border-blue-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400"
+          onChange={(e) => setProveedorFiltro(e.target.value)}
+          className="w-full max-w-sm border border-slate-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white/50"
         />
+        <span className="text-xs text-slate-500 font-medium">
+          Mostrando {cuentasFiltradas.length} de {data.length}
+        </span>
       </div>
-      {cuentas && cuentas.length > 0 ? (
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white border border-slate-200 rounded-lg shadow">
-            <thead>
-              <tr className="bg-blue-50 text-blue-900 text-xs uppercase">
-                <th className="px-2 py-2">Factura</th>
-                <th className="px-2 py-2">Proveedor</th>
-                <th className="px-2 py-2">Monto</th>
-                <th className="px-2 py-2">Retención</th>
-                <th className="px-2 py-2">Tasa</th>
-                <th className="px-2 py-2">Moneda</th>
-                <th className="px-2 py-2">F. Emisión</th>
-                <th className="px-2 py-2">F. Recepción</th>
-                <th className="px-2 py-2">F. Vencimiento</th>
-                <th className="px-2 py-2">F. Registro</th>
-                <th className="px-2 py-2">Estado</th>
+
+      {cuentasFiltradas.length > 0 ? (
+        <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
+          <table className="min-w-full bg-white/70 backdrop-blur-sm divide-y divide-slate-200">
+            <thead className="bg-slate-50">
+              <tr className="text-[10px] text-slate-500 uppercase tracking-wider text-left">
+                <th className="px-3 py-3 font-bold">Factura</th>
+                <th className="px-3 py-3 font-bold">Proveedor</th>
+                <th className="px-3 py-3 font-bold text-right">Monto</th>
+                <th className="px-3 py-3 font-bold text-center">Divisa</th>
+                <th className="px-3 py-3 font-bold">F. Emisión</th>
+                <th className="px-3 py-3 font-bold">F. Vencimiento</th>
+                <th className="px-3 py-3 font-bold text-center">Estado</th>
               </tr>
             </thead>
-            <tbody>
-              {cuentas
-                .filter((cuenta) => {
-                  if (fechaInicio && cuenta.fechaRecepcion < fechaInicio) return false;
-                  if (fechaFin && cuenta.fechaRecepcion > fechaFin) return false;
-                  if (proveedorFiltro && !cuenta.proveedor.toLowerCase().includes(proveedorFiltro.toLowerCase())) return false;
-                  return true;
-                })
-                .map((cuenta) => (
-                  <tr key={cuenta._id} className="border-b hover:bg-blue-50 transition">
-                    <td className="px-2 py-2 font-mono text-xs">{cuenta.numeroFactura}</td>
-                    <td className="px-2 py-2 text-xs">{cuenta.proveedor}</td>
-                    <td className="px-2 py-2 font-semibold text-xs">{cuenta.monto.toLocaleString('es-VE', { minimumFractionDigits: 2 })} {cuenta.divisa}</td>
-                    <td className="px-2 py-2 font-semibold text-xs">{cuenta.retencion != null ? cuenta.retencion.toLocaleString('es-VE', { minimumFractionDigits: 2 }) : 'N/D'}</td>
-                    <td className="px-2 py-2 font-semibold text-xs">{cuenta.tasa != null ? cuenta.tasa.toLocaleString('es-VE', { minimumFractionDigits: 2 }) : 'N/D'}</td>
-                    <td className="px-2 py-2 font-semibold text-xs">{cuenta.divisa || 'N/D'}</td>
-                    <td className="px-2 py-2 font-mono text-xs">{cuenta.fechaEmision ? new Date(cuenta.fechaEmision).toLocaleDateString('es-VE') : 'N/D'}</td>
-                    <td className="px-2 py-2 font-mono text-xs">{cuenta.fechaRecepcion ? new Date(cuenta.fechaRecepcion).toLocaleDateString('es-VE') : 'N/D'}</td>
-                    <td className="px-2 py-2 font-mono text-xs">{cuenta.fechaVencimiento ? new Date(cuenta.fechaVencimiento).toLocaleDateString('es-VE') : 'N/D'}</td>
-                    <td className="px-2 py-2 font-mono text-xs">{cuenta.fechaRegistro ? new Date(cuenta.fechaRegistro).toLocaleDateString('es-VE') : 'N/D'}</td>
-                    <td className="px-2 py-2 text-xs"><EstadoChip estatus={cuenta.estatus} /></td>
-                  </tr>
-                ))}
+            <tbody className="divide-y divide-slate-100">
+              {cuentasFiltradas.map((cuenta) => (
+                <tr key={cuenta._id} className="hover:bg-emerald-50/50 transition-colors">
+                  <td className="px-3 py-3 font-mono text-xs text-slate-600">{cuenta.numeroFactura}</td>
+                  <td className="px-3 py-3 text-xs font-medium text-slate-800">{cuenta.proveedor}</td>
+                  <td className="px-3 py-3 text-xs font-bold text-right text-slate-900">
+                    {Number(cuenta.monto).toLocaleString("es-VE", { minimumFractionDigits: 2 })}
+                  </td>
+                  <td className="px-3 py-3 text-[10px] font-bold text-center text-slate-500">
+                    {cuenta.divisa}
+                  </td>
+                  <td className="px-3 py-3 font-mono text-[11px] text-slate-600">
+                    {cuenta.fechaEmision}
+                  </td>
+                  <td className="px-3 py-3 font-mono text-[11px] text-slate-600">
+                    {cuenta.fechaVencimiento}
+                  </td>
+                  <td className="px-3 py-3 text-center">
+                    <EstadoChip estatus={cuenta.estatus} />
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
       ) : (
-        <div>No hay cuentas por pagar registradas.</div>
+        <div className="text-center py-12 bg-slate-50 border-2 border-dashed rounded-2xl">
+          <p className="text-slate-400 text-sm">No se encontraron facturas con los filtros aplicados.</p>
+        </div>
       )}
     </div>
   );

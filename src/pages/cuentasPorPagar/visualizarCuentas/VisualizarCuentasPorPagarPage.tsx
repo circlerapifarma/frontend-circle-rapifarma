@@ -93,7 +93,7 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
   useEffect(() => {
     try {
       localStorage.setItem('cuentasParaPagar', JSON.stringify(cuentasParaPagar));
-    } catch {}
+    } catch { }
   }, [cuentasParaPagar]);
 
   // 2. Función para abrir el modal de edición individual
@@ -102,28 +102,28 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
     if (cuentasParaPagar.find(c => c.cuentaPorPagarId === cuentaId)) setCuentaEditando(cuentaId);
   };
 
-  const fetchCuentas = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("No se encontró el token de autenticación");
-      const res = await fetch(`${API_BASE_URL}/cuentas-por-pagar`, {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error("Error al obtener cuentas por pagar");
-      const data = await res.json();
-      setCuentas(data);
-    } catch (err: any) {
-      setError(err.message || "Error al obtener cuentas por pagar");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // const fetchCuentas = async () => {
+  //   setLoading(true);
+  //   setError(null);
+  //   try {
+  //     const token = localStorage.getItem("token");
+  //     if (!token) throw new Error("No se encontró el token de autenticación");
+  //     const res = await fetch(`${API_BASE_URL}/cuentas-por-pagar`, {
+  //       headers: { "Authorization": `Bearer ${token}` }
+  //     });
+  //     if (!res.ok) throw new Error("Error al obtener cuentas por pagar");
+  //     const data = await res.json();
+  //     setCuentas(data);
+  //   } catch (err: any) {
+  //     setError(err.message || "Error al obtener cuentas por pagar");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
-  useEffect(() => {
-    fetchCuentas();
-  }, []);
+  // useEffect(() => {
+  //   fetchCuentas();
+  // }, []);
 
   useEffect(() => {
     const usuarioRaw = localStorage.getItem("usuario");
@@ -242,6 +242,50 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
     cuentasFiltradas,
   } = useCuentasPorPagar({ cuentas, pagosAprobadosPorCuenta, estatusInicial: 'wait' });
 
+  const handleBuscarCuentas = async () => {
+    // Validación: Obligar a seleccionar fechas
+    if (!fechaInicio || !fechaFin) {
+      setError("Por favor seleccione una fecha de inicio y una fecha de fin para buscar.");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    // Limpiamos las cuentas anteriores mientras buscamos
+    setCuentas([]);
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("No se encontró el token de autenticación");
+
+      // Construimos la URL con parámetros query
+      console.log('Fechas seleccionadas:', fechaInicio, fechaFin);
+      const params = new URLSearchParams({
+        startDate: fechaInicio, // Asegúrate que el formato sea YYYY-MM-DD
+        endDate: fechaFin
+      });
+
+      // Llamamos al NUEVO endpoint /rango
+      const res = await fetch(`${API_BASE_URL}/cuentas-por-pagar/rango?${params.toString()}`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+
+      if (!res.ok) throw new Error("Error al obtener cuentas por pagar");
+      const data = await res.json();
+
+      if (data.length === 0) {
+        setSuccess("No se encontraron cuentas en el rango seleccionado.");
+        // Limpiar el mensaje de éxito después de unos segundos
+        setTimeout(() => setSuccess(null), 3000);
+      }
+
+      setCuentas(data);
+    } catch (err: any) {
+      setError(err.message || "Error al obtener cuentas por pagar");
+    } finally {
+      setLoading(false);
+    }
+  };
   const handleEstadoChange = (id: string, nuevoEstatus: string) => {
     setConfirmDialog({ open: true, id, nuevoEstatus });
   };
@@ -361,7 +405,24 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
     <div className="min-h-screen bg-slate-50 py-8">
       <div className="w-full max-w-screen-full mx-auto px-4 sm:px-6 lg:px-8">
         <h1 className="text-3xl font-bold text-slate-800 mb-8 text-center">Cuentas por Pagar</h1>
-
+        <div className="flex justify-center">
+          <button
+            onClick={handleBuscarCuentas}
+            disabled={loading}
+            className="flex items-center gap-2 px-8 py-2 bg-indigo-600 text-white font-bold rounded-lg shadow hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? (
+              <>Buscando...</>
+            ) : (
+              <>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                Buscar Cuentas
+              </>
+            )}
+          </button>
+        </div>
 
         {/* Mensajes de error/éxito con mejor estilo */}
         {error && (
@@ -392,7 +453,6 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
           setFechaFin={setFechaFin}
           ESTATUS_OPCIONES={ESTATUS_OPCIONES}
         />
-
         {loading ? (
           <div className="text-center py-10 text-slate-500 text-lg">
             <svg className="animate-spin h-8 w-8 text-indigo-600 mx-auto mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -411,41 +471,41 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow-xl overflow-hidden">
-                {/* Cuadro para deseleccionar cuentas seleccionadas */}
-                {selectedCuentas.length > 0 && (
-                  <div className="bg-blue-100 border border-blue-300 rounded-lg p-4 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 shadow">
-                    <div className="flex flex-wrap gap-2 items-center">
-                      <span className="font-semibold text-blue-700">Cuentas seleccionadas:</span>
-                      {selectedCuentas.map(id => {
-                        const cuenta = cuentasParaPagar.find(c => c.cuentaPorPagarId === id || c._id === id);
-                        return (
-                          <span key={id} className="bg-blue-200 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                            {cuenta?.numeroFactura || id}
-                          </span>
-                        );
-                      })}
-                    </div>
-                    <button
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg font-semibold shadow hover:bg-red-700 transition"
-                      onClick={() => {
-                        setCuentasParaPagar([]);
-                        setSelectedCuentas([]);
-                        localStorage.setItem('cuentasParaPagar', JSON.stringify([]));
-                      }}
-                    >
-                      Deseleccionar todas
-                    </button>
-                  </div>
-                )}
+            {/* Cuadro para deseleccionar cuentas seleccionadas */}
+            {selectedCuentas.length > 0 && (
+              <div className="bg-blue-100 border border-blue-300 rounded-lg p-4 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 shadow">
+                <div className="flex flex-wrap gap-2 items-center">
+                  <span className="font-semibold text-blue-700">Cuentas seleccionadas:</span>
+                  {selectedCuentas.map(id => {
+                    const cuenta = cuentasParaPagar.find(c => c.cuentaPorPagarId === id || c._id === id);
+                    return (
+                      <span key={id} className="bg-blue-200 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                        {cuenta?.numeroFactura || id}
+                      </span>
+                    );
+                  })}
+                </div>
+                <button
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg font-semibold shadow hover:bg-red-700 transition"
+                  onClick={() => {
+                    setCuentasParaPagar([]);
+                    setSelectedCuentas([]);
+                    localStorage.setItem('cuentasParaPagar', JSON.stringify([]));
+                  }}
+                >
+                  Deseleccionar todas
+                </button>
+              </div>
+            )}
             <div className="overflow-x-auto w-full">
               {/* Botón para pago masivo */}
               <div className="flex items-center gap-4 p-4">
                 <button
                   className={`px-5 py-2 rounded-lg font-semibold shadow transition-all duration-200
                     ${selectedCuentas.length === 0 ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700'}`}
-                    disabled={selectedCuentas.length === 0}
-                    onClick={() => setPagoMasivoModalOpen(true)}
-                    >
+                  disabled={selectedCuentas.length === 0}
+                  onClick={() => setPagoMasivoModalOpen(true)}
+                >
                   Registrar Pago para Seleccionadas
                 </button>
               </div>
