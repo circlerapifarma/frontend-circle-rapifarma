@@ -18,7 +18,7 @@ interface DateRange {
   fin: string;
 }
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 // Custom hooks para cada endpoint
 const useCuadresFarmacia = (farmaciaId: string | null, fechaInicio: string, fechaFin: string) => {
