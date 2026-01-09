@@ -31,7 +31,7 @@ const useCuadresFarmacia = (farmaciaId: string | null, fechaInicio: string, fech
     setLoading(true);
     setError(null);
     try {
-      const params = new URLSearchParams({ fechaInicio: fechaInicio, fechaFin: fechaFin, farmacia: farmaciaId });
+      const params = new URLSearchParams({ fechaInicio: fechaInicio, fechaFin: fechaFin, farmacia: farmaciaId.toString() });
       const response = await fetch(`${API_BASE}/cuadres?${params}`);
       if (!response.ok) throw new Error("Error cargando cuadres");
       const result = await response.json();
@@ -54,7 +54,7 @@ const useGastosFarmacia = (farmaciaId: string | null, fechaInicio: string, fecha
     setLoading(true);
     setError(null);
     try {
-      const params = new URLSearchParams({ fecha_inicio: fechaInicio, fecha_fin: fechaFin, farmacia_id: farmaciaId });
+      const params = new URLSearchParams({ fecha_inicio: fechaInicio, fecha_fin: fechaFin, localidad: farmaciaId });
       const response = await fetch(`${API_BASE}/gastos?${params}`);
       if (!response.ok) throw new Error("Error cargando gastos");
       const result = await response.json();
