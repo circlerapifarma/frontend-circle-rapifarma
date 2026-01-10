@@ -112,9 +112,9 @@ const ComisionesEspecialesPage: React.FC = () => {
           "Farmacia(s)": Array.isArray(item.farmacias)
             ? item.farmacias.join(", ")
             : Object.values(item.farmacias || {}).join(", "),
-          "Total Vendido": venta.toLocaleString("es-VE", { minimumFractionDigits: 2 }),
+          "Total Vendido": venta.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
           "% Comisión": `${porcentaje}%`,
-          "Total Comisión": comision.toLocaleString("es-VE", { minimumFractionDigits: 2 })
+          "Total Comisión": comision.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
         };
       });
 
@@ -128,7 +128,7 @@ const ComisionesEspecialesPage: React.FC = () => {
       XLSX.utils.sheet_add_aoa(ws, [[
         `Reporte Comisiones Especiales (${startDate} al ${endDate})`,
         "", "", "", "",
-        `Total Pago: $${resumenFinanciero.comisiones.toLocaleString("es-VE", { minimumFractionDigits: 2 })}`
+        `Total Pago: $${resumenFinanciero.comisiones.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
       ]], { origin: -1 });
 
       XLSX.utils.book_append_sheet(wb, ws, "Comisiones Especiales");
@@ -352,29 +352,29 @@ const ComisionesEspecialesPage: React.FC = () => {
                         </div>
                       </div>
                       <div className="space-y-2">
-      {c.desglose?.map((d, idx) => (
-        <div key={idx} className="bg-slate-50/50 p-3 rounded-lg border border-slate-100 hover:bg-white transition-colors">
-          <div className="flex justify-between items-center mb-1">
-            <span className="text-xs font-bold text-slate-700">🏥 {d.farmacia}</span>
-            <span className="text-[10px] text-slate-400">#{d.codigo}</span>
-          </div>
-          <div className="flex justify-between items-end">
-            <div>
-              <p className="text-[9px] text-slate-500 uppercase">Venta</p>
-              <p className="text-xs font-medium text-slate-600">
-                ${d.venta.toLocaleString("es-VE", { minimumFractionDigits: 2 })}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-[9px] text-emerald-600 font-bold uppercase">Comisión sucursal</p>
-              <p className="text-sm font-black text-emerald-700">
-                ${d.comision.toLocaleString("es-VE", { minimumFractionDigits: 2 })}
-              </p>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
+                        {c.desglose?.map((d, idx) => (
+                          <div key={idx} className="bg-slate-50/50 p-3 rounded-lg border border-slate-100 hover:bg-white transition-colors">
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-xs font-bold text-slate-700">🏥 {d.farmacia}</span>
+                              <span className="text-[10px] text-slate-400">#{d.codigo}</span>
+                            </div>
+                            <div className="flex justify-between items-end">
+                              <div>
+                                <p className="text-[9px] text-slate-500 uppercase">Venta</p>
+                                <p className="text-xs font-medium text-slate-600">
+                                  ${d.venta.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-[9px] text-emerald-600 font-bold uppercase">Comisión sucursal</p>
+                                <p className="text-sm font-black text-emerald-700">
+                                  ${d.comision.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </Card>
                 );
