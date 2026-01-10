@@ -376,19 +376,19 @@ const ComisionesPorTurnoPage: React.FC = () => {
                     {/* Resumen General del Cajero */}
                     <div className="bg-slate-100 px-6 py-4 border-t border-slate-200 grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm font-bold text-slate-800">
                       <div className="flex flex-col">
-                        <span className="text-xs text-slate-500 uppercase tracking-wide">Total Ventas</span>
+                        <span className="text-xs text-black uppercase tracking-wide">Total Ventas</span>
                         <span className="text-lg text-slate-800">${totalVentas.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-xs text-slate-500 uppercase tracking-wide">Total Sobrante</span>
+                        <span className="text-xs text-black uppercase tracking-wide">Total Sobrante</span>
                         <span className="text-lg text-emerald-600">+${totalSobrante.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-xs text-slate-500 uppercase tracking-wide">Total Faltante</span>
+                        <span className="text-xs text-black uppercase tracking-wide">Total Faltante</span>
                         <span className="text-lg text-red-600">-${totalFaltante.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       </div>
                       <div className="flex flex-col bg-white p-2 rounded-lg border border-slate-200 shadow-sm">
-                        <span className="text-xs text-slate-500 uppercase tracking-wide">Total Comisión</span>
+                        <span className="text-xs text-black uppercase tracking-wide">Total Comisión</span>
                         <span className="text-lg text-blue-700 font-black">${totalComision.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       </div>
                     </div>
@@ -403,7 +403,7 @@ const ComisionesPorTurnoPage: React.FC = () => {
                           >
                             {/* Cabecera del Item: Info Contextual */}
                             <div className="flex flex-wrap justify-between items-center mb-3 pb-2 border-b border-slate-100">
-                              <div className="flex gap-4 text-xs text-slate-500 font-medium">
+                              <div className="flex gap-4 text-md text-black font-medium">
                                 <span className="flex items-center gap-1">📅 {item.dia?.slice(0, 10)}</span>
                                 <span className="flex items-center gap-1">🕒 {item.turno}</span>
                                 <span className="flex items-center gap-1">🏥 {Array.isArray(item.farmacias) ? item.farmacias.join(", ") : Object.values(item.farmacias || {}).join(", ")}</span>
@@ -417,33 +417,33 @@ const ComisionesPorTurnoPage: React.FC = () => {
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 items-center">
                               {/* 1. Ventas */}
                               <div>
-                                <div className="text-xs text-slate-500 mb-1">Total Vendido</div>
+                                <p className="text-md text-black mb-1">Total Vendido</p>
                                 <div className="font-bold text-slate-700 text-lg">
-                                  ${Number(item.totalVentas || 0).toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                                  ${Number(item.totalVentas || 0).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </div>
                               </div>
 
                               {/* 2. Sobrante */}
                               <div>
-                                <div className="text-xs text-slate-500 mb-1">Sobrante</div>
+                                <p className="text-md text-black mb-1">Sobrante</p>
                                 <div className={`font-bold text-lg ${Number(item.sobrante) > 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
-                                  {Number(item.sobrante) > 0 ? '+' : ''}${Number(item.sobrante || 0).toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                                  {Number(item.sobrante) > 0 ? '+' : ''}${Number(item.sobrante || 0).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </div>
                               </div>
 
                               {/* 3. Faltante */}
                               <div>
-                                <div className="text-xs text-slate-500 mb-1">Faltante</div>
+                                <p className="text-md text-black mb-1">Faltante</p>
                                 <div className={`font-bold text-lg ${Number(item.faltante) > 0 ? 'text-red-600' : 'text-slate-400'}`}>
-                                  {Number(item.faltante) > 0 ? '-' : ''}${Number(item.faltante || 0).toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                                  {Number(item.faltante) > 0 ? '-' : ''}${Number(item.faltante || 0).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </div>
                               </div>
 
                               {/* 4. Comisión Final */}
                               <div className="bg-gradient-to-r from-emerald-50 to-green-50 p-3 rounded-lg border border-emerald-100 text-right">
-                                <div className="text-xs text-emerald-800 font-semibold mb-1">COMISIÓN</div>
+                                <p className="text-md text-emerald-800 font-semibold mb-1">COMISIÓN</p>
                                 <div className="font-black text-emerald-700 text-xl">
-                                  ${Number(item.comision || 0).toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                                  ${Number(item.comision || 0).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </div>
                               </div>
                             </div>
@@ -457,7 +457,7 @@ const ComisionesPorTurnoPage: React.FC = () => {
             </div>
           ) : (
             !loading && (
-              <div className="text-center py-12 text-slate-500 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-300">
+              <div className="text-center py-12 text-black bg-slate-50 rounded-2xl border-2 border-dashed border-slate-300">
                 <div className="text-4xl mb-4">📊</div>
                 Selecciona un rango de fechas y haz clic en "Obtener" para ver las comisiones
               </div>
