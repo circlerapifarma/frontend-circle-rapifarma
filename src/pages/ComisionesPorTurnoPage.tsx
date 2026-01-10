@@ -75,7 +75,6 @@ const ComisionesPorTurnoPage: React.FC = () => {
     }
 
     try {
-      // Preparar datos para Excel (comisiones filtradas)
       const excelData = comisionesFiltradas.map((item) => ({
         "Cajero": item.cajero,
         "Turno": item.turno,
@@ -103,26 +102,38 @@ const ComisionesPorTurnoPage: React.FC = () => {
         }),
       }));
 
-      // Crear workbook y worksheet
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(excelData);
 
-      // Auto-ajustar columnas
-      const colWidths = excelData[0] ? Object.keys(excelData[0]).map((key) => ({
-        wch: Math.max(key.length, 12)
-      })) : [];
-      ws['!cols'] = colWidths;
+      const colWidths = excelData[0]
+        ? Object.keys(excelData[0]).map((key) => ({
+          wch: Math.max(key.length, 12),
+        }))
+        : [];
+      ws["!cols"] = colWidths;
 
-      // Estilos header
-      XLSX.utils.sheet_add_aoa(ws, [["COMISIONES POR TURNO", "", "", `Rango: ${startDate} al ${endDate}`, "", `Total: $${totalComisionesFiltradas.toLocaleString("es-VE", { minimumFractionDigits: 2 })}`]], {
-        origin: -1,
-      });
+      XLSX.utils.sheet_add_aoa(
+        ws,
+        [
+          [
+            "COMISIONES POR TURNO",
+            "",
+            "",
+            `Rango: ${startDate} al ${endDate}`,
+            "",
+            `Total: $${totalComisionesFiltradas.toLocaleString("es-VE", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2
+            })}`,
+          ],
+        ],
+        { origin: -1 }
+      );
 
       XLSX.utils.book_append_sheet(wb, ws, "Comisiones");
       XLSX.writeFile(wb, `Comisiones_${startDate}_al_${endDate}.xlsx`);
 
-      // Feedback visual
-      const btn = document.getElementById('export-btn') as HTMLButtonElement;
+      const btn = document.getElementById("export-btn") as HTMLButtonElement;
       if (btn) {
         const originalText = btn.innerHTML;
         btn.innerHTML = "✅ Exportado!";
@@ -138,7 +149,6 @@ const ComisionesPorTurnoPage: React.FC = () => {
     }
   };
 
-  // Chips de farmacias únicas para filtrar
   const farmaciasUnicas = Array.from(
     new Set(
       comisiones
@@ -153,11 +163,10 @@ const ComisionesPorTurnoPage: React.FC = () => {
     )
   );
 
-  const estadosUnicos = ['activo', 'inactivo'].filter(e =>
-    comisiones.some(c => c.estado === e)
+  const estadosUnicos = ["activo", "inactivo"].filter((e) =>
+    comisiones.some((c) => c.estado === e)
   );
 
-  // ✅ Memo para filtros (performance)
   const comisionesFiltradas = React.useMemo(() => {
     return comisiones.filter((comision) => {
       const coincideBusqueda =
@@ -186,7 +195,6 @@ const ComisionesPorTurnoPage: React.FC = () => {
     return comisionesFiltradas.reduce((acc, c) => acc + (Number(c.comision) || 0), 0);
   }, [comisionesFiltradas]);
 
-  // Obtener farmacias del usuario
   const farmaciasUsuario = React.useMemo(() => {
     try {
       const usuarioRaw = localStorage.getItem("usuario");
@@ -208,7 +216,10 @@ const ComisionesPorTurnoPage: React.FC = () => {
             </h1>
             {Object.keys(farmaciasUsuario).length > 0 && (
               <div className="text-sm text-slate-600 bg-slate-100 px-4 py-2 rounded-xl inline-block">
-                🏥 Farmacia(s): <span className="font-bold text-blue-700">{Object.values(farmaciasUsuario).join(", ")}</span>
+                🏥 Farmacia(s):{" "}
+                <span className="font-bold text-blue-700">
+                  {Object.values(farmaciasUsuario).join(", ")}
+                </span>
               </div>
             )}
           </div>
@@ -262,14 +273,14 @@ const ComisionesPorTurnoPage: React.FC = () => {
               type="text"
               placeholder="🔍 Buscar por cajero o turno..."
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={(e) => setSearch(e.target.value)}
               className="h-14 text-lg shadow-lg"
             />
           </div>
 
           {/* Chips Filtros */}
           <div className="flex flex-wrap gap-2 mb-6 p-4 bg-white/50 rounded-xl border">
-            {farmaciasUnicas.slice(0, 6).map((f) => (
+            {farmaciasUnicas.map((f) => (
               <Badge
                 key={f}
                 variant={farmaciaFiltro === f ? "default" : "secondary"}
@@ -286,7 +297,7 @@ const ComisionesPorTurnoPage: React.FC = () => {
                 className="cursor-pointer px-3 py-2 text-sm font-bold hover:scale-105 transition-all"
                 onClick={() => setEstadoFiltro(estadoFiltro === estado ? "" : estado)}
               >
-                {estado === 'activo' ? '✅ Activo' : '⏸️ Inactivo'}
+                {estado === "activo" ? "✅ Activo" : "⏸️ Inactivo"}
               </Badge>
             ))}
             {(farmaciaFiltro || estadoFiltro) && (
@@ -310,7 +321,7 @@ const ComisionesPorTurnoPage: React.FC = () => {
               <div className="text-2xl font-black text-emerald-900">
                 💵 Total Filtrado: ${totalComisionesFiltradas.toLocaleString("es-VE", {
                   minimumFractionDigits: 2,
-                  maximumFractionDigits: 2
+                  maximumFractionDigits: 2,
                 })}
               </div>
               <div className="text-sm text-emerald-800">
@@ -344,7 +355,7 @@ const ComisionesPorTurnoPage: React.FC = () => {
                           <h3 className="text-xl font-black text-slate-900">{cajero}</h3>
                           <div className="flex flex-wrap gap-2 text-sm text-slate-600 mt-1">
                             {lista[0].estado && (
-                              <Badge variant={lista[0].estado === 'activo' ? "default" : "secondary"}>
+                              <Badge variant={lista[0].estado === "activo" ? "default" : "secondary"}>
                                 {lista[0].estado}
                               </Badge>
                             )}
@@ -354,38 +365,86 @@ const ComisionesPorTurnoPage: React.FC = () => {
                       </div>
                       <div className="text-right">
                         <div className="text-2xl font-black text-emerald-700 mb-1">
-                          ${totalComision.toLocaleString("es-VE", { minimumFractionDigits: 2 })}
+                          ${totalComision.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
-                        <div className="text-sm text-slate-600">${totalVentas.toLocaleString("es-VE")} vendido</div>
+                        <div className="text-sm text-slate-600 font-medium">
+                          Total Ventas: <span className="text-slate-900">${totalVentas.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        </div>
                       </div>
                     </Button>
 
-                    {/* Totales Cajero */}
-                    <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 px-6 py-3 border-t border-emerald-200 grid grid-cols-2 md:grid-cols-5 gap-4 text-sm font-bold text-slate-800">
-                      <span>Ventas</span>
-                      <span className="text-emerald-700">${totalVentas.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
-                      <span className="text-green-700">Sobrante</span>
-                      <span className="text-green-700">${totalSobrante.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
-                      <span className="text-red-700">Faltante</span>
-                      <span className="text-red-700">${totalFaltante.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
+                    {/* Resumen General del Cajero */}
+                    <div className="bg-slate-100 px-6 py-4 border-t border-slate-200 grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm font-bold text-slate-800">
+                      <div className="flex flex-col">
+                        <span className="text-xs text-slate-500 uppercase tracking-wide">Total Ventas</span>
+                        <span className="text-lg text-slate-800">${totalVentas.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-xs text-slate-500 uppercase tracking-wide">Total Sobrante</span>
+                        <span className="text-lg text-emerald-600">+${totalSobrante.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-xs text-slate-500 uppercase tracking-wide">Total Faltante</span>
+                        <span className="text-lg text-red-600">-${totalFaltante.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                      <div className="flex flex-col bg-white p-2 rounded-lg border border-slate-200 shadow-sm">
+                        <span className="text-xs text-slate-500 uppercase tracking-wide">Total Comisión</span>
+                        <span className="text-lg text-blue-700 font-black">${totalComision.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
                     </div>
 
-                    {/* Detalle Turnos */}
-                    <div className={`overflow-hidden transition-all duration-500 ${isOpen ? 'max-h-96 p-6' : 'max-h-0 p-0'}`}>
-                      <div className="space-y-3">
+                    {/* Detalle Turnos Expandible */}
+                    <div className={`overflow-hidden transition-all duration-500 ${isOpen ? "max-h-[800px] overflow-y-auto" : "max-h-0"}`}>
+                      <div className="p-4 space-y-3 bg-slate-50/50">
                         {lista.map((item, index) => (
-                          <div key={index} className="p-4 bg-white/50 rounded-xl border border-slate-200 hover:bg-white hover:shadow-md transition-all">
-                            <div className="grid grid-cols-1 md:grid-cols-6 gap-4 text-sm">
-                              <div><strong>Turno:</strong> {item.turno}</div>
-                              <div><strong>Fecha:</strong> {item.dia?.slice(0, 10) || '-'}</div>
-                              <div className="md:col-span-2">
-                                <strong>Farmacia(s):</strong> {Array.isArray(item.farmacias)
-                                  ? item.farmacias.join(", ")
-                                  : Object.values(item.farmacias || {}).join(", ")}
+                          <div
+                            key={index}
+                            className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all"
+                          >
+                            {/* Cabecera del Item: Info Contextual */}
+                            <div className="flex flex-wrap justify-between items-center mb-3 pb-2 border-b border-slate-100">
+                              <div className="flex gap-4 text-xs text-slate-500 font-medium">
+                                <span className="flex items-center gap-1">📅 {item.dia?.slice(0, 10)}</span>
+                                <span className="flex items-center gap-1">🕒 {item.turno}</span>
+                                <span className="flex items-center gap-1">🏥 {Array.isArray(item.farmacias) ? item.farmacias.join(", ") : Object.values(item.farmacias || {}).join(", ")}</span>
                               </div>
-                              <div><strong>%:</strong> {item.comisionPorcentaje || 0}%</div>
-                              <div className="text-emerald-700 font-bold">
-                                <strong>Comisión:</strong> ${Number(item.comision || 0).toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                              <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50">
+                                Comisión: {item.comisionPorcentaje}%
+                              </Badge>
+                            </div>
+
+                            {/* Cuerpo del Item: Datos Financieros Desglosados */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 items-center">
+                              {/* 1. Ventas */}
+                              <div>
+                                <div className="text-xs text-slate-500 mb-1">Total Vendido</div>
+                                <div className="font-bold text-slate-700 text-lg">
+                                  ${Number(item.totalVentas || 0).toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                                </div>
+                              </div>
+
+                              {/* 2. Sobrante */}
+                              <div>
+                                <div className="text-xs text-slate-500 mb-1">Sobrante</div>
+                                <div className={`font-bold text-lg ${Number(item.sobrante) > 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                                  {Number(item.sobrante) > 0 ? '+' : ''}${Number(item.sobrante || 0).toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                                </div>
+                              </div>
+
+                              {/* 3. Faltante */}
+                              <div>
+                                <div className="text-xs text-slate-500 mb-1">Faltante</div>
+                                <div className={`font-bold text-lg ${Number(item.faltante) > 0 ? 'text-red-600' : 'text-slate-400'}`}>
+                                  {Number(item.faltante) > 0 ? '-' : ''}${Number(item.faltante || 0).toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                                </div>
+                              </div>
+
+                              {/* 4. Comisión Final */}
+                              <div className="bg-gradient-to-r from-emerald-50 to-green-50 p-3 rounded-lg border border-emerald-100 text-right">
+                                <div className="text-xs text-emerald-800 font-semibold mb-1">COMISIÓN</div>
+                                <div className="font-black text-emerald-700 text-xl">
+                                  ${Number(item.comision || 0).toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                                </div>
                               </div>
                             </div>
                           </div>
