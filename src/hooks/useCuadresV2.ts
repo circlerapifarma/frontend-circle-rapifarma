@@ -12,17 +12,17 @@ interface CuadresParams {
 
 export const useCuadresDetallados = (params?: CuadresParams) => {
     const key = params
-        ? ['cuadres-detallados', params]
+        ? `cuadres-${params.farmacia}-${params.fechaInicio}-${params.fechaFin}-${params.estado}`
         : null;
 
     const { data, error, isLoading, mutate: refresh } = useSWR(
         key,
-        ([, params]: [string, CuadresParams]) =>
-            cuadresService.getCuadresDetallados(params),
+        () => cuadresService.getCuadresDetallados(params!),
         {
             revalidateOnFocus: false,
-            revalidateOnReconnect: true,
-            revalidateIfStale: true,
+            revalidateOnReconnect: false,
+            revalidateIfStale: false,
+            dedupingInterval: 60000 // Opcional: evita peticiones repetidas por 1 min
         }
     );
     console.log("useCuadresDetallados - data:", data);

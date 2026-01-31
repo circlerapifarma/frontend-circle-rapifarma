@@ -11,14 +11,21 @@ interface CuentasParams {
 }
 
 export const useCuentasPorPagar = (params: CuentasParams | null) => {
-  const key = params ? ['cuentas-por-pagar', params] : null;
+  const key = params
+    ? `cuentas-pagar-${params.farmacia}-${params.startDate}-${params.endDate}-${params.estatus}`
+    : null;
 
   const { data, error, isLoading, mutate } = useSWR(
     key,
-    ([, params]: [string, CuentasParams]) => 
-      cuentasPorPagarService.getCuentasPorRango(params)
+    // Usamos params directamente del closure para evitar problemas de tipos en el array
+    () => cuentasPorPagarService.getCuentasPorRango(params!),
+    {
+      revalidateOnFocus: false,    // ⚡ No cargar al cambiar de pestaña navegador
+      revalidateIfStale: false,    // ⚡ Usar caché si ya existe sin preguntar de nuevo
+      revalidateOnReconnect: true, // Reintentar solo si se cae el internet
+      dedupingInterval: 60000,     // ⚡ Ignorar peticiones duplicadas por 1 minuto
+    }
   );
-
   // ✅ Total general (activas + pagadas)
   const totalCuentasUsd = data?.data?.reduce((total, cuenta) => {
     if (cuenta.montoUsd) return total + cuenta.montoUsd;

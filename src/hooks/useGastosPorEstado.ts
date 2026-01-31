@@ -11,13 +11,21 @@ interface GastosParams {
 }
 
 export const useGastosPorEstado = (params?: GastosParams) => {
-  const key = params ? ['gastos-estado', params] : null;
+  const key = params
+    ? `gastos-${params.estado}-${params.localidad}-${params.fechaInicio}-${params.fechaFin}`
+    : null;
 
   const { data, error, isLoading, mutate } = useSWR(
     key,
-    ([, params]: [string, GastosParams]) => gastosService.getGastosPorEstado(params)
+    // SWR ahora comparará el string de la 'key'. Si es igual al anterior,
+    // NO ejecutará esta función y sacará los datos del caché instantáneamente.
+    () => gastosService.getGastosPorEstado(params!),
+    {
+      revalidateOnFocus: false,    // No recargar al cambiar de pestaña del navegador
+      revalidateIfStale: false,    // No hacer fetch si ya existen datos en el caché
+      dedupingInterval: 60000,     // Evitar peticiones duplicadas en el mismo minuto
+    }
   );
-
   return {
     gastos: data?.data || [] as Gasto[],
     isLoading,
