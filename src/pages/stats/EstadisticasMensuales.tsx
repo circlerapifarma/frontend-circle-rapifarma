@@ -83,7 +83,7 @@ const StatRow: React.FC<StatRowProps> = ({ title, icon: Icon, valCurrent, valPre
                 </div>
 
                 <div className="text-right pb-1">
-                    <p className="text-sm font-bold text-slate-500 line-through decoration-slate-300 decoration-2">${formatCurrency(valPrevious)}</p>
+                    <p className="text-md font-bold text-slate-500 decoration-slate-300 decoration-2">${formatCurrency(valPrevious)}</p>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Periodo Anterior</p>
                 </div>
             </div>
@@ -288,11 +288,14 @@ const EstadisticasMensuales: React.FC = () => {
                                     </div>
                                     <div className="flex items-baseline gap-4 mb-6">
                                         <span className="text-4xl font-black text-slate-800">${formatCurrency(stats.current.cuentasActivas)}</span>
-                                        <span className="text-sm font-bold text-slate-400 line-through">${formatCurrency(stats.prev.cuentasActivas)}</span>
+                                        <div className="flex flex-col justify-center items-center">
+                                            <span className="text-xl font-bold text-slate-400">${formatCurrency(stats.prev.cuentasActivas)}</span>
+                                            <span className="text-xs font-bold text-slate-400">deuda anterior</span>
+                                        </div>
                                     </div>
 
                                     <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                        <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                                        <p className="text-md text-slate-500 font-medium leading-relaxed">
                                             {stats.current.cuentasActivas > stats.prev.cuentasActivas
                                                 ? "⚠️ La deuda activa ha aumentado respecto al periodo anterior. Se recomienda revisar el flujo de caja."
                                                 : "✅ Buen trabajo. Has reducido los compromisos pendientes de pago comparado con el mes anterior."}
@@ -312,7 +315,7 @@ const EstadisticasMensuales: React.FC = () => {
                                     <div className="p-5 rounded-3xl bg-emerald-50 border border-emerald-100 flex flex-col items-center text-center">
                                         <span className="text-[10px] font-black uppercase text-emerald-400 tracking-widest">Sobrantes</span>
                                         <span className="text-2xl font-black text-emerald-700 mt-1">${formatCurrency(stats.current.sobrantes)}</span>
-                                        <span className="text-[10px] font-bold text-emerald-600/60 mt-1">
+                                        <span className="text-xl font-bold text-emerald-600/60 mt-1">
                                             vs ${formatCurrency(stats.prev.sobrantes)}
                                         </span>
                                     </div>
@@ -320,13 +323,13 @@ const EstadisticasMensuales: React.FC = () => {
                                     <div className="p-5 rounded-3xl bg-red-50 border border-red-100 flex flex-col items-center text-center">
                                         <span className="text-[10px] font-black uppercase text-red-400 tracking-widest">Faltantes</span>
                                         <span className="text-2xl font-black text-red-700 mt-1">${formatCurrency(stats.current.faltantes)}</span>
-                                        <span className="text-[10px] font-bold text-red-600/60 mt-1">
+                                        <span className="text-xl font-bold text-red-600/60 mt-1">
                                             vs ${formatCurrency(stats.prev.faltantes)}
                                         </span>
                                     </div>
                                 </div>
 
-                                <div className="mt-6 flex items-center gap-3 text-xs font-medium text-slate-500">
+                                <div className="mt-6 flex items-center gap-3 text-md font-medium text-slate-500">
                                     <div className={`w-2 h-2 rounded-full ${stats.current.faltantes < stats.prev.faltantes ? 'bg-emerald-500' : 'bg-red-500'}`} />
                                     <span>
                                         {stats.current.faltantes < stats.prev.faltantes
