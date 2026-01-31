@@ -41,6 +41,7 @@ import ListasComparativasPage from "@/pages/ListasComparativasPage";
 import OrdenCompraPage from "@/pages/OrdenCompraPage";
 import BancosPage from "@/pages/BancosPage";
 import MovimientosBancosPage from "@/pages/MovimientosBancosPage";
+import EstadisticasMensuales from "@/pages/stats/EstadisticasMensuales";
 
 const AppRouter = () => (
   <Routes>
@@ -342,6 +343,14 @@ const AppRouter = () => (
       element={
         <PermissionRoute permiso="bancos">
           <MovimientosBancosPage />
+        </PermissionRoute>
+      }
+    />
+    <Route
+      path="/estadisticas/mensuales"
+      element={
+        <PermissionRoute permiso="estadisticas">
+          <EstadisticasMensuales />
         </PermissionRoute>
       }
     />

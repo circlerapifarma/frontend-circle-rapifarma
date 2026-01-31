@@ -47,6 +47,11 @@ const allLinks: LinkCategory[] = [
         label: "Venta Total",
         permiso: "ver_ventas_totales",
       },
+      {
+        to: "/estadisticas/mensuales",
+        label: "Estadisticas Comparativa",
+        permiso: "estadisticas",
+      },
       { to: "/metas", label: "Metas", permiso: "ver_about" },
       { to: "/gestionmetas", label: "Crear Meta", permiso: "metas" },
       { to: "/metasconf", label: "Metas Configuración", permiso: "ver_about" },
@@ -233,13 +238,13 @@ const Navbar = () => {
       const ahora = new Date();
       // Venezuela está en UTC-4 (America/Caracas)
       const horaVenezuela = new Date(ahora.toLocaleString("en-US", { timeZone: "America/Caracas" }));
-      
+
       // Formatear hora: HH:MM:SS
       const horas = horaVenezuela.getHours().toString().padStart(2, "0");
       const minutos = horaVenezuela.getMinutes().toString().padStart(2, "0");
       const segundos = horaVenezuela.getSeconds().toString().padStart(2, "0");
       setHoraVenezuela(`${horas}:${minutos}:${segundos}`);
-      
+
       // Formatear fecha: DD de MMMM de YYYY
       const opcionesFecha: Intl.DateTimeFormatOptions = {
         day: "numeric",
@@ -287,7 +292,7 @@ const Navbar = () => {
 
     window.addEventListener("storage", handleStorageChange);
     window.addEventListener("localStorageChange", handleCustomStorageChange);
-    
+
     return () => {
       window.removeEventListener("storage", handleStorageChange);
       window.removeEventListener("localStorageChange", handleCustomStorageChange);
@@ -393,9 +398,8 @@ const Navbar = () => {
           >
             MODULOS
             <ChevronDown
-              className={`w-5 h-5 transition-transform ${
-                isDropdownOpen ? "rotate-180" : "rotate-0"
-              }`}
+              className={`w-5 h-5 transition-transform ${isDropdownOpen ? "rotate-180" : "rotate-0"
+                }`}
             />
           </button>
 
@@ -424,12 +428,11 @@ const Navbar = () => {
                             to={link.to}
                             onClick={() => setIsDropdownOpen(false)}
                             className={`block px-4 py-2 text-sm whitespace-nowrap transition-all duration-150 rounded mx-2 my-1
-                                                            ${
-                                                              location.pathname ===
-                                                              link.to
-                                                                ? "text-black font-semibold bg-gray-100 hover:bg-gray-200" // Active link black on light gray
-                                                                : "text-gray-800 hover:text-black hover:bg-gray-50" // Hover link black on very light gray
-                                                            }`}
+                                                            ${location.pathname ===
+                                link.to
+                                ? "text-black font-semibold bg-gray-100 hover:bg-gray-200" // Active link black on light gray
+                                : "text-gray-800 hover:text-black hover:bg-gray-50" // Hover link black on very light gray
+                              }`}
                           >
                             <span className="flex items-center justify-between">
                               <span>{link.label}</span>
@@ -457,10 +460,9 @@ const Navbar = () => {
                         to="/adminusuarios"
                         onClick={() => setIsDropdownOpen(false)}
                         className={`block px-4 py-2 text-sm whitespace-nowrap transition-all duration-150 rounded mx-2 my-1
-                          ${
-                            location.pathname === "/adminusuarios"
-                              ? "text-black font-semibold bg-gray-100 hover:bg-gray-200"
-                              : "text-gray-800 hover:text-black hover:bg-gray-50"
+                          ${location.pathname === "/adminusuarios"
+                            ? "text-black font-semibold bg-gray-100 hover:bg-gray-200"
+                            : "text-gray-800 hover:text-black hover:bg-gray-50"
                           }`}
                       >
                         Gestionar Usuarios
@@ -530,11 +532,10 @@ const Navbar = () => {
                       to={link.to}
                       onClick={() => setIsMobileMenuOpen(false)}
                       className={`block px-3 py-2 text-sm transition-all duration-150 rounded
-                                                ${
-                                                  location.pathname === link.to
-                                                    ? "text-black font-semibold bg-gray-200" // Active link black on medium gray
-                                                    : "text-gray-800 hover:text-black hover:bg-gray-50" // Default text gray, hover black on very light gray
-                                                }`}
+                                                ${location.pathname === link.to
+                          ? "text-black font-semibold bg-gray-200" // Active link black on medium gray
+                          : "text-gray-800 hover:text-black hover:bg-gray-50" // Default text gray, hover black on very light gray
+                        }`}
                     >
                       <span className="flex items-center justify-between">
                         <span>{link.label}</span>
@@ -562,10 +563,9 @@ const Navbar = () => {
                   to="/adminusuarios"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`block px-3 py-2 text-sm transition-all duration-150 rounded
-                    ${
-                      location.pathname === "/adminusuarios"
-                        ? "text-black font-semibold bg-gray-200"
-                        : "text-gray-800 hover:text-black hover:bg-gray-50"
+                    ${location.pathname === "/adminusuarios"
+                      ? "text-black font-semibold bg-gray-200"
+                      : "text-gray-800 hover:text-black hover:bg-gray-50"
                     }`}
                 >
                   Gestionar Usuarios

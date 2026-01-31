@@ -1,26 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Loader2, AlertTriangle } from "lucide-react";
-import { motion } from "framer-motion";
-// import DashboardCard from "../components/DashboardCard";
+import { Loader2, RefreshCcw, BarChart3, Calendar, Building2, DollarSign, TrendingDown, Landmark, Wallet, CreditCard, TrendingUp, Receipt, PlusCircle, Banknote, ArrowRightLeft, MinusCircle } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useCuadresDetallados } from "@/hooks/useCuadresV2";
-
-// Reutilizamos las variantes de Framer Motion
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.15 },
-  },
-};
-
-const cardVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.4, type: "spring", stiffness: 80 },
-  },
-};
+import { useGastosPorEstado } from "@/hooks/useGastosPorEstado";
+import { useCuentasPorPagar } from "@/hooks/useCuentasPorPagar"; // ✅ NUEVO
+import { PieChart } from "recharts";
 
 const FARMACIAS_EJEMPLO = [
   { value: "", label: "Todas las farmacias" },
@@ -35,52 +19,63 @@ const FARMACIAS_EJEMPLO = [
   { label: "Milagro Norte", value: "07" },
   { label: "Virginia", value: "08" },
   { label: "Santo Tomas", value: "09" }
-]
+];
 
-// Helper para formatear moneda (considera moverlo a un archivo de utilidades)
 const formatCurrency = (amount: number | null | undefined) => {
   if (amount === null || amount === undefined) return "0.00";
   return amount.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
-// Helper para formatear bolívares (considera moverlo a un archivo de utilidades)
 const formatBs = (amount: number | null | undefined) => {
   if (amount === null || amount === undefined) return "0.00 Bs";
   return `${amount.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs`;
 };
 
 const TotalGeneralFarmaciasPage: React.FC = () => {
-
-  // Filtros de fecha
+  const [mostrarEstadisticas, setMostrarEstadisticas] = useState<boolean>(true);
   const [fechaInicio, setFechaInicio] = useState<string>("");
   const [fechaFin, setFechaFin] = useState<string>("");
   const [farmaciaSeleccionada, setFarmaciaSeleccionada] = useState<string>("");
 
-
+  // 🎯 Hook de CUADRES
   const {
     cuadres,
     isLoading: cuadresLoading,
-    isError: cuadresError,
-    error: cuadresErrorMsg,
-    refresh
+    refresh: refreshCuadres
   } = useCuadresDetallados({
     farmacia: farmaciaSeleccionada || undefined,
     fechaInicio,
     fechaFin,
-    estado: "verified" // Fijo como pediste
+    estado: "verified"
   });
-  console.log("Cuadres obtenidos:", cuadres);
+
+  // 🎯 Hook de GASTOS
+  const {
+    totalGastosUsd,
+    isLoading: gastosLoading,
+    refresh: refreshGastos
+  } = useGastosPorEstado({
+    estado: 'verified',
+    fechaInicio,
+    fechaFin,
+    localidad: farmaciaSeleccionada || undefined
+  });
+
+  // 🎯 Hook de CUENTAS POR PAGAR (requiere fechas obligatorias)
+  const cuentasHook = useCuentasPorPagar(
+    fechaInicio && fechaFin ? {
+      startDate: fechaInicio,
+      endDate: fechaFin,
+      farmacia: farmaciaSeleccionada || undefined,
+    } : null
+  );
+
   const totals = useMemo(() => {
     if (!cuadres.length) return {
-      totalGeneral: 0,
-      totalSobrantes: 0,
-      totalFaltantes: 0,
-      totalEfectivoUsd: 0,
-      totalZelleUsd: 0,
-      totalPuntosVentaDebitoBs: 0,
-      totalPuntosVentaCreditoBs: 0,
-      totalPagomovilBs: 0,
-      totalEfectivoBs: 0,
+      totalGeneral: 0, totalSobrantes: 0, totalFaltantes: 0,
+      totalEfectivoUsd: 0, totalZelleUsd: 0,
+      totalPuntosVentaDebitoBs: 0, totalPuntosVentaCreditoBs: 0,
+      totalPagomovilBs: 0, totalEfectivoBs: 0,
     };
 
     return {
@@ -100,7 +95,6 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
     };
   }, [cuadres]);
 
-
   useEffect(() => {
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -111,208 +105,246 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
 
   const currentMonthName = new Date().toLocaleString('es-VE', { month: 'long', year: 'numeric' });
   const filtrosActivos = farmaciaSeleccionada || fechaInicio !== fechaFin;
+  const loading = cuadresLoading || gastosLoading || cuentasHook.isLoading;
+
+  const handleRefresh = () => {
+    refreshCuadres();
+    refreshGastos();
+    cuentasHook.refresh();
+  };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
-      <div className="max-w-6xl w-full space-y-10">
-        {/* Header Section */}
-        <header className="text-center">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-black leading-tight">
-            📊 Resumen de Ventas de Farmacias
-          </h1>
-          <p className="mt-2 text-xl text-gray-700">
-            Métricas consolidadas para el mes de <span className="font-semibold capitalize">{currentMonthName}</span>
-          </p>
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-start px-4 py-8 sm:px-6 lg:px-8 font-sans">
+      <div className="max-w-7xl w-full space-y-6">
 
-          {/* Filtros mejorados */}
-          <div className="flex flex-col lg:flex-row gap-4 justify-center items-center mt-6 p-4 bg-blue-50 rounded-xl">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Farmacia</label>
-              <select
-                value={farmaciaSeleccionada}
-                onChange={(e) => setFarmaciaSeleccionada(e.target.value)}
-                className="border border-blue-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 w-48"
-              >
-                {FARMACIAS_EJEMPLO.map((farmacia) => (
-                  <option key={farmacia.value} value={farmacia.value}>
-                    {farmacia.label}
-                  </option>
-                ))}
-              </select>
+        {/* Header & Filtros */}
+        <header className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-200">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="bg-blue-600 p-3 rounded-2xl shadow-lg shadow-blue-200">
+                <BarChart3 className="text-white w-7 h-7" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-black text-slate-900 tracking-tight">Detalle de Operaciones</h1>
+                <p className="text-slate-500 text-sm font-medium flex items-center gap-2">
+                  <Calendar className="w-3.5 h-3.5" /> <span className="capitalize text-blue-600 font-bold">{currentMonthName}</span>
+                </p>
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Fecha desde</label>
-              <input
-                type="date"
-                value={fechaInicio}
-                onChange={(e) => setFechaInicio(e.target.value)}
-                className="border border-blue-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                max={fechaFin}
-              />
+
+            <div className="flex flex-wrap items-center gap-3 bg-slate-50 p-2 rounded-2xl border border-slate-100">
+              <div className="relative flex items-center">
+                <Building2 className="absolute left-3 w-4 h-4 text-slate-400 z-10" />
+                <select
+                  value={farmaciaSeleccionada}
+                  onChange={(e) => setFarmaciaSeleccionada(e.target.value)}
+                  className="pl-9 pr-8 py-2.5 bg-white border-none rounded-xl text-sm font-bold text-slate-700 shadow-sm focus:ring-2 focus:ring-blue-500 appearance-none min-w-[180px]"
+                >
+                  {FARMACIAS_EJEMPLO.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <input type="date" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} className="px-3 py-2.5 bg-white border-none rounded-xl text-sm font-semibold shadow-sm focus:ring-2 focus:ring-blue-500" />
+                <span className="text-slate-400 font-bold">/</span>
+                <input type="date" value={fechaFin} onChange={(e) => setFechaFin(e.target.value)} className="px-3 py-2.5 bg-white border-none rounded-xl text-sm font-semibold shadow-sm focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <button onClick={handleRefresh} className="p-2.5 bg-slate-900 text-white rounded-xl hover:bg-blue-600 transition-all shadow-md active:scale-95 disabled:opacity-50">
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <RefreshCcw className="w-5 h-5" />}
+              </button>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Fecha hasta</label>
-              <input
-                type="date"
-                value={fechaFin}
-                onChange={(e) => setFechaFin(e.target.value)}
-                className="border border-blue-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                min={fechaInicio}
-              />
-            </div>
-            <button
-              onClick={() => refresh()}
-              disabled={cuadresLoading}
-              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
-            >
-              {cuadresLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                "🔄"
-              )}
-              Actualizar
-            </button>
           </div>
-
-          {/* Indicador de filtros */}
-          {filtrosActivos && (
-            <div className="mt-2 text-sm text-blue-600 bg-blue-100 px-3 py-1 rounded-full max-w-max mx-auto">
-              {farmaciaSeleccionada ? `Farmacia: ${FARMACIAS_EJEMPLO.find(f => f.value === farmaciaSeleccionada)?.label}` : 'Todas las farmacias'} •
-              {fechaInicio} - {fechaFin} •
-              {cuadres.length} cuadres verificados
-            </div>
-          )}
         </header>
 
-        {cuadresLoading ? (
-          <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl shadow-lg border border-blue-200">
-            <Loader2 className="h-16 w-16 text-blue-500 animate-spin" />
-            <p className="mt-4 text-xl text-gray-700 font-medium">Cargando cuadres verificados...</p>
-          </div>
-        ) : cuadresError ? (
-          <div className="flex flex-col items-center justify-center py-20 bg-red-50 rounded-xl shadow-lg border border-red-200">
-            <AlertTriangle className="h-16 w-16 text-red-500" />
-            <p className="mt-4 text-xl text-red-700 font-medium text-center">¡Error al cargar los cuadres!</p>
-            <p className="mt-2 text-red-600 text-base text-center">{cuadresErrorMsg?.message || 'Error desconocido'}</p>
-            <button
-              onClick={() => refresh()}
-              className="mt-6 px-6 py-3 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-red-500"
-            >
-              Reintentar
-            </button>
-          </div>
-        ) : (
-          <motion.div
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
+        {/* Botón Estadísticas y Badge de Estado */}
+        <div className="flex justify-between items-center px-2">
+          <button
+            onClick={() => setMostrarEstadisticas(!mostrarEstadisticas)}
+            className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-700 font-bold hover:shadow-md transition-all group"
           >
-            {/* Categoría: Ventas - USANDO DATOS DEL HOOK */}
-            <div className="col-span-1 md:col-span-2 lg:col-span-3">
-              <h3 className="text-lg font-semibold text-gray-800 mb-2 border-b border-gray-200 pb-1">Ventas (Verificados)</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <motion.div variants={cardVariants} className="rounded-2xl border border-black bg-[#f5f5f5] p-8 flex flex-col items-center text-center shadow-lg transition-shadow duration-300">
-                  <span className="text-5xl font-extrabold text-[#1a202c] flex items-center drop-shadow-sm">
-                    <span className="text-green-600 mr-2 text-5xl">$</span>{formatCurrency(totals.totalGeneral)}
-                  </span>
-                  <span className="text-xl text-gray-700 mt-4 font-semibold tracking-wide">Ventas Totales</span>
-                </motion.div>
-                <motion.div variants={cardVariants} className="rounded-2xl border border-black bg-[#e0f7fa] p-8 flex flex-col items-center text-center shadow-lg transition-shadow duration-300">
-                  <span className="text-5xl font-extrabold text-blue-950 flex items-center drop-shadow-sm">
-                    <span className="text-green-600 mr-2 text-5xl">$</span>{formatCurrency(totals.totalSobrantes)}
-                  </span>
-                  <span className="text-xl text-gray-700 mt-4 font-semibold tracking-wide">Sobrantes</span>
-                </motion.div>
-                <motion.div variants={cardVariants} className="rounded-2xl border border-black bg-[#ffebee] p-8 flex flex-col items-center text-center shadow-lg transition-shadow duration-300">
-                  <span className="text-5xl font-extrabold text-[#b71c1c] flex items-center drop-shadow-sm">
-                    <span className="text-green-600 mr-2 text-5xl">$</span>{formatCurrency(totals.totalFaltantes)}
-                  </span>
-                  <span className="text-xl text-gray-700 mt-4 font-semibold tracking-wide">Faltantes</span>
-                </motion.div>
+            <PieChart className={`w-5 h-5 transition-transform ${mostrarEstadisticas ? 'rotate-180 text-blue-600' : 'text-slate-400'}`} />
+            Mostrar Estadísticas y Balance
+          </button>
+
+          {filtrosActivos && (
+            <div className="flex items-center gap-4">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                {cuadres.length} Cuadres Procesados
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* SECCIÓN ESTADÍSTICAS (Balance entre meses) */}
+        <AnimatePresence>
+          {mostrarEstadisticas && (
+            <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="bg-indigo-600 p-6 rounded-[2rem] text-white shadow-lg">
+                <div className="flex justify-between opacity-80 mb-2 font-bold text-xs uppercase tracking-wider">Balance Ingresos/Egresos</div>
+                <div className="text-3xl font-black">${formatCurrency(totals.totalGeneral - totalGastosUsd)}</div>
+                <p className="text-[10px] mt-2 opacity-70">Utilidad operativa bruta en el periodo seleccionado</p>
+              </div>
+              <div className="bg-white p-6 rounded-[2rem] border border-slate-200">
+                <div className="flex justify-between text-slate-400 mb-2 font-bold text-xs uppercase tracking-wider">Ratio de Diferencias</div>
+                <div className="text-3xl font-black text-slate-900">
+                  {((Math.abs(totals.totalSobrantes - totals.totalFaltantes) / totals.totalGeneral) * 100).toFixed(2)}%
+                </div>
+                <p className="text-[10px] mt-2 text-slate-500 font-medium italic">Impacto de faltantes/sobrantes sobre venta</p>
+              </div>
+              <div className="bg-white p-6 rounded-[2rem] border border-slate-200">
+                <div className="flex justify-between text-slate-400 mb-2 font-bold text-xs uppercase tracking-wider">Deuda Pendiente</div>
+                <div className="text-3xl font-black text-orange-600">${formatCurrency(cuentasHook.totalActivasUsd)}</div>
+                <p className="text-[10px] mt-2 text-slate-500 font-medium italic">Total de {cuentasHook.cuentasActivas.length} facturas activas</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* GRID PRINCIPAL BENTO */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+          {/* 1. VENTAS, SOBRANTES Y FALTANTES (Cuerpo Principal) */}
+          <div className="lg:col-span-8 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white p-6 rounded-[2.5rem] border border-slate-200 shadow-sm relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><DollarSign className="w-16 h-16" /></div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Ventas Totales</p>
+                <h3 className="text-3xl font-black text-slate-900 mt-1">${formatCurrency(totals.totalGeneral)}</h3>
+                <div className="mt-4 flex items-center gap-1 text-green-600 text-[10px] font-bold">
+                  <PlusCircle className="w-3 h-3" /> MONTO VERIFICADO
+                </div>
+              </div>
+
+              <div className="bg-blue-50 p-6 rounded-[2.5rem] border border-blue-100 shadow-sm">
+                <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">Sobrantes</p>
+                <h3 className="text-3xl font-black text-blue-900 mt-1">${formatCurrency(totals.totalSobrantes)}</h3>
+                <div className="mt-4 flex items-center gap-1 text-blue-600 text-[10px] font-bold">
+                  <TrendingUp className="w-3 h-3" /> EXCESO EN CAJA
+                </div>
+              </div>
+
+              <div className="bg-red-50 p-6 rounded-[2.5rem] border border-red-100 shadow-sm">
+                <p className="text-[10px] font-black text-red-400 uppercase tracking-[0.2em]">Faltantes</p>
+                <h3 className="text-3xl font-black text-red-900 mt-1">${formatCurrency(totals.totalFaltantes)}</h3>
+                <div className="mt-4 flex items-center gap-1 text-red-600 text-[10px] font-bold">
+                  <TrendingDown className="w-3 h-3" /> DÉFICIT EN CAJA
+                </div>
               </div>
             </div>
 
-            {/* Categoría: Métodos de Pago */}
-            <div className="col-span-1 md:col-span-2 lg:col-span-3 mt-8">
-              <h3 className="text-lg font-semibold text-gray-800 mb-2 border-b border-gray-200 pb-1">Métodos de Pago</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="rounded-2xl border border-black bg-white p-8 flex flex-col gap-4 shadow-lg transition-shadow duration-300">
-                  <span className="text-xl font-semibold text-gray-700 mb-4 tracking-wide">USD</span>
-                  <div className="flex justify-between text-gray-900 text-lg font-medium">
-                    <span>Efectivo</span>
-                    <span className="font-extrabold flex items-center text-2xl"><span className="text-green-600 mr-2 text-2xl">$</span>{formatCurrency(totals.totalEfectivoUsd)}</span>
+            {/* 2. DESGLOSE DETALLADO DE MÉTODOS DE PAGO */}
+            <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
+              <div className="p-6 border-b border-slate-50 flex items-center gap-3">
+                <div className="p-2 bg-slate-900 rounded-xl text-white"><ArrowRightLeft className="w-5 h-5" /></div>
+                <h3 className="font-bold text-slate-800 tracking-tight">Detalle de Ingresos por Método</h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2">
+                {/* Columna USD */}
+                <div className="p-6 border-r border-slate-50 space-y-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Divisas (USD)</span>
                   </div>
-                  <div className="flex justify-between text-gray-900 text-lg font-medium">
-                    <span>Zelle</span>
-                    <span className="font-extrabold flex items-center text-2xl"><span className="text-green-600 mr-2 text-2xl">$</span>{formatCurrency(totals.totalZelleUsd)}</span>
+                  <div className="flex justify-between items-center group p-2 hover:bg-slate-50 rounded-xl transition-colors">
+                    <div className="flex items-center gap-3">
+                      <Banknote className="w-4 h-4 text-slate-400" />
+                      <span className="text-sm font-semibold text-slate-600">Efectivo USD</span>
+                    </div>
+                    <span className="font-black text-slate-900">${formatCurrency(totals.totalEfectivoUsd)}</span>
+                  </div>
+                  <div className="flex justify-between items-center group p-2 hover:bg-slate-50 rounded-xl transition-colors">
+                    <div className="flex items-center gap-3">
+                      <Landmark className="w-4 h-4 text-slate-400" />
+                      <span className="text-sm font-semibold text-slate-600">Zelle</span>
+                    </div>
+                    <span className="font-black text-slate-900">${formatCurrency(totals.totalZelleUsd)}</span>
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-dashed flex justify-between items-center">
+                    <span className="text-xs font-bold text-slate-400 uppercase">Subtotal USD</span>
+                    <span className="text-xl font-black text-blue-600">${formatCurrency(totals.totalEfectivoUsd + totals.totalZelleUsd)}</span>
                   </div>
                 </div>
-                <div className="rounded-2xl border border-black bg-white p-8 flex flex-col gap-4 shadow-lg transition-shadow duration-300">
-                  <span className="text-xl font-semibold text-gray-700 mb-4 tracking-wide">Bolívares</span>
-                  <div className="flex justify-between text-gray-900 text-lg font-medium">
-                    <span>P. Venta (Débito)</span>
-                    <span className="font-extrabold flex items-center text-2xl"><span className="text-green-600 mr-2 text-2xl">Bs</span>{formatBs(totals.totalPuntosVentaDebitoBs)}</span>
+
+                {/* Columna Bolívares */}
+                <div className="p-6 space-y-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Moneda Nacional (VES)</span>
                   </div>
-                  <div className="flex justify-between text-gray-900 text-lg font-medium">
-                    <span>P. Venta (Crédito)</span>
-                    <span className="font-extrabold flex items-center text-2xl"><span className="text-green-600 mr-2 text-2xl">Bs</span>{formatBs(totals.totalPuntosVentaCreditoBs)}</span>
+                  <div className="flex justify-between items-center group p-2 hover:bg-slate-50 rounded-xl transition-colors">
+                    <div className="flex items-center gap-3">
+                      <CreditCard className="w-4 h-4 text-slate-400" />
+                      <span className="text-sm font-semibold text-slate-600">P. Venta Débito</span>
+                    </div>
+                    <span className="font-black text-slate-900">Bs {formatBs(totals.totalPuntosVentaDebitoBs)}</span>
                   </div>
-                  <div className="flex justify-between text-gray-900 text-lg font-medium">
-                    <span>Pago Móvil</span>
-                    <span className="font-extrabold flex items-center text-2xl"><span className="text-green-600 mr-2 text-2xl">Bs</span>{formatBs(totals.totalPagomovilBs)}</span>
+                  <div className="flex justify-between items-center group p-2 hover:bg-slate-50 rounded-xl transition-colors">
+                    <div className="flex items-center gap-3">
+                      <CreditCard className="w-4 h-4 text-slate-300" />
+                      <span className="text-sm font-semibold text-slate-600">P. Venta Crédito</span>
+                    </div>
+                    <span className="font-black text-slate-900">Bs {formatBs(totals.totalPuntosVentaCreditoBs)}</span>
                   </div>
-                  <div className="flex justify-between text-gray-900 text-lg font-medium">
-                    <span>Efectivo</span>
-                    <span className="font-extrabold flex items-center text-2xl"><span className="text-green-600 mr-2 text-2xl">Bs</span>{formatBs(totals.totalEfectivoBs)}</span>
+                  <div className="flex justify-between items-center group p-2 hover:bg-slate-50 rounded-xl transition-colors">
+                    <div className="flex items-center gap-3">
+                      <Wallet className="w-4 h-4 text-slate-400" />
+                      <span className="text-sm font-semibold text-slate-600">Pago Móvil</span>
+                    </div>
+                    <span className="font-black text-slate-900">Bs {formatBs(totals.totalPagomovilBs)}</span>
+                  </div>
+                  <div className="flex justify-between items-center group p-2 hover:bg-slate-50 rounded-xl transition-colors">
+                    <div className="flex items-center gap-3">
+                      <Banknote className="w-4 h-4 text-slate-400" />
+                      <span className="text-sm font-semibold text-slate-600">Efectivo Bs</span>
+                    </div>
+                    <span className="font-black text-slate-900">Bs {formatBs(totals.totalEfectivoBs)}</span>
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-dashed flex justify-between items-center">
+                    <span className="text-xs font-bold text-slate-400 uppercase">Subtotal VES</span>
+                    <span className="text-xl font-black text-slate-900">Bs {formatBs(totals.totalPuntosVentaDebitoBs + totals.totalPuntosVentaCreditoBs + totals.totalPagomovilBs + totals.totalEfectivoBs)}</span>
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* 3. COLUMNA LATERAL (GASTOS Y CUENTAS POR PAGAR) */}
+          <div className="lg:col-span-4 space-y-6">
+
+            {/* Gastos */}
+            <div className="bg-white p-6 rounded-[2.5rem] border border-slate-200 shadow-sm border-l-4 border-l-red-500">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-red-50 rounded-xl text-red-600"><MinusCircle className="w-5 h-5" /></div>
+                <h3 className="font-bold text-slate-800 tracking-tight">Gastos Verificados</h3>
+              </div>
+              <div className="text-3xl font-black text-slate-900">${formatCurrency(totalGastosUsd)}</div>
+              <p className="text-[10px] text-slate-400 mt-2 font-bold uppercase">Salidas netas en USD</p>
             </div>
 
-            {/* Categoría: Resúmenes */}
-            <div className="col-span-1 md:col-span-2 lg:col-span-3 mt-8">
-              <h3 className="text-lg font-semibold text-gray-800 mb-2 border-b border-gray-200 pb-1">Resúmenes</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* <DashboardCard
-                  title="Mes a la fecha"
-                  value={<span className="flex items-center"><span className="text-green-600 mr-2 text-3xl">$</span>{formatCurrency(Gastos)}</span>}
-                  subtitle="Gastos"
-                  badge={<span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs font-medium">Sistema</span>}
-                  trendSvg={<svg viewBox="0 0 100 24" fill="none" className="w-full h-full"><polyline points="0,20 20,10 40,14 60,6 80,12 100,4" stroke="#22c55e" strokeWidth="2" fill="none" /></svg>}
-                />
-                <DashboardCard
-                  title="Mes a la fecha"
-                  value={<span className="flex items-center"><span className="text-green-600 mr-2 text-3xl">$</span>{formatCurrency(totals.totalInventario)}</span>}
-                  subtitle="Inventario (USD)"
-                  badge={<span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-medium">Inventario</span>}
-                  trendSvg={<svg viewBox="0 0 100 24" fill="none" className="w-full h-full"><polyline points="0,18 20,12 40,16 60,8 80,10 100,6" stroke="#2563eb" strokeWidth="2" fill="none" /></svg>}
-                /> */}
-                {/* <DashboardCard
-                  title="Mes a la fecha"
-                  value={<span className="flex items-center"><span className="text-green-600 mr-2 text-3xl">$</span>{formatCurrency(totalCuentasPorPagar + totalCuentasPagadas)}</span>}
-                  subtitle="Cuentas por Pagar y Pagadas"
-                  badge={<span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded text-xs font-medium">Cuentas</span>}
-                  trendSvg={<svg viewBox="0 0 100 24" fill="none" className="w-full h-full"><polyline points="0,22 20,16 40,20 60,10 80,14 100,8" stroke="#f59e42" strokeWidth="2" fill="none" /></svg>}
-                />
-                <DashboardCard
-                  title="Mes a la fecha"
-                  value={<span className="flex items-center"><span className="text-green-600 mr-2 text-3xl">$</span>{formatCurrency(totalCostoInventario)}</span>}
-                  subtitle="Inventario Costo Venta"
-                  badge={<span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs font-medium">Inventario</span>}
-                  trendSvg={<svg viewBox="0 0 100 24" fill="none" className="w-full h-full"><polyline points="0,16 20,8 40,12 60,6 80,10 100,4" stroke="#a21caf" strokeWidth="2" fill="none" /></svg>}
-                />
-                <DashboardCard
-                  title="Mes a la fecha"
-                  value={<span className="flex items-center"><span className="text-green-600 mr-2 text-3xl">$</span>{formatCurrency(totalCostoInventarioRestante)}</span>}
-                  subtitle="Utilidad (Venta - Costo Inventario)"
-                  badge={<span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-medium">Utilidad</span>}
-                  trendSvg={<svg viewBox="0 0 100 24" fill="none" className="w-full h-full"><polyline points="0,20 20,14 40,18 60,10 80,12 100,6" stroke="#22c55e" strokeWidth="2" fill="none" /></svg>}
-                /> */}
+            {/* Cuentas por Pagar (Visualizado como Cartera) */}
+            <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-xl shadow-blue-100 relative overflow-hidden group">
+              <div className="absolute -right-6 -bottom-6 opacity-10 group-hover:rotate-12 transition-transform duration-500"><Receipt className="w-40 h-40" /></div>
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Cartera Cuentas por Pagar</p>
+              <div className="text-4xl font-black mt-2 mb-8">${formatCurrency(cuentasHook.totalActivasUsd + cuentasHook.totalPagadasUsd)}</div>
+
+              <div className="space-y-4">
+                <div className="bg-white/5 border border-white/10 p-4 rounded-2xl backdrop-blur-sm">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[10px] font-black text-orange-400 uppercase tracking-tighter">Pendientes de Pago</span>
+                    <span className="text-xs font-bold text-slate-500">{cuentasHook.cuentasActivas.length} documentos</span>
+                  </div>
+                  <div className="text-2xl font-black">${formatCurrency(cuentasHook.totalActivasUsd)}</div>
+                </div>
+
+                <div className="bg-white/5 border border-white/10 p-4 rounded-2xl backdrop-blur-sm">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[10px] font-black text-green-400 uppercase tracking-tighter">Histórico Pagado</span>
+                  </div>
+                  <div className="text-2xl font-black">${formatCurrency(cuentasHook.totalPagadasUsd)}</div>
+                </div>
               </div>
             </div>
-          </motion.div>
-        )}
+          </div>
+
+        </div>
       </div>
     </div>
   );
