@@ -1,0 +1,43 @@
+// hooks/useCuadresDetallados.ts
+import { cuadresService } from '@/services/cuadres.service';
+import useSWR from 'swr';
+import type { CuadreDetallado } from './types';
+
+interface CuadresParams {
+    farmacia?: string;
+    fechaInicio?: string;
+    fechaFin?: string;
+    estado?: string;
+}
+
+export const useCuadresDetallados = (params?: CuadresParams) => {
+    const key = params
+        ? ['cuadres-detallados', params]
+        : null;
+
+    const { data, error, isLoading, mutate: refresh } = useSWR(
+        key,
+        ([, params]: [string, CuadresParams]) =>
+            cuadresService.getCuadresDetallados(params),
+        {
+            revalidateOnFocus: false,
+            revalidateOnReconnect: true,
+            revalidateIfStale: true,
+        }
+    );
+    console.log("useCuadresDetallados - data:", data);
+    return {
+        // Datos procesados
+        cuadres: data?.data || [] as CuadreDetallado[],
+        isLoading,
+        isError: !!error,
+        error,
+        // Acciones
+        refresh,
+
+        // Stats útiles
+        totalCuadres: data?.data?.length || 0,
+        totalBs: data?.data?.reduce((sum, c) => sum + c.totalBs, 0) || 0,
+        totalUsd: data?.data?.reduce((sum, c) => sum + c.totalGeneralUsd, 0) || 0,
+    };
+};
