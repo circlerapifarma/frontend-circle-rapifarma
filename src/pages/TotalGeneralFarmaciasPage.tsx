@@ -75,6 +75,9 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
       totalEfectivoUsd: 0, totalZelleUsd: 0,
       totalPuntosVentaDebitoBs: 0, totalPuntosVentaCreditoBs: 0,
       totalPagomovilBs: 0, totalEfectivoBs: 0,
+      totalPuntosVentaDebitoUsd: 0, totalPuntosVentaCreditoUsd: 0,
+      totalPagomovilUsd: 0, totalEfectivoUsdFromBs: 0,
+      totalInventario: 0
     };
 
     return {
@@ -92,6 +95,14 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
       ),
       totalPagomovilBs: cuadres.reduce((acc, c) => acc + c.pagomovilBs, 0),
       totalEfectivoBs: cuadres.reduce((acc, c) => acc + c.efectivoBs, 0),
+      totalPuntosVentaDebitoUsd: cuadres.reduce((acc, c) =>
+        acc + c.puntosVenta.reduce((sum, pv) => sum + (pv.puntoDebito / c.tasa), 0), 0
+      ),
+      totalPuntosVentaCreditoUsd: cuadres.reduce((acc, c) =>
+        acc + c.puntosVenta.reduce((sum, pv) => sum + (pv.puntoCredito / c.tasa), 0), 0
+      ),
+      totalPagomovilUsd: cuadres.reduce((acc, c) => acc + (c.pagomovilBs / c.tasa), 0),
+      totalEfectivoUsdFromBs: cuadres.reduce((acc, c) => acc + (c.efectivoBs / c.tasa), 0),
     };
   }, [cuadres]);
 
@@ -216,40 +227,49 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
 
                 {/* Columna Bolívares */}
                 <div className="p-6 space-y-4">
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center justify-between mb-2">
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Moneda Nacional (VES)</span>
+                    <span className="text-[10px] font-bold text-blue-500 uppercase tracking-tighter bg-blue-50 px-2 py-0.5 rounded-md">Equivalente USD</span>
                   </div>
-                  <div className="flex justify-between items-center group p-2 hover:bg-slate-50 rounded-xl transition-colors">
-                    <div className="flex items-center gap-3">
-                      <CreditCard className="w-4 h-4 text-slate-400" />
-                      <span className="text-sm font-semibold text-slate-600">P. Venta Débito</span>
+
+                  {[
+                    { label: "P. VentaD", bs: totals.totalPuntosVentaDebitoBs, usd: totals.totalPuntosVentaDebitoUsd, icon: <CreditCard className="w-4 h-4 text-slate-400" /> },
+                    { label: "P. VentaC", bs: totals.totalPuntosVentaCreditoBs, usd: totals.totalPuntosVentaCreditoUsd, icon: <CreditCard className="w-4 h-4 text-slate-300" /> },
+                    { label: "Pago Móvil", bs: totals.totalPagomovilBs, usd: totals.totalPagomovilUsd, icon: <Wallet className="w-4 h-4 text-slate-400" /> },
+                    { label: "Efectivo Bs", bs: totals.totalEfectivoBs, usd: totals.totalEfectivoUsdFromBs, icon: <Banknote className="w-4 h-4 text-slate-400" /> },
+                  ].map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between group p-2 hover:bg-slate-50 rounded-xl transition-all border border-transparent hover:border-slate-100">
+                      {/* Parte Izquierda: Icono y Nombre */}
+                      <div className="flex items-center gap-3 w-1/3">
+                        {item.icon}
+                        <span className="text-sm font-semibold text-slate-600 truncate">{item.label}</span>
+                      </div>
+
+                      {/* Parte Central: Monto en Bolívares */}
+                      <div className="flex-1 text-right pr-4">
+                        <span className="font-bold text-slate-900 text-sm">{formatBs(item.bs)}</span>
+                      </div>
+
+                      {/* Parte Derecha: Monto en Dólares (Badge) */}
+                      <div className="w-24 text-right">
+                        <span className="inline-block px-2 py-1 bg-slate-100 text-slate-600 rounded-lg text-[11px] font-black group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                          ${formatCurrency(item.usd)}
+                        </span>
+                      </div>
                     </div>
-                    <span className="font-black text-slate-900">Bs {formatBs(totals.totalPuntosVentaDebitoBs)}</span>
-                  </div>
-                  <div className="flex justify-between items-center group p-2 hover:bg-slate-50 rounded-xl transition-colors">
-                    <div className="flex items-center gap-3">
-                      <CreditCard className="w-4 h-4 text-slate-300" />
-                      <span className="text-sm font-semibold text-slate-600">P. Venta Crédito</span>
+                  ))}
+
+                  {/* Subtotal Final */}
+                  <div className="mt-4 pt-4 border-t border-dashed">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs font-bold text-slate-400 uppercase">Total en Moneda Nacional</span>
+                      <span className="text-lg font-black text-slate-900">{formatBs(totals.totalPuntosVentaDebitoBs + totals.totalPuntosVentaCreditoBs + totals.totalPagomovilBs + totals.totalEfectivoBs)}</span>
                     </div>
-                    <span className="font-black text-slate-900">Bs {formatBs(totals.totalPuntosVentaCreditoBs)}</span>
-                  </div>
-                  <div className="flex justify-between items-center group p-2 hover:bg-slate-50 rounded-xl transition-colors">
-                    <div className="flex items-center gap-3">
-                      <Wallet className="w-4 h-4 text-slate-400" />
-                      <span className="text-sm font-semibold text-slate-600">Pago Móvil</span>
+                    <div className="flex justify-end">
+                      <span className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                        ≈ ${formatCurrency(totals.totalPuntosVentaDebitoUsd + totals.totalPuntosVentaCreditoUsd + totals.totalPagomovilUsd + totals.totalEfectivoUsdFromBs)} Total USD
+                      </span>
                     </div>
-                    <span className="font-black text-slate-900">Bs {formatBs(totals.totalPagomovilBs)}</span>
-                  </div>
-                  <div className="flex justify-between items-center group p-2 hover:bg-slate-50 rounded-xl transition-colors">
-                    <div className="flex items-center gap-3">
-                      <Banknote className="w-4 h-4 text-slate-400" />
-                      <span className="text-sm font-semibold text-slate-600">Efectivo Bs</span>
-                    </div>
-                    <span className="font-black text-slate-900">Bs {formatBs(totals.totalEfectivoBs)}</span>
-                  </div>
-                  <div className="mt-4 pt-4 border-t border-dashed flex justify-between items-center">
-                    <span className="text-xs font-bold text-slate-400 uppercase">Subtotal VES</span>
-                    <span className="text-xl font-black text-slate-900">Bs {formatBs(totals.totalPuntosVentaDebitoBs + totals.totalPuntosVentaCreditoBs + totals.totalPagomovilBs + totals.totalEfectivoBs)}</span>
                   </div>
                 </div>
               </div>
@@ -344,7 +364,7 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
           )}
         </div>
       </div>
-        <ExportarTodoExcel fechaInicio={fechaInicio} fechaFin={fechaFin} farmacias={FARMACIAS_EJEMPLO} />
+      <ExportarTodoExcel fechaInicio={fechaInicio} fechaFin={fechaFin} farmacias={FARMACIAS_EJEMPLO} />
     </div>
   );
 };
