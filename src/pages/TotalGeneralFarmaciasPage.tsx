@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Loader2, RefreshCcw, BarChart3, Calendar, Building2, DollarSign, TrendingDown, Landmark, Wallet, CreditCard, TrendingUp, Receipt, PlusCircle, Banknote, ArrowRightLeft, MinusCircle } from "lucide-react";
+import { Loader2, RefreshCcw, BarChart3, Calendar, Building2, TrendingDown, Landmark, Wallet, CreditCard, TrendingUp, Receipt, Banknote, ArrowRightLeft, MinusCircle } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCuadresDetallados } from "@/hooks/useCuadresV2";
 import { useGastosPorEstado } from "@/hooks/useGastosPorEstado";
 import { useCuentasPorPagar } from "@/hooks/useCuentasPorPagar"; // ✅ NUEVO
-import { PieChart } from "recharts";
+import ExportarTodoExcel from "@/components/stats/Report";
 
 const FARMACIAS_EJEMPLO = [
   { value: "", label: "Todas las farmacias" },
@@ -32,7 +32,6 @@ const formatBs = (amount: number | null | undefined) => {
 };
 
 const TotalGeneralFarmaciasPage: React.FC = () => {
-  const [mostrarEstadisticas, setMostrarEstadisticas] = useState<boolean>(true);
   const [fechaInicio, setFechaInicio] = useState<string>("");
   const [fechaFin, setFechaFin] = useState<string>("");
   const [farmaciaSeleccionada, setFarmaciaSeleccionada] = useState<string>("");
@@ -80,6 +79,7 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
 
     return {
       totalGeneral: cuadres.reduce((acc, c) => acc + c.totalGeneralUsd, 0),
+      totalInventario: cuadres.reduce((acc, c) => acc + (c.costoInventario / c.tasa), 0),
       totalSobrantes: cuadres.reduce((acc, c) => acc + c.sobranteUsd, 0),
       totalFaltantes: cuadres.reduce((acc, c) => acc + c.faltanteUsd, 0),
       totalEfectivoUsd: cuadres.reduce((acc, c) => acc + c.efectivoUsd, 0),
@@ -116,7 +116,6 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-start px-4 py-8 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-7xl w-full space-y-6">
-
         {/* Header & Filtros */}
         <header className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-200">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
@@ -154,84 +153,35 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
             </div>
           </div>
         </header>
-
-        {/* Botón Estadísticas y Badge de Estado */}
-        <div className="flex justify-between items-center px-2">
-          <button
-            onClick={() => setMostrarEstadisticas(!mostrarEstadisticas)}
-            className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-700 font-bold hover:shadow-md transition-all group"
-          >
-            <PieChart className={`w-5 h-5 transition-transform ${mostrarEstadisticas ? 'rotate-180 text-blue-600' : 'text-slate-400'}`} />
-            Mostrar Estadísticas y Balance
-          </button>
-
-          {filtrosActivos && (
-            <div className="flex items-center gap-4">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                {cuadres.length} Cuadres Procesados
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* SECCIÓN ESTADÍSTICAS (Balance entre meses) */}
-        <AnimatePresence>
-          {mostrarEstadisticas && (
-            <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div className="bg-indigo-600 p-6 rounded-[2rem] text-white shadow-lg">
-                <div className="flex justify-between opacity-80 mb-2 font-bold text-xs uppercase tracking-wider">Balance Ingresos/Egresos</div>
-                <div className="text-3xl font-black">${formatCurrency(totals.totalGeneral - totalGastosUsd)}</div>
-                <p className="text-[10px] mt-2 opacity-70">Utilidad operativa bruta en el periodo seleccionado</p>
+        {/* Resumen Principal */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="col-span-2">
+            <div className="bg-emerald-600 rounded-[2.5rem] p-8 text-white shadow-2xl shadow-emerald-100 relative overflow-hidden group">
+              <div className="absolute right-0 top-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-500">
+                <Wallet className="w-32 h-32" />
               </div>
-              <div className="bg-white p-6 rounded-[2rem] border border-slate-200">
-                <div className="flex justify-between text-slate-400 mb-2 font-bold text-xs uppercase tracking-wider">Ratio de Diferencias</div>
-                <div className="text-3xl font-black text-slate-900">
-                  {((Math.abs(totals.totalSobrantes - totals.totalFaltantes) / totals.totalGeneral) * 100).toFixed(2)}%
-                </div>
-                <p className="text-[10px] mt-2 text-slate-500 font-medium italic">Impacto de faltantes/sobrantes sobre venta</p>
-              </div>
-              <div className="bg-white p-6 rounded-[2rem] border border-slate-200">
-                <div className="flex justify-between text-slate-400 mb-2 font-bold text-xs uppercase tracking-wider">Deuda Pendiente</div>
-                <div className="text-3xl font-black text-orange-600">${formatCurrency(cuentasHook.totalActivasUsd)}</div>
-                <p className="text-[10px] mt-2 text-slate-500 font-medium italic">Total de {cuentasHook.cuentasActivas.length} facturas activas</p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              <div className="relative z-10">
+                <p className="text-xs font-black uppercase tracking-[0.2em] mb-2 text-emerald-100">Utilidad</p>
+                <h2 className="text-5xl font-black mb-6">${formatCurrency(totals.totalGeneral - totalGastosUsd - (totals.totalInventario || 0))}</h2>
 
-        {/* GRID PRINCIPAL BENTO */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-          {/* 1. VENTAS, SOBRANTES Y FALTANTES (Cuerpo Principal) */}
-          <div className="lg:col-span-8 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white p-6 rounded-[2.5rem] border border-slate-200 shadow-sm relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><DollarSign className="w-16 h-16" /></div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Ventas Totales</p>
-                <h3 className="text-3xl font-black text-slate-900 mt-1">${formatCurrency(totals.totalGeneral)}</h3>
-                <div className="mt-4 flex items-center gap-1 text-green-600 text-[10px] font-bold">
-                  <PlusCircle className="w-3 h-3" /> MONTO VERIFICADO
-                </div>
-              </div>
-
-              <div className="bg-blue-50 p-6 rounded-[2.5rem] border border-blue-100 shadow-sm">
-                <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">Sobrantes</p>
-                <h3 className="text-3xl font-black text-blue-900 mt-1">${formatCurrency(totals.totalSobrantes)}</h3>
-                <div className="mt-4 flex items-center gap-1 text-blue-600 text-[10px] font-bold">
-                  <TrendingUp className="w-3 h-3" /> EXCESO EN CAJA
-                </div>
-              </div>
-
-              <div className="bg-red-50 p-6 rounded-[2.5rem] border border-red-100 shadow-sm">
-                <p className="text-[10px] font-black text-red-400 uppercase tracking-[0.2em]">Faltantes</p>
-                <h3 className="text-3xl font-black text-red-900 mt-1">${formatCurrency(totals.totalFaltantes)}</h3>
-                <div className="mt-4 flex items-center gap-1 text-red-600 text-[10px] font-bold">
-                  <TrendingDown className="w-3 h-3" /> DÉFICIT EN CAJA
+                <div className="flex flex-wrap gap-6 border-t border-white/20 pt-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white/10 rounded-lg"><BarChart3 className="w-5 h-5" /></div>
+                    <div>
+                      <p className="text-md font-bold text-emerald-100 uppercase">Venta Bruta</p>
+                      <p className="font-bold text-2xl">${formatCurrency(totals.totalGeneral)}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white/10 rounded-lg"><MinusCircle className="w-5 h-5" /></div>
+                    <div>
+                      <p className="text-md font-bold text-emerald-100 uppercase">Total Egresos (costo cuadres + gastos)</p>
+                      <p className="font-bold text-2xl">-${formatCurrency(totalGastosUsd + (totals.totalInventario || 0))}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-
-            {/* 2. DESGLOSE DETALLADO DE MÉTODOS DE PAGO */}
             <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
               <div className="p-6 border-b border-slate-50 flex items-center gap-3">
                 <div className="p-2 bg-slate-900 rounded-xl text-white"><ArrowRightLeft className="w-5 h-5" /></div>
@@ -305,21 +255,39 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
               </div>
             </div>
           </div>
-
-          {/* 3. COLUMNA LATERAL (GASTOS Y CUENTAS POR PAGAR) */}
-          <div className="lg:col-span-4 space-y-6">
-
-            {/* Gastos */}
-            <div className="bg-white p-6 rounded-[2.5rem] border border-slate-200 shadow-sm border-l-4 border-l-red-500">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-red-50 rounded-xl text-red-600"><MinusCircle className="w-5 h-5" /></div>
-                <h3 className="font-bold text-slate-800 tracking-tight">Gastos Verificados</h3>
+          <div className="space-y-6">
+            {/* Costo de Inventario */}
+            <div className="bg-white p-6 rounded-[2.5rem] border border-slate-200 shadow-sm relative overflow-hidden border-l-4 border-l-green-500">
+              <div className="relative z-10">
+                <div className="flex flex-row justify-between">
+                  <p className="text-[10px] font-black text-green-800 uppercase tracking-widest mb-1">Costo de Cuadres</p>
+                  <MinusCircle className="w-4 h-4 text-green-800" />
+                </div>
+                <h3 className="text-3xl font-black text-slate-900">${formatCurrency(totals.totalInventario)}</h3>
+                <p className="text-[10px] text-slate-400 font-medium mt-2 italic">Valor de reposición de mercancía vendida</p>
               </div>
-              <div className="text-3xl font-black text-slate-900">${formatCurrency(totalGastosUsd)}</div>
-              <p className="text-[10px] text-slate-400 mt-2 font-bold uppercase">Salidas netas en USD</p>
+              <div className="absolute -right-4 -bottom-4 text-slate-50 opacity-10">
+                <Receipt className="w-24 h-24" />
+              </div>
             </div>
 
-            {/* Cuentas por Pagar (Visualizado como Cartera) */}
+            {/* Gastos Operativos */}
+            <div className="bg-white p-6 rounded-[2.5rem] border border-slate-200 shadow-sm border-l-4 border-l-red-500">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[10px] font-black text-red-500 uppercase tracking-widest">Gastos Verificados</p>
+                <MinusCircle className="w-4 h-4 text-red-400" />
+              </div>
+              <h3 className="text-3xl font-black text-slate-900">${formatCurrency(totalGastosUsd)}</h3>
+              <div className="mt-4 w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                <div
+                  className="bg-red-500 h-full"
+                  style={{ width: `${(totalGastosUsd / totals.totalGeneral * 100).toFixed(1)}%` }}
+                ></div>
+              </div>
+              <p className="text-[10px] text-slate-400 mt-2 font-bold italic">Representa el {(totalGastosUsd / totals.totalGeneral * 100).toFixed(1)}% de la venta</p>
+            </div>
+
+            {/* Cuentas por Pagar (Cartera) */}
             <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-xl shadow-blue-100 relative overflow-hidden group">
               <div className="absolute -right-6 -bottom-6 opacity-10 group-hover:rotate-12 transition-transform duration-500"><Receipt className="w-40 h-40" /></div>
               <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Cartera Cuentas por Pagar</p>
@@ -345,7 +313,38 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
           </div>
 
         </div>
+
+        {/* SECCIÓN ESTADÍSTICAS (Balance entre meses) */}
+        <AnimatePresence>
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="bg-blue-50 p-6 rounded-[2.5rem] border border-blue-100 shadow-sm">
+              <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">Sobrantes</p>
+              <h3 className="text-3xl font-black text-blue-900 mt-1">${formatCurrency(totals.totalSobrantes)}</h3>
+              <div className="mt-4 flex items-center gap-1 text-blue-600 text-[10px] font-bold">
+                <TrendingUp className="w-3 h-3" /> EXCESO EN CAJA
+              </div>
+            </div>
+            <div className="bg-red-50 p-6 rounded-[2.5rem] border border-red-100 shadow-sm">
+              <p className="text-[10px] font-black text-red-400 uppercase tracking-[0.2em]">Faltantes</p>
+              <h3 className="text-3xl font-black text-red-900 mt-1">${formatCurrency(totals.totalFaltantes)}</h3>
+              <div className="mt-4 flex items-center gap-1 text-red-600 text-[10px] font-bold">
+                <TrendingDown className="w-3 h-3" /> DÉFICIT EN CAJA
+              </div>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+
+        <div className="flex justify-between items-center px-2">
+          {filtrosActivos && (
+            <div className="flex items-center gap-4">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                {cuadres.length} Cuadres Procesados
+              </span>
+            </div>
+          )}
+        </div>
       </div>
+        <ExportarTodoExcel fechaInicio={fechaInicio} fechaFin={fechaFin} farmacias={FARMACIAS_EJEMPLO} />
     </div>
   );
 };

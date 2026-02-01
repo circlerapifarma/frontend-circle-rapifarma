@@ -28,6 +28,7 @@ interface CuadreDetallado {
     faltanteUsd: number;
     delete: boolean;
     estado: string;
+    costoInventario: number;
     nombreFarmacia: string;
     codigoFarmacia: string;
 }
