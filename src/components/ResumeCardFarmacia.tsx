@@ -102,11 +102,11 @@ const ResumeCardFarmacia: React.FC<ResumeCardFarmaciaProps> = ({
       </div>
         {pendienteVerificar > 0 && (
           <div className="flex flex-row justify-center items-center z-10 mb-2">
-            <div className=" text-black text-xs font-bold">
+            <div className="text-center text-xs font-bold text-red-500 bg-red-200 px-2 py-1 rounded-2xl">
               Pendiente: {formatCurrency(pendienteVerificar)}
             </div>
             <p className="mx-2">|</p>
-            <div className="text-black text-xs font-bold">
+            <div className="text-center text-xs font-bold text-green-700 bg-green-200 px-2 py-1 rounded-2xl">
               Estimado: {formatCurrency(totalVentas + pendienteVerificar)}
             </div>
           </div>
