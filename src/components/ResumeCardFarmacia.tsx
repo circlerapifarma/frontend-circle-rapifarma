@@ -86,36 +86,31 @@ const ResumeCardFarmacia: React.FC<ResumeCardFarmaciaProps> = ({
           🏆 TOP VENTAS
         </div>
       )}
-
-      {/* Chip de Pendiente de Verificar (si aplica) */}
-      {pendienteVerificar > 0 && (
-        <div className="absolute top-4 right-4 flex flex-col items-end gap-1 z-10">
-          <div className="bg-yellow-100 text-yellow-800 text-xs font-bold px-3 py-1 rounded-full shadow border border-yellow-300">
-            ⏳ Pendiente: {formatCurrency(pendienteVerificar)}
-          </div>
-          <div className="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full shadow border border-blue-300">
-            Total Estimado: {formatCurrency(totalVentas + pendienteVerificar)}
-          </div>
-        </div>
-      )}
-
       {/* Nombre de la Farmacia */}
       <h3
-        className={`text-2xl font-extrabold mb-3 text-center ${
-          top ? "text-yellow-800" : "text-gray-900"
-        } leading-tight`}
+        className={`text-2xl font-extrabold text-center ${top ? "text-yellow-800" : "text-gray-900"
+          } leading-tight`}
       >
         {nombre}
       </h3>
-
       {/* Total de Ventas Principal */}
       <div
-        className={`text-4xl font-extrabold mb-2 ${
-          top ? "text-yellow-600" : "text-green-600"
-        } text-center`}
+        className={`text-4xl font-extrabold ${top ? "text-yellow-600" : "text-green-600"
+          } text-center`}
       >
         {formatCurrency(totalVentas)}
       </div>
+        {pendienteVerificar > 0 && (
+          <div className="flex flex-row justify-center items-center z-10 mb-2">
+            <div className=" text-black text-xs font-bold">
+              Pendiente: {formatCurrency(pendienteVerificar)}
+            </div>
+            <p className="mx-2">|</p>
+            <div className="text-black text-xs font-bold">
+              Estimado: {formatCurrency(totalVentas + pendienteVerificar)}
+            </div>
+          </div>
+        )}
       {/* Total Inventario visual */}
       <div className="flex items-center gap-2 mb-4 text-base text-blue-700 font-semibold relative">
         <i className="fas fa-boxes-stacked text-blue-500"></i>
@@ -188,46 +183,42 @@ const ResumeCardFarmacia: React.FC<ResumeCardFarmaciaProps> = ({
         </div>
 
         <>
-        <div className="flex justify-between items-center py-1 border-b border-gray-100">
-          <span className="flex items-center gap-2">
-            <i className="fas fa-minus-circle text-red-600"></i> Gastos
-            Verificados:
-          </span>
-          <span className="font-semibold text-red-600">
-            {formatCurrency(gastos)}
-          </span>
-        </div>
-        
-        {/* Utilidad Neta - Resultado llamativo */}
-        <div className={`flex justify-between items-center py-3 mt-2 mb-2 rounded-lg px-3 border-2 ${
-          utilidadNeta >= 0 
-            ? "bg-green-50 border-green-400" 
+          <div className="flex justify-between items-center py-1 border-b border-gray-100">
+            <span className="flex items-center gap-2">
+              <i className="fas fa-minus-circle text-red-600"></i> Gastos
+              Verificados:
+            </span>
+            <span className="font-semibold text-red-600">
+              {formatCurrency(gastos)}
+            </span>
+          </div>
+
+          {/* Utilidad Neta - Resultado llamativo */}
+          <div className={`flex justify-between items-center py-3 mt-2 mb-2 rounded-lg px-3 border-2 ${utilidadNeta >= 0
+            ? "bg-green-50 border-green-400"
             : "bg-red-50 border-red-400"
-        }`}>
-          <span className={`flex items-center gap-2 font-bold text-lg ${
-            utilidadNeta >= 0 ? "text-green-800" : "text-red-800"
-          }`}>
-            <i className={`fas ${
-              utilidadNeta >= 0 ? "fa-arrow-trend-up text-green-600" : "fa-arrow-trend-down text-red-600"
-            }`}></i>
-            Utilidad Neta:
-          </span>
-          <span className={`font-extrabold text-xl ${
-            utilidadNeta >= 0 ? "text-green-700" : "text-red-700"
-          }`}>
-            {formatCurrency(utilidadNeta)}
-          </span>
-        </div>
-        
-        <div className="flex justify-between items-center py-1 border-b border-gray-100">
-          <span className="flex items-center gap-2">
-            <i className="fas fa-hand-holding-usd text-orange-600"></i>{" "}
-            Cuentas por Pagar:
-          </span>
-          <span className="font-semibold text-orange-600">
-            {formatCurrency(cuentasPorPagarActivas)}
-          </span>
-        </div>
+            }`}>
+            <span className={`flex items-center gap-2 font-bold text-lg ${utilidadNeta >= 0 ? "text-green-800" : "text-red-800"
+              }`}>
+              <i className={`fas ${utilidadNeta >= 0 ? "fa-arrow-trend-up text-green-600" : "fa-arrow-trend-down text-red-600"
+                }`}></i>
+              Utilidad Neta:
+            </span>
+            <span className={`font-extrabold text-xl ${utilidadNeta >= 0 ? "text-green-700" : "text-red-700"
+              }`}>
+              {formatCurrency(utilidadNeta)}
+            </span>
+          </div>
+
+          <div className="flex justify-between items-center py-1 border-b border-gray-100">
+            <span className="flex items-center gap-2">
+              <i className="fas fa-hand-holding-usd text-orange-600"></i>{" "}
+              Cuentas por Pagar:
+            </span>
+            <span className="font-semibold text-orange-600">
+              {formatCurrency(cuentasPorPagarActivas)}
+            </span>
+          </div>
           <div className="flex justify-between items-center py-1 border-b border-gray-100">
             <span className="flex items-center gap-2">
               <i className="fas fa-check-circle text-green-600"></i> Monto
@@ -266,26 +257,23 @@ const ResumeCardFarmacia: React.FC<ResumeCardFarmaciaProps> = ({
 
               <div className="flex justify-between items-center mt-2">
                 <span
-                  className={`flex items-center gap-2 font-bold ${
-                    diferencialPagos >= 0 ? "text-red-800" : "text-green-800"
-                  }`}
+                  className={`flex items-center gap-2 font-bold ${diferencialPagos >= 0 ? "text-red-800" : "text-green-800"
+                    }`}
                 >
                   {/* Íconos más intuitivos para indicar ganancia, pérdida o neutralidad */}
                   <i
-                    className={`fas fa-fw ${
-                      diferencialPagos > 0
-                        ? "fa-arrow-trend-up"
-                        : diferencialPagos < 0
+                    className={`fas fa-fw ${diferencialPagos > 0
+                      ? "fa-arrow-trend-up"
+                      : diferencialPagos < 0
                         ? "fa-arrow-trend-down"
                         : "fa-equals"
-                    }`}
+                      }`}
                   ></i>
                   Diferencial por Pago:
                 </span>
                 <span
-                  className={`font-extrabold text-lg ${
-                    diferencialPagos >= 0 ? "text-red-700" :"text-green-700"
-                  }`}
+                  className={`font-extrabold text-lg ${diferencialPagos >= 0 ? "text-red-700" : "text-green-700"
+                    }`}
                 >
                   {formatCurrency(diferencialPagos)}
                 </span>
