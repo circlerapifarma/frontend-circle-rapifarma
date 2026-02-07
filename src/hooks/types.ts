@@ -33,4 +33,5 @@ export interface CuadreDetallado {
     nombreFarmacia: string;
     codigoFarmacia: string;
     valesUsd: number
+    imagenesCuadre: []
 }
