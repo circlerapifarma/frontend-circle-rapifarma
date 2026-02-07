@@ -202,14 +202,9 @@ const allLinks: LinkCategory[] = [
     icon: Users,
     items: [
       {
-        to: "/registrarusuario",
-        label: "Registrar Usuario",
-        permiso: "usuarios",
-      },
-      {
         to: "/adminusuarios",
         label: "Gestionar Usuarios",
-        // Sin propiedad permiso - visible para todos
+        permiso: "acceso_admin",
       },
     ],
   },
@@ -450,7 +445,7 @@ const Navbar = () => {
                   </div>
                 ))}
                 {/* Categoría Configuracion - siempre visible con Gestionar Usuarios */}
-                <div className="mb-2">
+                {/* <div className="mb-2">
                   <h3 className="px-4 pt-3 pb-2 text-xs font-bold uppercase text-gray-700 flex items-center gap-2 border-b border-gray-100">
                     <Users className="w-4 h-4 text-gray-700" />
                     Configuracion
@@ -470,7 +465,7 @@ const Navbar = () => {
                       </Link>
                     </li>
                   </ul>
-                </div>
+                </div> */}
                 {usuario && (
                   <div className="border-t border-gray-200 pt-2 mt-2">
                     <button
