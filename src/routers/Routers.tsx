@@ -42,6 +42,7 @@ import OrdenCompraPage from "@/pages/OrdenCompraPage";
 import BancosPage from "@/pages/BancosPage";
 import MovimientosBancosPage from "@/pages/MovimientosBancosPage";
 import EstadisticasMensuales from "@/pages/stats/EstadisticasMensuales";
+import { CuadresDenegadosPorUsuario } from "@/pages/cuadresDenegados/CuadresDenegadosPorUsuario";
 
 const AppRouter = () => (
   <Routes>
@@ -94,6 +95,14 @@ const AppRouter = () => (
       element={
         <PermissionRoute permiso="ver_resumen_mensual">
           <ResumenFarmaciasVentas />
+        </PermissionRoute>
+      }
+    />
+    <Route
+      path="/cuadres/denegados"
+      element={
+        <PermissionRoute permiso="verificar_cuadres">
+          <CuadresDenegadosPorUsuario />
         </PermissionRoute>
       }
     />

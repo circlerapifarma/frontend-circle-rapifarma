@@ -86,6 +86,7 @@ const allLinks: LinkCategory[] = [
         label: "Visualizar Cuadres",
         permiso: "ver_cuadres_dia",
       },
+      { to: "/cuadres/denegados", label: "Cuadres Denegados", permiso: "" },
       {
         to: "/modificar-cuadre",
         label: "Modificar Cuadre",

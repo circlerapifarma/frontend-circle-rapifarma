@@ -9,6 +9,7 @@ export interface CuadreDetallado {
     dia: string;
     cajaNumero: number;
     tasa: number;
+    fecha: string;
     turno: string;
     cajero: string;
     cajeroId: string;
