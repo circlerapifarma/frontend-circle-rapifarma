@@ -222,7 +222,7 @@ export const CuadresDenegadosPorUsuario: React.FC<Props> = ({ farmacia }) => {
                                     <table className="min-w-full border-separate border-spacing-0">
                                         <thead>
                                             <tr>
-                                                <th className="px-4 py-3 bg-slate-100 text-left text-[10px] font-bold text-slate-600 uppercase tracking-widest rounded-l-xl border-y border-l border-slate-200">Fecha / Hora</th>
+                                                <th className="px-4 py-3 bg-slate-100 text-center text-[10px] font-bold text-slate-600 uppercase tracking-widest rounded-l-xl border-y border-l border-slate-200">Fecha</th>
                                                 <th className="px-4 py-3 bg-slate-100 text-center text-[10px] font-bold text-slate-600 uppercase tracking-widest border-y border-slate-200">Caja</th>
                                                 <th className="px-4 py-3 bg-slate-100 text-left text-[10px] font-bold text-slate-600 uppercase tracking-widest border-y border-slate-200">Turno</th>
                                                 <th className="px-4 py-3 bg-slate-100 text-right text-[10px] font-bold text-slate-600 uppercase tracking-widest border-y border-slate-200">Total Bs</th>
@@ -233,6 +233,7 @@ export const CuadresDenegadosPorUsuario: React.FC<Props> = ({ farmacia }) => {
                                         <tbody className="divide-y divide-slate-100">
                                             {selectedUserCuadres.map((c) => (
                                                 <tr key={c._id} className="group hover:bg-blue-50/30 transition-colors">
+                                                    <td className="px-4 py-4 text-sm text-center font-bold text-slate-500 bg-slate-50/50 group-hover:bg-transparent">{c.fecha}</td>
                                                     <td className="px-4 py-4 text-sm text-center font-bold text-slate-500 bg-slate-50/50 group-hover:bg-transparent">#{c.cajaNumero}</td>
                                                     <td className="px-4 py-4 text-sm text-slate-600 font-medium lowercase first-letter:uppercase">{c.turno}</td>
                                                     <td className="px-4 py-4 text-sm text-right font-mono text-slate-600">
