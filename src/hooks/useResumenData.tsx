@@ -170,6 +170,22 @@ export function useResumenData() {
     return null;
   }, []);
 
+  const obtenerFarmaciasArray = () => {
+    // 1. Obtenemos el string y lo convertimos a objeto
+    // Usamos "{}" como fallback para que JSON.parse no falle
+    const data = JSON.parse(localStorage.getItem("usuario") || "{}");
+
+    // 2. Extraemos el objeto farmacias (si no existe, usamos un objeto vacío)
+    const farmaciasObj = data.farmacias || {};
+
+    // 3. Transformamos el objeto en un Array de objetos
+    // Object.entries nos da [key, value], que mapeamos a {id, nombre}
+    return Object.entries(farmaciasObj).map(([id, nombre]) => ({
+      id,
+      nombre: String(nombre)
+    }));
+  };
+
   useEffect(() => {
     const fetchInitialData = async () => {
       setLoading(true);
@@ -182,24 +198,11 @@ export function useResumenData() {
           headers.Authorization = `Bearer ${token}`;
         }
 
-        const resFarmacias = await fetch(`${API_BASE_URL}/farmacias`, {
-          headers,
-        });
-        if (!resFarmacias.ok) throw new Error("Error al obtener farmacias.");
-        const dataFarmacias = await resFarmacias.json();
-        const listaFarmacias = dataFarmacias.farmacias
-          ? Object.entries(dataFarmacias.farmacias).map(([id, nombre]) => ({
-            id,
-            nombre: String(nombre),
-          }))
-          : Object.entries(dataFarmacias).map(([id, nombre]) => ({
-            id,
-            nombre: String(nombre),
-          }));
-        setFarmacias(listaFarmacias);
+        const resFarmacias = obtenerFarmaciasArray()
+        setFarmacias(resFarmacias);
 
         const resultCuadres: { [key: string]: Cuadre[] } = {};
-        const cuadrePromises = listaFarmacias.map(async (farm) => {
+        const cuadrePromises = resFarmacias.map(async (farm) => {
           try {
             const params = new URLSearchParams({
               farmacia: farm.id,
@@ -250,8 +253,6 @@ export function useResumenData() {
         const resGastos = await fetch(`${API_BASE_URL}/gastos`, { headers });
         if (resGastos.ok) {
           const dataGastos = await resGastos.json();
-          console.log("useResumenData - Gastos iniciales obtenidos:", dataGastos.length, "total");
-          console.log("useResumenData - Gastos verified iniciales:", dataGastos.filter((g: any) => g.estado === "verified").length);
           setGastos(dataGastos);
         } else {
           console.error("useResumenData - Error al obtener gastos iniciales:", resGastos.status, resGastos.statusText);
@@ -283,8 +284,6 @@ export function useResumenData() {
         const resGastos = await fetchWithRetry(`${API_BASE_URL}/gastos`, { headers });
         if (resGastos && resGastos.ok) {
           const dataGastos = await resGastos.json();
-          console.log("useResumenData - Gastos actualizados:", dataGastos.length, "total");
-          console.log("useResumenData - Gastos verified:", dataGastos.filter((g: any) => g.estado === "verified").length);
           setGastos(dataGastos);
         }
       } catch (err) {
@@ -292,7 +291,7 @@ export function useResumenData() {
         // No loguear errores de conexión para no saturar la consola
       }
     };
-    
+
     // Recargar inmediatamente y luego cada minuto
     fetchGastos();
     const interval = setInterval(fetchGastos, 60000); // 60 segundos
@@ -519,12 +518,12 @@ export function useResumenData() {
   // Función helper para parsear fechas de manera robusta
   const parseDate = (dateStr: string | Date | undefined | null): Date | null => {
     if (!dateStr) return null;
-    
+
     // Si ya es un Date object, retornarlo
     if (dateStr instanceof Date) {
       return dateStr;
     }
-    
+
     // Si es string, intentar parsearlo
     if (typeof dateStr === 'string') {
       // Formato DD/MM/YYYY
@@ -540,7 +539,7 @@ export function useResumenData() {
           }
         }
       }
-      
+
       // Formato YYYY-MM-DD (con o sin hora)
       if (dateStr.includes('-')) {
         const fecha = new Date(dateStr);
@@ -548,14 +547,14 @@ export function useResumenData() {
           return fecha;
         }
       }
-      
+
       // Intentar parsear como ISO string
       const fecha = new Date(dateStr);
       if (!isNaN(fecha.getTime())) {
         return fecha;
       }
     }
-    
+
     return null;
   };
 
@@ -571,43 +570,34 @@ export function useResumenData() {
         setGastosPorFarmaciaData({});
         return;
       }
-      
+
       try {
         const token = localStorage.getItem("token");
         const headers: HeadersInit = {};
         if (token) {
           headers.Authorization = `Bearer ${token}`;
         }
-        
+
         // Usar las fechas del filtro (fechaInicio y fechaFin) para que coincida con las ventas
         const url = `${API_BASE_URL}/gastos/verified/por-farmacia?fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`;
-        console.log("useResumenData - Fetching gastos por farmacia con fechas:", fechaInicio, "a", fechaFin);
         const res = await fetchWithRetry(url, { headers });
-        
+
         if (res && res.ok) {
           const data = await res.json();
-          console.log("useResumenData - Gastos por farmacia obtenidos del endpoint:", data);
-          console.log("useResumenData - Farmacias disponibles:", farmacias.map(f => ({ id: f.id, nombre: f.nombre })));
-          
-          // Verificar mapeo de IDs
-          farmacias.forEach(farm => {
-            const gastosFarmacia = data[farm.id] || 0;
-            console.log(`useResumenData - ${farm.nombre} (ID: ${farm.id}): Gastos = $${gastosFarmacia}`);
-          });
-          
+
+
+
           setGastosPorFarmaciaData(data);
         } else {
-          console.warn("useResumenData - Endpoint optimizado falló, usando fallback");
           // Fallback: usar el método anterior si el nuevo endpoint falla
           setGastosPorFarmaciaData({});
         }
       } catch (error) {
         console.error("useResumenData - Error al obtener gastos por farmacia:", error);
-        // Fallback: usar el método anterior si hay error
         setGastosPorFarmaciaData({});
       }
     };
-    
+
     fetchGastosPorFarmacia();
     // Actualizar cada 60 segundos
     const interval = setInterval(fetchGastosPorFarmacia, 60000);
@@ -623,22 +613,20 @@ export function useResumenData() {
         setCostoInventarioCuadresPorFarmacia({});
         return;
       }
-      
+
       try {
         const token = localStorage.getItem("token");
         const headers: HeadersInit = {};
         if (token) {
           headers.Authorization = `Bearer ${token}`;
         }
-        
+
         // Usar las fechas del filtro (fechaInicio y fechaFin) para que coincida con las ventas
         const url = `${API_BASE_URL}/cuadres/costo-inventario/por-farmacia?fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`;
         const res = await fetchWithRetry(url, { headers });
-        
+
         if (res && res.ok) {
           const data = await res.json();
-          console.log("useResumenData - Costo inventario cuadres por farmacia obtenidos:", data);
-          console.log("useResumenData - Rango de fechas usado:", fechaInicio, "a", fechaFin);
           setCostoInventarioCuadresPorFarmacia(data);
         } else {
           setCostoInventarioCuadresPorFarmacia({});
@@ -647,7 +635,7 @@ export function useResumenData() {
         setCostoInventarioCuadresPorFarmacia({});
       }
     };
-    
+
     fetchCostoInventarioCuadres();
     // Actualizar cada 60 segundos
     const interval = setInterval(fetchCostoInventarioCuadres, 60000);
@@ -657,24 +645,21 @@ export function useResumenData() {
   const gastosPorFarmacia = useMemo(() => {
     // Si tenemos datos del endpoint optimizado, usarlos directamente
     if (Object.keys(gastosPorFarmaciaData).length > 0) {
-      console.log("useResumenData - Usando datos del endpoint optimizado:", gastosPorFarmaciaData);
-      
+
       // Verificar que todos los IDs de farmacia estén mapeados
       const resultado: { [key: string]: number } = {};
       farmacias.forEach(farm => {
         resultado[farm.id] = gastosPorFarmaciaData[farm.id] || 0;
         if (gastosPorFarmaciaData[farm.id] === undefined) {
-          console.warn(`useResumenData - Farmacia ${farm.nombre} (ID: ${farm.id}) no tiene gastos en la respuesta del endpoint`);
         }
       });
-      
+
       return resultado;
     }
-    
+
     // Fallback: calcular desde gastos si el endpoint no está disponible
-    console.log("useResumenData - Usando fallback: calcular desde gastos");
     const resultado: { [key: string]: number } = {};
-    
+
     // Usar las fechas del filtro (fechaInicio y fechaFin) en lugar de fechas fijas
     if (!fechaInicio || !fechaFin) {
       farmacias.forEach(farm => {
@@ -682,21 +667,17 @@ export function useResumenData() {
       });
       return resultado;
     }
-    
+
     const fechaInicioDate = new Date(fechaInicio);
     const fechaFinDate = new Date(fechaFin);
     fechaInicioDate.setHours(0, 0, 0, 0);
     fechaFinDate.setHours(23, 59, 59, 999);
-    
-    console.log("useResumenData - Fallback: Rango de fechas:", fechaInicio, "a", fechaFin);
-    console.log("useResumenData - Fallback: Total gastos disponibles:", gastos.length);
-    console.log("useResumenData - Fallback: Gastos verified:", gastos.filter(g => g.estado === "verified").length);
-    
+
     farmacias.forEach((farm) => {
       const gastosFiltrados = gastos.filter((g) => {
         const tieneLocalidad = g.localidad === farm.id;
         const esVerificado = g.estado === "verified";
-        
+
         let enRango = false;
         if (g.fecha) {
           const fechaGasto = parseDate(g.fecha);
@@ -705,28 +686,10 @@ export function useResumenData() {
             enRango = fechaGasto >= fechaInicioDate && fechaGasto <= fechaFinDate;
           }
         }
-        
+
         return tieneLocalidad && esVerificado && enRango;
       });
-      
-      // Debug para las primeras 3 farmacias
-      if (farmacias.indexOf(farm) < 3) {
-        console.log(`useResumenData - Fallback: ${farm.nombre} (ID: ${farm.id}):`, {
-          totalGastos: gastos.length,
-          gastosDeEstaFarmacia: gastos.filter(g => g.localidad === farm.id).length,
-          gastosVerificados: gastos.filter(g => g.localidad === farm.id && g.estado === "verified").length,
-          gastosEnRango: gastosFiltrados.length,
-          gastosFiltrados: gastosFiltrados.slice(0, 5).map(g => ({
-            id: g._id,
-            localidad: g.localidad,
-            fecha: g.fecha,
-            monto: g.monto,
-            divisa: g.divisa,
-            tasa: g.tasa
-          }))
-        });
-      }
-      
+
       const total = gastosFiltrados.reduce((acc, g) => {
         if (g.divisa === "Bs" && g.tasa && Number(g.tasa) > 0) {
           return acc + Number(g.monto || 0) / Number(g.tasa);
@@ -734,12 +697,9 @@ export function useResumenData() {
         return acc + Number(g.monto || 0);
       }, 0);
       resultado[farm.id] = Math.max(0, total);
-      
-      if (farmacias.indexOf(farm) < 3) {
-        console.log(`useResumenData - Fallback: ${farm.nombre} (ID: ${farm.id}): Total = $${resultado[farm.id]}`);
-      }
+
     });
-    
+
     return resultado;
   }, [gastosPorFarmaciaData, gastos, farmacias, fechaInicio, fechaFin]);
 
