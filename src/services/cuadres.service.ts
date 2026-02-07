@@ -31,6 +31,7 @@ interface CuadreDetallado {
     costoInventario: number;
     nombreFarmacia: string;
     codigoFarmacia: string;
+    valesUsd: number; // Agregado para incluir los vales en USD
 }
 
 interface ApiResponse<T> {
@@ -65,8 +66,6 @@ export const cuadresService = {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
-                    // Agrega aquí tus headers de autenticación si los necesitas
-                    // 'Authorization': `Bearer ${token}`,
                 },
             });
 

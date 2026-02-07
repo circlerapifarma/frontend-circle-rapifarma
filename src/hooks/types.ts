@@ -31,4 +31,5 @@ export interface CuadreDetallado {
     costoInventario: number;
     nombreFarmacia: string;
     codigoFarmacia: string;
+    valesUsd: number
 }

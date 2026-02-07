@@ -81,7 +81,7 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
     };
 
     return {
-      totalGeneral: cuadres.reduce((acc, c) => acc + c.totalGeneralUsd, 0),
+      totalGeneral: cuadres.reduce((acc, c) => acc + c.totalGeneralUsd + (c.recargaBs / c.tasa) , 0),
       totalInventario: cuadres.reduce((acc, c) => acc + (c.costoInventario / c.tasa), 0),
       totalSobrantes: cuadres.reduce((acc, c) => acc + c.sobranteUsd, 0),
       totalFaltantes: cuadres.reduce((acc, c) => acc + c.faltanteUsd, 0),
