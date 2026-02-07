@@ -101,7 +101,7 @@ const AppRouter = () => (
     <Route
       path="/cuadres/denegados"
       element={
-        <PermissionRoute permiso="verificar_cuadres">
+        <PermissionRoute permiso="cuadres_denegados">
           <CuadresDenegadosPorUsuario />
         </PermissionRoute>
       }

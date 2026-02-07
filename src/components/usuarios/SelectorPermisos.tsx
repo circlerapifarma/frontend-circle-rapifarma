@@ -4,29 +4,18 @@ interface PermissionSelectorProps {
 }
 
 const PERMISOS = [
-
     "ver_inicio",
-
     "ver_about",
-
     "agregar_cuadre",
-
     "ver_resumen_mensual",
-
     "verificar_cuadres",
-
     "ver_cuadres_dia",
-
     "ver_resumen_dia",
-
     "acceso_admin",
-
     "eliminar_cuadres",
-
     "ver_ventas_totales",
-
-    "verificar_gastos"
-
+    "verificar_gastos",
+    "cuadres_denegados"
 ];
 
 export const PermissionSelector = ({ selected, onChange }: PermissionSelectorProps) => (
