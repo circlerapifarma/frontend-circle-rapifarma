@@ -36,7 +36,7 @@ import ModificarEstadoMeta from "@/pages/metas/ModificarEstadoMeta";
 import ModificacionCuadrePage from "@/pages/cuadres/modificarCuadre/ModificacionCuadrePage";
 import RegistroUsuario from "@/pages/auth/RegistroUsuario";
 import ProveedoresPage from "@/pages/ProveedoresPage";
-import UsuariosAdminPage from "@/pages/UsuariosAdminPage";
+import { UsuariosAdminPage } from "@/pages/UsuariosAdminPage";
 import ListasComparativasPage from "@/pages/ListasComparativasPage";
 import OrdenCompraPage from "@/pages/OrdenCompraPage";
 import BancosPage from "@/pages/BancosPage";

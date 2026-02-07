@@ -10,3 +10,11 @@ export interface Gasto {
     estado: string;
     imagenesGasto?: string[];
 }
+
+export interface Usuario {
+  _id?: string;
+  correo: string;
+  contraseña?: string;
+  farmacias: Record<string, string>;
+  permisos: string[];
+}
