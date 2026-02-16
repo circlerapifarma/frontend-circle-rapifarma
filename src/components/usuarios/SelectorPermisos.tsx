@@ -15,7 +15,9 @@ const PERMISOS = [
     "eliminar_cuadres",
     "ver_ventas_totales",
     "verificar_gastos",
-    "cuadres_denegados"
+    "cuadres_denegados",
+    "comisiones",
+    "comisionesgenerales"
 ];
 
 export const PermissionSelector = ({ selected, onChange }: PermissionSelectorProps) => (
