@@ -320,7 +320,6 @@ export function useResumenData() {
         )
           return;
         let sumaBs =
-          Number(c.recargaBs || 0) +
           Number(c.pagomovilBs || 0) +
           Number(c.efectivoBs || 0);
         if (Array.isArray(c.puntosVenta)) {
@@ -412,7 +411,7 @@ export function useResumenData() {
         )
           return;
         let sumaBs =
-          Number(c.recargaBs || 0) +
+          // Number(c.recargaBs || 0) +
           Number(c.pagomovilBs || 0) +
           Number(c.efectivoBs || 0);
         if (Array.isArray(c.puntosVenta)) {

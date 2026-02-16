@@ -50,13 +50,6 @@ const ResumeCardFarmacia: React.FC<ResumeCardFarmaciaProps> = ({
   gastos = 0,
   cuentasPorPagarActivas = 0,
   cuentasPagadas = 0,
-  pagosEnUsd = 0,
-  pagosEnBs = 0,
-  totalPagosGeneral = 0,
-  montoOriginalFacturas = 0,
-  diferencialPagos = 0,
-  abonosNoLiquidadosEnUsd = 0,
-  abonosNoLiquidadosEnBs = 0,
 }) => {
   const formatCurrency = (amount: number) => {
     return amount.toLocaleString("es-VE", {
@@ -227,109 +220,6 @@ const ResumeCardFarmacia: React.FC<ResumeCardFarmaciaProps> = ({
             <span className="font-semibold text-green-700">
               {formatCurrency(cuentasPagadas)}
             </span>
-          </div>
-          <div className="mt-2 pt-2 border-t border-dashed">
-            <p className="font-bold text-center text-blue-800 mb-2">
-              Análisis de Pagos del Período
-            </p>
-            <div className="w-full rounded-lg p-3 mt-2">
-              <div className="flex justify-between items-center mb-2">
-                <span className="flex items-center gap-2 text-slate-600">
-                  <i className="fas fa-file-invoice-dollar fa-fw"></i>
-                  Monto Original Facturas:
-                </span>
-                <span className="font-semibold text-slate-800">
-                  {formatCurrency(montoOriginalFacturas)}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center mb-2">
-                <span className="flex items-center gap-2 font-bold text-blue-800">
-                  <i className="fas fa-money-bill-wave fa-fw"></i>
-                  Total Pagado (USD):
-                </span>
-                <span className="font-extrabold text-lg text-blue-700">
-                  {formatCurrency(totalPagosGeneral)}
-                </span>
-              </div>
-
-              <hr className="my-2" />
-
-              <div className="flex justify-between items-center mt-2">
-                <span
-                  className={`flex items-center gap-2 font-bold ${diferencialPagos >= 0 ? "text-red-800" : "text-green-800"
-                    }`}
-                >
-                  {/* Íconos más intuitivos para indicar ganancia, pérdida o neutralidad */}
-                  <i
-                    className={`fas fa-fw ${diferencialPagos > 0
-                      ? "fa-arrow-trend-up"
-                      : diferencialPagos < 0
-                        ? "fa-arrow-trend-down"
-                        : "fa-equals"
-                      }`}
-                  ></i>
-                  Diferencial por Pago:
-                </span>
-                <span
-                  className={`font-extrabold text-lg ${diferencialPagos >= 0 ? "text-red-700" : "text-green-700"
-                    }`}
-                >
-                  {formatCurrency(diferencialPagos)}
-                </span>
-              </div>
-            </div>
-
-            {/* Desglose de cómo se pagó */}
-            <div className="mt-2 pt-2 border-t border-dotted">
-              <div className="flex justify-between items-center py-1 text-xs text-gray-600">
-                <span className="flex items-center gap-2 pl-4">
-                  <i className="fas fa-dollar-sign text-blue-500"></i> Pagos en
-                  USD:
-                </span>
-                <span className="font-semibold">
-                  {formatCurrency(pagosEnUsd)}
-                </span>
-              </div>
-              <div className="flex justify-between items-center py-1 text-xs text-gray-600">
-                <span className="flex items-center gap-2 pl-4">
-                  <i className="fas fa-coins text-yellow-600"></i> Pagos en Bs:
-                </span>
-                <span className="font-semibold">
-                  {pagosEnBs.toLocaleString("es-VE", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}{" "}
-                  Bs
-                </span>
-              </div>
-            </div>
-
-            {/* Información adicional */}
-            <div className="mt-2 pt-2 border-t border-dotted">
-              <div className="flex justify-between items-center py-1 text-xs text-gray-600">
-                <span className="flex items-center gap-2 pl-4">
-                  <i className="fas fa-hourglass-half text-yellow-500"></i>{" "}
-                  Abonos no liquidados (USD):
-                </span>
-                <span className="font-semibold text-yellow-700">
-                  {formatCurrency(abonosNoLiquidadosEnUsd)}
-                </span>
-              </div>
-              <div className="flex justify-between items-center py-1 text-xs text-gray-600">
-                <span className="flex items-center gap-2 pl-4">
-                  <i className="fas fa-hourglass-half text-yellow-600"></i>{" "}
-                  Abonos no liquidados (Bs):
-                </span>
-                <span className="font-semibold text-yellow-700">
-                  {abonosNoLiquidadosEnBs.toLocaleString("es-VE", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}{" "}
-                  Bs
-                </span>
-              </div>
-            </div>
           </div>
         </>
 
