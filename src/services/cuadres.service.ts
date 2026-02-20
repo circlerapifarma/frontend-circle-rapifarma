@@ -33,6 +33,7 @@ interface CuadreDetallado {
     nombreFarmacia: string;
     codigoFarmacia: string;
     valesUsd: number; // Agregado para incluir los vales en USD
+    valesBs: number;  // Agregado para incluir los vales en Bs
     imagenesCuadre:[]
 }
 
