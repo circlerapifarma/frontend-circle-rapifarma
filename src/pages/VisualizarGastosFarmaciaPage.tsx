@@ -1,6 +1,10 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import ImageDisplay from "../components/upfile/ImageDisplay";
-import { animate, stagger } from 'animejs';
+import type { MRT_ColumnDef } from 'material-react-table';
+import { MaterialReactTable, useMaterialReactTable } from 'material-react-table';
+import { MRT_Localization_ES } from 'material-react-table/locales/es';
+import ImageDisplay2 from "@/components/upfile/ImageDisplay2";
+import { getPresignedUrl } from "@/components/upfile/UpFileGasto";
 
 interface Gasto {
   _id: string;
@@ -86,6 +90,17 @@ const EstadoGastoBadge: React.FC<{ estado: string }> = ({ estado }) => {
   );
 };
 
+const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
+  const token = localStorage.getItem("token");
+  const headers: HeadersInit = {
+    ...options.headers,
+    "Content-Type": "application/json",
+    ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+  };
+  const res = await fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers });
+  if (!res.ok) throw new Error("Error en la petición");
+  return res.json();
+};
 
 const VisualizarGastosFarmaciaPage: React.FC = () => {
   const [gastos, setGastos] = useState<Gasto[]>([]);
@@ -96,71 +111,26 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
   const [estadoFiltro, setEstadoFiltro] = useState<string>("");
   const [fechaInicio, setFechaInicio] = useState<string>("");
   const [fechaFin, setFechaFin] = useState<string>("");
-  const [proveedorFiltro, setProveedorFiltro] = useState<string>(""); // Usado para filtrar por título
   const [success, setSuccess] = useState<string | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; gastoId: string | null; nuevoEstado: string }>({ open: false, gastoId: null, nuevoEstado: "" });
-  const [imagenAmpliada, setImagenAmpliada] = useState<{imagenes: string[], index: number} | null>(null);
-
+  const [imagenAmpliada, setImagenAmpliada] = useState<{ imagenes: string[], index: number } | null>(null);
   const fetchGastos = async () => {
     setLoading(true);
     setError(null);
     try {
-      let url = `${API_BASE_URL}/gastos?`;
-      if (selectedFarmacia) url += `localidad=${selectedFarmacia}&`;
-      if (fechaInicio) url += `fecha_inicio=${fechaInicio}&`;
-      if (fechaFin) url += `fecha_fin=${fechaFin}&`;
-      
-      // Agregamos el token de autenticación si es necesario para esta ruta
-      const token = localStorage.getItem("token"); // Asumiendo que usas token como en el anterior
-      const headers: HeadersInit = {};
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
+      const params = new URLSearchParams();
+      if (selectedFarmacia) params.append("localidad", selectedFarmacia);
+      if (fechaInicio) params.append("fecha_inicio", fechaInicio);
+      if (fechaFin) params.append("fecha_fin", fechaFin);
 
-      const res = await fetch(url, { headers });
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ message: "Error desconocido al obtener gastos" }));
-        throw new Error(errorData.message || "Error al obtener gastos");
-      }
-      const data = await res.json();
+      const data = await apiFetch(`/gastos?${params.toString()}`);
       setGastos(data);
     } catch (err: any) {
-      setError(err.message || "Error al obtener gastos");
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    const now = new Date();
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    setFechaInicio(firstDay.toISOString().slice(0, 10));
-    setFechaFin(lastDay.toISOString().slice(0, 10));
-    
-    const usuarioRaw = localStorage.getItem("usuario");
-    if (usuarioRaw) {
-      try {
-        const usuario = JSON.parse(usuarioRaw);
-        const farmaciasObj = usuario.farmacias || {};
-        const farmaciasArr = Object.entries(farmaciasObj).map(([id, nombre]) => ({ id, nombre: String(nombre) }));
-        setFarmacias(farmaciasArr);
-         if (farmaciasArr.length === 1) { // Si solo hay una farmacia, seleccionarla por defecto
-            setSelectedFarmacia(farmaciasArr[0].id);
-        }
-      } catch {
-        setFarmacias([]);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    // Solo llamar a fetchGastos si las fechas están seteadas (evita llamadas iniciales sin fechas)
-    // y si hay farmacias o no se requiere una farmacia seleccionada para la primera carga
-    if (fechaInicio && fechaFin && (farmacias.length === 0 || farmacias.length > 1 || selectedFarmacia) ) {
-        fetchGastos();
-    }
-  }, [selectedFarmacia, fechaInicio, fechaFin, farmacias]); // Añadir farmacias a las dependencias
 
   const handleEstadoSelect = (gastoId: string, nuevoEstado: string) => {
     setConfirmDialog({ open: true, gastoId, nuevoEstado });
@@ -182,7 +152,7 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
         body: JSON.stringify({ id: confirmDialog.gastoId, estado: confirmDialog.nuevoEstado })
       });
       if (!res.ok) {
-         const errorData = await res.json().catch(() => ({ message: "Error desconocido al actualizar estado" }));
+        const errorData = await res.json().catch(() => ({ message: "Error desconocido al actualizar estado" }));
         throw new Error(errorData.detail || errorData.message || "Error al actualizar el estado del gasto");
       }
       setGastos(prev => prev.map(g => g._id === confirmDialog.gastoId ? { ...g, estado: confirmDialog.nuevoEstado } : g));
@@ -200,54 +170,233 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
     setConfirmDialog({ open: false, gastoId: null, nuevoEstado: "" });
   };
 
-  const gastosFiltrados = gastos
-    .filter(g => {
-      // Si el filtro es "" (Todos), mostrar todos sin filtrar por estado
-      if (!estadoFiltro) return true;
-      return g.estado && g.estado.trim().toLowerCase() === estadoFiltro.trim().toLowerCase();
-    })
-    .filter(g =>
-      !proveedorFiltro ||
-      g.titulo.toLowerCase().includes(proveedorFiltro.toLowerCase()) ||
-      g.descripcion.toLowerCase().includes(proveedorFiltro.toLowerCase())
-    )
-    .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+  const gastosFiltrados = useMemo(() => {
+    return gastos
+      .filter(g => {
+        const matchEstado = !estadoFiltro || g.estado?.toLowerCase() === estadoFiltro.toLowerCase();
+        return matchEstado;
+      })
+      .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+  }, [gastos, estadoFiltro]);
 
-  // Debug: mostrar valores de filtro y estados para depuración
-  // console.log('estadoFiltro:', estadoFiltro, 'gastos:', gastos.map(g => g.estado));
+  // Memorizamos los totales
+  const { totalUSD, totalBs } = useMemo(() => {
+    return gastosFiltrados.reduce((acc, g) => {
+      const monto = g.monto || 0;
+      const tasa = g.tasa || 1;
 
-  useEffect(() => {
-    // Animar fechas y montos al renderizar la lista filtrada
-    animate('.gasto-fecha, .gasto-monto', {
-      opacity: [0, 1],
-      y: [20, 0],
-      duration: 500,
-      delay: stagger(60)
-    });
+      if (g.divisa === 'Bs') {
+        acc.totalBs += monto;
+        acc.totalUSD += (monto / tasa);
+      } else {
+        acc.totalUSD += monto;
+        acc.totalBs += (monto * tasa);
+      }
+      return acc;
+    }, { totalUSD: 0, totalBs: 0 });
   }, [gastosFiltrados]);
 
-  // Calcular totales globales en USD y Bs
-  const totalUSD = gastosFiltrados.reduce((acc, g) => {
-    if (g.divisa === 'Bs' && g.tasa) {
-      return acc + (g.monto / g.tasa);
+  const [presignedMap, setPresignedMap] = useState<Record<string, string>>({});
+
+  const getImageUrlFor = async (imageName: string) => {
+    // 1) si ya está en cache, devolverla
+    if (presignedMap[imageName]) return presignedMap[imageName];
+
+    const url = await getPresignedUrl(imageName, "get_object");
+    setPresignedMap(prev => ({ ...prev, [imageName]: url }));
+    return url;
+  };
+
+  const useGastoColumns = (
+    setImagenAmpliada: (data: { imagenes: string[]; index: number }) => void,
+    handleEstadoSelect: (id: string, nuevoEstado: string) => void
+  ) => {
+    return useMemo<MRT_ColumnDef<Gasto>[]>(
+      () => [
+        {
+          accessorKey: 'imagenesGasto', // Podemos usar este o imagenGasto
+          header: 'Imagen',
+          size: 120,
+          enableResizing: false,    // <--- No se puede estirar
+          enableColumnFilter: false, // <--- No se puede filtrar
+          enableSorting: false,      // <--- No se puede ordenar
+          // en la definición de columnas
+          Cell: ({ row }) => {
+            const g = row.original;
+            const imagenes = Array.isArray(g.imagenesGasto) && g.imagenesGasto.length > 0
+              ? g.imagenesGasto
+              : g.imagenGasto ? [g.imagenGasto] : [];
+
+            if (imagenes.length === 0) return <span className="text-slate-400 text-xs">Sin imagen</span>;
+
+            return (
+              <ImageDisplay2
+                imageName={imagenes[0]}
+                alt="Imagen gasto"
+                style={{ height: 40, width: 40, objectFit: 'cover', borderRadius: 8, cursor: 'pointer' }}
+                onClickImage={() => setImagenAmpliada({ imagenes, index: 0 })}
+                // nueva prop
+                resolveUrl={getImageUrlFor}
+              />
+            );
+          },
+
+        },
+        {
+          accessorKey: 'fecha',
+          header: 'Fecha',
+          Cell: ({ cell }) => formatFecha(cell.getValue<string>()),
+        },
+        {
+          id: 'fechaRegistro',
+          header: 'Fecha R.',
+          Cell: ({ row }) => formatFecha(row.original.fecha, row.original.fechaRegistro),
+        },
+        {
+          accessorKey: 'titulo',
+          header: 'Título',
+          muiTableBodyCellProps: { sx: { fontWeight: 'bold' } },
+        },
+        {
+          accessorKey: 'descripcion',
+          header: 'Descripción',
+          enableTooltip: true, // MRT ya maneja tooltips básicos o puedes personalizar
+          Cell: ({ cell }) => (
+            <div className="max-w-md truncate" title={cell.getValue<string>()}>
+              {cell.getValue<string>()}
+            </div>
+          ),
+        },
+        {
+          accessorKey: 'monto',
+          header: 'Monto',
+          muiTableBodyCellProps: { align: 'right' },
+          Cell: ({ cell }) =>
+            cell.getValue<number>().toLocaleString('es-VE', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2
+            }),
+        },
+        {
+          accessorKey: 'divisa',
+          header: 'Moneda',
+          Cell: ({ cell }) => cell.getValue<string>() || '-',
+        },
+        {
+          accessorKey: 'tasa',
+          header: 'Tasa',
+          Cell: ({ cell }) => cell.getValue<number>() || '-',
+        },
+        {
+          accessorKey: 'estado',
+          header: 'Estado',
+          Cell: ({ cell }) => <EstadoGastoBadge estado={cell.getValue<string>()} />,
+        },
+        {
+          id: 'acciones',
+          header: 'Acción',
+          Cell: ({ row }) => (
+            <select
+              value={row.original.estado}
+              onChange={(e) => handleEstadoSelect(row.original._id, e.target.value)}
+              className="border-slate-300 rounded-md py-1 px-2 text-xs"
+            >
+              {ESTADO_OPCIONES.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                </option>
+              ))}
+            </select>
+          ),
+        },
+      ],
+      [setImagenAmpliada, handleEstadoSelect]
+    );
+  };
+  const columns = useGastoColumns(setImagenAmpliada, handleEstadoSelect);
+  const table = useMaterialReactTable({
+    columns,
+    data: gastosFiltrados, // Tus datos
+    enableColumnResizing: true,
+    enableColumnOrdering: true,
+    enablePagination: true,
+    localization: MRT_Localization_ES, // Para que esté en español  
+    initialState: { density: 'compact' },
+
+    // Estilos personalizados para mantener tu estética de "rojo"
+    muiTableHeadCellProps: {
+      sx: {
+        backgroundColor: '#fef2f2', // bg-red-50
+        color: '#b91c1c',           // text-red-700
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
+        fontSize: '0.75rem',
+      },
+    },
+    muiTablePaperProps: {
+      elevation: 0,
+      sx: { borderRadius: '8px', border: '1px solid #e2e8f0' }
     }
-    return acc + g.monto;
-  }, 0);
-  const totalBs = gastosFiltrados.reduce((acc, g) => {
-    if (g.divisa === 'Bs') {
-      return acc + g.monto;
+  });
+
+
+  useEffect(() => {
+    const now = new Date();
+
+    // hoy como fin
+    const lastDay = now;
+
+    // hace 6 días como inicio
+    const firstDay = new Date(now);
+    firstDay.setDate(now.getDate() - 6);
+
+    setFechaInicio(firstDay.toISOString().slice(0, 10));
+    setFechaFin(lastDay.toISOString().slice(0, 10));
+
+
+    const usuarioRaw = localStorage.getItem("usuario");
+    if (usuarioRaw) {
+      try {
+        const usuario = JSON.parse(usuarioRaw);
+        const farmaciasObj = usuario.farmacias || {};
+        const farmaciasArr = Object.entries(farmaciasObj).map(([id, nombre]) => ({ id, nombre: String(nombre) }));
+        setFarmacias(farmaciasArr);
+        if (farmaciasArr.length === 1) { // Si solo hay una farmacia, seleccionarla por defecto
+          setSelectedFarmacia(farmaciasArr[0].id);
+        }
+      } catch {
+        setFarmacias([]);
+      }
     }
-    if (g.divisa === 'USD' && g.tasa) {
-      return acc + (g.monto * g.tasa);
+  }, []);
+
+  useEffect(() => {
+    // Solo llamar a fetchGastos si las fechas están seteadas (evita llamadas iniciales sin fechas)
+    // y si hay farmacias o no se requiere una farmacia seleccionada para la primera carga
+    if (fechaInicio && fechaFin && (farmacias.length === 0 || farmacias.length > 1 || selectedFarmacia)) {
+      fetchGastos();
     }
-    return acc;
-  }, 0);
+  }, [selectedFarmacia, fechaInicio, fechaFin, farmacias]); // Añadir farmacias a las dependencias
+
+  const [showFarmacias, setShowFarmacias] = useState(false);
+  const farmaciaRef = useRef<HTMLDivElement>(null);
+
+  // Cerrar popover al hacer click fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (farmaciaRef.current && !farmaciaRef.current.contains(event.target as Node)) {
+        setShowFarmacias(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <div className="h-1 bg-slate-50 py-8">
-      <div className="w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
         <h1 className="text-3xl font-bold text-red-700 mb-8 text-center">Gestión de Gastos</h1>
-        
+
         {error && (
           <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md shadow" role="alert">
             <p className="font-bold">Error</p>
@@ -261,71 +410,120 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
           </div>
         )}
 
-        <div className="bg-white p-6 rounded-lg shadow-lg mb-8">
-          <h2 className="text-xl font-semibold text-slate-700 mb-4">Filtros</h2>
-          
-          {farmacias.length > 1 && ( // Solo mostrar si hay más de una farmacia
-            <div className="mb-6">
-              <span className="font-medium text-slate-700 mr-3">Farmacias:</span>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {farmacias.map(f => (
-                  <button
-                    key={f.id}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-150 ease-in-out
-                                ${selectedFarmacia === f.id 
-                                  ? 'bg-red-600 text-white shadow-md ring-2 ring-red-300' 
-                                  : 'bg-slate-100 text-slate-700 hover:bg-red-100 hover:text-red-700 border border-slate-300'}`}
-                    onClick={() => setSelectedFarmacia(f.id === selectedFarmacia ? "" : f.id)}
-                  >
-                    {f.nombre}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-            <div>
-              <label htmlFor="proveedorFiltro" className="block text-sm font-medium text-slate-600 mb-1">Buscar Título/Descripción</label>
-              <input 
-                type="text" 
-                id="proveedorFiltro"
-                value={proveedorFiltro} 
-                onChange={e => setProveedorFiltro(e.target.value)} 
-                className="w-full border-slate-300 rounded-md shadow-sm focus:border-red-500 focus:ring focus:ring-red-200 focus:ring-opacity-50 py-2 px-3 text-sm" 
-                placeholder="Ej: Reparación, Papelería..." />
-            </div>
-            <div>
-              <label htmlFor="estadoFiltro" className="block text-sm font-medium text-slate-600 mb-1">Estado</label>
-              <select 
-                id="estadoFiltro"
-                value={estadoFiltro} 
-                onChange={e => setEstadoFiltro(e.target.value)} 
-                className="w-full border-slate-300 rounded-md shadow-sm focus:border-red-500 focus:ring focus:ring-red-200 focus:ring-opacity-50 py-2 px-3 text-sm"
+        <div className="bg-white rounded-xl shadow-md border border-slate-200 mb-8">
+          {/* Header Sutil */}
+          <div className="bg-slate-50/50 px-6 py-3 border-b border-slate-100 flex justify-between items-center">
+            <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+              <span className="w-1 h-4 bg-red-500 rounded-full"></span>
+              Panel de Filtros
+            </h2>
+            {(fechaInicio || fechaFin || estadoFiltro || selectedFarmacia) && (
+              <button
+                onClick={() => { setEstadoFiltro(""); setFechaInicio(""); setFechaFin(""); setSelectedFarmacia(""); }}
+                className="text-xs font-semibold text-red-600 hover:text-red-700 transition-colors flex items-center gap-1"
               >
-                <option value="">Todos</option>
-                {ESTADO_OPCIONES.map(opt => (
-                  <option key={opt} value={opt}>{opt.charAt(0).toUpperCase() + opt.slice(1)}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="fechaInicio" className="block text-sm font-medium text-slate-600 mb-1">Fecha Desde</label>
-              <input 
-                type="date" 
-                id="fechaInicio"
-                value={fechaInicio} 
-                onChange={e => setFechaInicio(e.target.value)} 
-                className="w-full border-slate-300 rounded-md shadow-sm focus:border-red-500 focus:ring focus:ring-red-200 focus:ring-opacity-50 py-2 px-3 text-sm" />
-            </div>
-            <div>
-              <label htmlFor="fechaFin" className="block text-sm font-medium text-slate-600 mb-1">Fecha Hasta</label>
-              <input 
-                type="date" 
-                id="fechaFin"
-                value={fechaFin} 
-                onChange={e => setFechaFin(e.target.value)} 
-                className="w-full border-slate-300 rounded-md shadow-sm focus:border-red-500 focus:ring focus:ring-red-200 focus:ring-opacity-50 py-2 px-3 text-sm" />
+                Limpiar Todo ✕
+              </button>
+            )}
+          </div>
+
+          <div className="p-5">
+            <div className="flex flex-wrap items-end gap-4">
+
+              {/* Selector de Farmacia */}
+              <div className="flex-1 min-w-[220px] md:flex-none" ref={farmaciaRef}>
+                <label className="block text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1.5 ml-1">
+                  Farmacia
+                </label>
+                <div className="relative">
+                  <button
+                    onClick={() => setShowFarmacias(!showFarmacias)}
+                    className={`w-full flex items-center justify-between gap-3 h-10 px-3 rounded-lg border transition-all text-sm
+                ${selectedFarmacia
+                        ? 'border-red-200 bg-red-50/50 text-red-700 shadow-sm'
+                        : 'border-slate-300 bg-white text-slate-600 hover:border-slate-400'}`}
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <svg className="w-4 h-4 flex-shrink-0 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2-2 0 00-2-2H7a2-2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-10V4m0 10V4m-4 10h4" />
+                      </svg>
+                      <span className="truncate font-medium">
+                        {selectedFarmacia ? farmacias.find(f => f.id === selectedFarmacia)?.nombre : "Todas las farmacias"}
+                      </span>
+                    </div>
+                    <svg className={`w-3 h-3 transition-transform duration-200 ${showFarmacias ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {/* Popover con animación */}
+                  {showFarmacias && (
+                    <div className="absolute left-2 top-1 z-[100] mt-2 w-64 bg-white border border-slate-200 rounded-xl shadow-2xl py-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                      <button
+                        onClick={() => { setSelectedFarmacia(""); setShowFarmacias(false); }}
+                        className="w-full text-left px-4 py-2 text-xs font-bold text-slate-400 hover:bg-slate-50"
+                      >
+                        MOSTRAR TODAS
+                      </button>
+                      <div className="h-px bg-slate-100 my-1" />
+                      <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                        {farmacias.map(f => (
+                          <button
+                            key={f.id}
+                            onClick={() => { setSelectedFarmacia(f.id); setShowFarmacias(false); }}
+                            className={`w-full text-left px-4 py-2.5 text-sm transition-colors
+                        ${selectedFarmacia === f.id ? 'bg-red-50 text-red-700 font-bold' : 'text-slate-600 hover:bg-slate-50'}`}
+                          >
+                            {f.nombre}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Estado */}
+              <div className="w-full md:w-44">
+                <label htmlFor="estadoFiltro" className="block text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1.5 ml-1">
+                  Estado
+                </label>
+                <select
+                  id="estadoFiltro"
+                  value={estadoFiltro}
+                  onChange={e => setEstadoFiltro(e.target.value)}
+                  className="w-full h-10 bg-white border-slate-300 border rounded-lg shadow-sm focus:border-red-500 focus:ring-2 focus:ring-red-200 transition-all px-3 text-sm font-medium text-slate-600 outline-none appearance-none cursor-pointer"
+                  style={{ backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center', backgroundSize: '1rem' }}
+                >
+                  <option value="">Cualquier estado</option>
+                  {ESTADO_OPCIONES.map(opt => (
+                    <option key={opt} value={opt}>{opt.charAt(0).toUpperCase() + opt.slice(1)}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Rango de Fechas */}
+              <div className="flex-1 min-w-[300px] grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1.5 ml-1">Desde</label>
+                  <input
+                    type="date"
+                    value={fechaInicio}
+                    onChange={e => setFechaInicio(e.target.value)}
+                    className="w-full h-10 bg-white border-slate-300 border rounded-lg px-3 text-sm text-slate-600 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1.5 ml-1">Hasta</label>
+                  <input
+                    type="date"
+                    value={fechaFin}
+                    onChange={e => setFechaFin(e.target.value)}
+                    className="w-full h-10 bg-white border-slate-300 border rounded-lg px-3 text-sm text-slate-600 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all"
+                  />
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
@@ -349,114 +547,13 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
         ) : (
           <>
             {/* Vista de tabla para pantallas medianas y grandes */}
-            <div className=" max-h-96 hidden sm:block bg-white rounded-lg shadow-xl overflow-auto max-w-full">
-              <div className="overflow-x-auto w-full">
-                <table className="min-w-full divide-y divide-slate-200 table-fixed" style={{ maxWidth: '100vw' }}>
-                  <thead className="bg-red-50">
-                    <tr>
-                      <th scope="col" className="px-5 py-3.5 text-left text-xs font-semibold text-red-700 uppercase tracking-wider whitespace-nowrap">Imagen</th>
-                      {['Fecha','Fecha R.', 'Título', 'Descripción', 'Monto', 'Moneda', 'Tasa', 'Estado', 'Acción'].map(header => (
-                        <th key={header} scope="col" className="px-5 py-3.5 text-left text-xs font-semibold text-red-700 uppercase tracking-wider whitespace-nowrap">
-                          {header}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-slate-200">
-                    {gastosFiltrados.map(g => (
-                      <tr key={g._id} className="hover:bg-red-50/50 transition-colors duration-150 ease-in-out">
-                        <td className="px-5 py-4 whitespace-nowrap">
-                          {Array.isArray(g.imagenesGasto) && g.imagenesGasto.length > 0 ? (
-                            <ImageDisplay
-                              imageName={g.imagenesGasto[0]}
-                              alt="Imagen gasto"
-                              style={{ height: 48, width: 48, objectFit: 'cover', borderRadius: 8, cursor: 'pointer', border: '1px solid #e2e8f0', boxShadow: '0 1px 4px #0001' }}
-                              onClickImage={() => setImagenAmpliada({imagenes: g.imagenesGasto ?? [], index: 0})}
-                            />
-                          ) : g.imagenGasto ? (
-                            <ImageDisplay
-                              imageName={g.imagenGasto}
-                              alt="Imagen gasto"
-                              style={{ height: 48, width: 48, objectFit: 'cover', borderRadius: 8, cursor: 'pointer', border: '1px solid #e2e8f0', boxShadow: '0 1px 4px #0001' }}
-                              onClickImage={() => setImagenAmpliada({imagenes: g.imagenGasto ? [g.imagenGasto] : [], index: 0})}
-                            />
-                          ) : (
-                            <span className="text-slate-400 text-xs">Sin imagen</span>
-                          )}
-                        </td>
-                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 gasto-fecha">{formatFecha(g.fecha,)}</td>
-                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-700 gasto-fecha">{formatFecha(g.fecha, g.fechaRegistro)}</td>
-                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-800 font-medium">{g.titulo}</td>
-                        <td className="px-5 py-4 text-sm text-slate-600 max-w-md truncate cursor-pointer group relative" title={g.descripcion}
-                          onClick={e => {
-                            e.stopPropagation();
-                            const target = e.currentTarget;
-                            // Si ya existe el tooltip, lo quitamos
-                            const existing = target.querySelector('.desc-tooltip');
-                            if (existing) {
-                              existing.remove();
-                              return;
-                            }
-                            // Crear tooltip
-                            const tooltip = document.createElement('div');
-                            tooltip.className = 'desc-tooltip fixed z-50 bg-white border border-slate-300 shadow-lg rounded-lg p-4 text-slate-800 text-sm max-w-xs w-fit break-words';
-                            tooltip.style.top = `${target.getBoundingClientRect().bottom + window.scrollY + 8}px`;
-                            tooltip.style.left = `${target.getBoundingClientRect().left + window.scrollX}px`;
-                            tooltip.innerText = g.descripcion;
-                            // Cerrar al hacer click fuera
-                            const closeTooltip = (ev: MouseEvent) => {
-                              if (!tooltip.contains(ev.target as Node)) {
-                                tooltip.remove();
-                                document.removeEventListener('mousedown', closeTooltip);
-                              }
-                            };
-                            document.addEventListener('mousedown', closeTooltip);
-                            document.body.appendChild(tooltip);
-                            // Responsive: ajustar si se sale de la pantalla
-                            setTimeout(() => {
-                              const rect = tooltip.getBoundingClientRect();
-                              if (rect.right > window.innerWidth) {
-                                tooltip.style.left = `${window.innerWidth - rect.width - 16}px`;
-                              }
-                              if (rect.bottom > window.innerHeight) {
-                                tooltip.style.top = `${window.innerHeight - rect.height - 16 + window.scrollY}px`;
-                              }
-                            }, 10);
-                          }}
-                        >
-                          {g.descripcion}
-                        </td>
-                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-800 font-semibold text-right gasto-monto">
-                          {g.monto.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </td>
-                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-800">{g.divisa || '-'}</td>
-                        <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-800">{g.tasa ? g.tasa : '-'}</td>
-                        <td className="px-5 py-4 whitespace-nowrap">
-                          <EstadoGastoBadge estado={g.estado} />
-                        </td>
-                        <td className="px-5 py-4 whitespace-nowrap text-sm">
-                          <select
-                            value={g.estado}
-                            onChange={e => handleEstadoSelect(g._id, e.target.value)}
-                            className="border-slate-300 rounded-md shadow-sm focus:border-red-500 focus:ring focus:ring-red-200 focus:ring-opacity-50 py-1.5 px-2 text-xs"
-                          >
-                            {ESTADO_OPCIONES.map(opt => (
-                              <option key={opt} value={opt}>{opt.charAt(0).toUpperCase() + opt.slice(1)}</option>
-                            ))}
-                          </select>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <MaterialReactTable table={table} />
             {/* Total de gastos en tabla, ahora fuera de la tabla */}
             <div className="flex flex-col sm:flex-row sm:justify-end gap-2 bg-red-50 border-t border-red-200 px-5 py-4 mt-2 rounded-lg">
               <span className="text-lg font-bold text-red-700">Total Bs: {totalBs.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               <span className="text-lg font-bold text-blue-700">Total $: {totalUSD.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
-            
+
             {/* Vista tipo tarjeta para móviles */}
             <div className="sm:hidden flex flex-col gap-4">
               {gastosFiltrados.map(g => (
@@ -546,13 +643,13 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
                   <button
                     className="px-3 py-1 bg-white bg-opacity-80 rounded shadow text-slate-700 font-bold"
                     disabled={imagenAmpliada.index === 0}
-                    onClick={() => setImagenAmpliada(imagenAmpliada => imagenAmpliada ? {...imagenAmpliada, index: imagenAmpliada.index - 1} : null)}
+                    onClick={() => setImagenAmpliada(imagenAmpliada => imagenAmpliada ? { ...imagenAmpliada, index: imagenAmpliada.index - 1 } : null)}
                   >Anterior</button>
                   <span className="text-white font-semibold">{imagenAmpliada.index + 1} / {imagenAmpliada.imagenes.length}</span>
                   <button
                     className="px-3 py-1 bg-white bg-opacity-80 rounded shadow text-slate-700 font-bold"
                     disabled={imagenAmpliada.index === imagenAmpliada.imagenes.length - 1}
-                    onClick={() => setImagenAmpliada(imagenAmpliada => imagenAmpliada ? {...imagenAmpliada, index: imagenAmpliada.index + 1} : null)}
+                    onClick={() => setImagenAmpliada(imagenAmpliada => imagenAmpliada ? { ...imagenAmpliada, index: imagenAmpliada.index + 1 } : null)}
                   >Siguiente</button>
                 </div>
               )}
