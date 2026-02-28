@@ -33,7 +33,17 @@ const VerificacionCuentasPorPagarPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; cuentaId: string | null; nuevoEstatus: string }>({ open: false, cuentaId: null, nuevoEstatus: "activa" });
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    cuentaId: string | null;
+    nuevoEstatus: string;
+    nuevoTipo: string | null;  // ✅ NUEVO
+  }>({
+    open: false,
+    cuentaId: null,
+    nuevoEstatus: "",
+    nuevoTipo: null
+  });
   const [modalAbierto, setModalAbierto] = useState(false);
   const [farmaciaSeleccionada, setFarmaciaSeleccionada] = useState<{ id: string; nombre: string } | null>(null);
   const [farmacias, setFarmacias] = useState<{ id: string; nombre: string }[]>([]);
@@ -71,32 +81,63 @@ const VerificacionCuentasPorPagarPage: React.FC = () => {
   }
 
   // Cambiar estatus
-  const handleEstatusSelect = (cuentaId: string, nuevoEstatus: string) => setConfirmDialog({ open: true, cuentaId, nuevoEstatus });
-  const handleCancelChange = () => setConfirmDialog({ open: false, cuentaId: null, nuevoEstatus: "" });
+  // Actualizar handleEstatusSelect
+  const handleEstatusSelect = (cuentaId: string, nuevoEstatus: string) =>
+    setConfirmDialog({
+      open: true,
+      cuentaId,
+      nuevoEstatus,
+      nuevoTipo: null  // Reset tipo
+    });
+
+  const handleCancelChange = () => setConfirmDialog({ open: false, cuentaId: null, nuevoEstatus: "", nuevoTipo: null });
+
   const handleConfirmChange = async () => {
-    if (!confirmDialog.cuentaId) return;
+    if (!confirmDialog.cuentaId || !confirmDialog.nuevoEstatus || !confirmDialog.nuevoTipo) return;
+
     setError(null);
+    setLoading(true);
+
     try {
       const token = localStorage.getItem("token");
       const headers: HeadersInit = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/cuentas-por-pagar/${confirmDialog.cuentaId}/estatus`, {
-        method: "PATCH",
-        headers,
-        body: JSON.stringify({ estatus: confirmDialog.nuevoEstatus })
-      });
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ message: "Error desconocido al actualizar estatus" }));
-        throw new Error(errorData.detail || errorData.message || "Error al actualizar el estatus");
-      }
+
+      // ✅ 1. PRIMERO actualiza ESTATUS
+      const estatusRes = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/cuentas-por-pagar/${confirmDialog.cuentaId}/estatus`,
+        {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({ estatus: confirmDialog.nuevoEstatus })
+        }
+      );
+
+      if (!estatusRes.ok) throw new Error("Error al actualizar estatus");
+
+      // ✅ 2. DESPUÉS actualiza TIPO
+      const tipoRes = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/cuentas-por-pagar/${confirmDialog.cuentaId}/tipo`,
+        {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({ tipo: confirmDialog.nuevoTipo })
+        }
+      );
+
+      if (!tipoRes.ok) throw new Error("Error al actualizar tipo");
+
+      // ✅ ÉXITO
       setCuentas(prev => prev.filter(c => c._id !== confirmDialog.cuentaId));
-      setSuccess("Estatus actualizado correctamente");
+      setSuccess("Estatus y tipo actualizados correctamente");
       setTimeout(() => setSuccess(null), 3000);
+
     } catch (err: any) {
-      setError(err.message || "Error al actualizar el estatus");
+      setError(err.message || "Error al actualizar");
       setTimeout(() => setError(null), 5000);
     } finally {
-      setConfirmDialog({ open: false, cuentaId: null, nuevoEstatus: "" });
+      setConfirmDialog({ open: false, cuentaId: null, nuevoEstatus: "", nuevoTipo: null });
+      setLoading(false);
     }
   };
 
@@ -161,6 +202,7 @@ const VerificacionCuentasPorPagarPage: React.FC = () => {
             error={error}
           />
         )}
+       // En VerificacionCuentasPorPagarPage, MODIFICAR el Dialog:
         {confirmDialog.open && (
           <Dialog open={confirmDialog.open} onOpenChange={handleCancelChange}>
             <DialogContent className="sm:max-w-[425px] p-6 bg-white rounded-2xl shadow-xl border-2 border-blue-500">
@@ -168,16 +210,35 @@ const VerificacionCuentasPorPagarPage: React.FC = () => {
                 <DialogTitle className="text-2xl font-bold text-blue-600 text-center">Confirmar Acción</DialogTitle>
                 <DialogDescription className="text-center text-gray-700 mt-2">
                   ¿Está seguro que desea cambiar el estatus de la cuenta por pagar?
-                  <div className="mt-4 flex justify-center">
-                    <select
-                      value={confirmDialog.nuevoEstatus}
-                      onChange={e => setConfirmDialog(cd => ({ ...cd, nuevoEstatus: e.target.value }))}
-                      className="border border-blue-300 rounded-md px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-blue-700"
-                    >
-                      <option value="seleccionar">seleccionar</option>
-                      <option value="activa">Activa</option>
-                      <option value="anulada">Anulada</option>
-                    </select>
+                  <div className="mt-6 space-y-4">
+                    {/* ✅ SELECT ESTATUS */}
+                    <div className="flex flex-col items-center">
+                      <label className="text-sm font-semibold text-gray-700 mb-2">Nuevo Estatus:</label>
+                      <select
+                        value={confirmDialog.nuevoEstatus}
+                        onChange={e => setConfirmDialog(cd => ({ ...cd, nuevoEstatus: e.target.value }))}
+                        className="border border-blue-300 rounded-md px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-blue-700 w-48"
+                      >
+                        <option value="">Seleccionar</option>
+                        <option value="activa">Activa</option>
+                        <option value="anulada">Anulada</option>
+                      </select>
+                    </div>
+
+                    {/* ✅ SELECT TIPO (NUEVO) */}
+                    <div className="flex flex-col items-center">
+                      <label className="text-sm font-semibold text-gray-700 mb-2">Tipo de Cuenta:</label>
+                      <select
+                        value={confirmDialog.nuevoTipo || ""}
+                        onChange={e => setConfirmDialog(cd => ({ ...cd, nuevoTipo: e.target.value }))}
+                        className="border border-green-300 rounded-md px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-green-400 bg-white text-green-700 w-48"
+                      >
+                        <option value="">Seleccionar</option>
+                        <option value="traslado">Traslado</option>
+                        <option value="pago_listo">Pago Listo</option>
+                        <option value="cuenta_por_pagar">Cuenta por Pagar</option>
+                      </select>
+                    </div>
                   </div>
                 </DialogDescription>
               </DialogHeader>
@@ -190,8 +251,8 @@ const VerificacionCuentasPorPagarPage: React.FC = () => {
                 </Button>
                 <Button
                   onClick={handleConfirmChange}
-                  className={`bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition-all`}
-                  disabled={!confirmDialog.nuevoEstatus}
+                  disabled={!confirmDialog.nuevoEstatus || !confirmDialog.nuevoTipo}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Aceptar
                 </Button>
@@ -199,6 +260,7 @@ const VerificacionCuentasPorPagarPage: React.FC = () => {
             </DialogContent>
           </Dialog>
         )}
+
       </div>
     </div>
   );

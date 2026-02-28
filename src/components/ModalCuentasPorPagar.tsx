@@ -1,6 +1,7 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { X, FileText, Info, Receipt, Clock } from "lucide-react";
 import ImageDisplay from "./upfile/ImageDisplay";
 
 interface CuentaPorPagar {
@@ -18,9 +19,10 @@ interface CuentaPorPagar {
   farmacia: string;
   retencion: number;
   fechaRecepcion: string;
-  fechaVencimiento?: string; // Nuevo campo
-  fechaRegistro?: string; // Nuevo campo
-  imagenesCuentaPorPagar?: string[]; // <-- Añadido para las imágenes
+  fechaVencimiento?: string;
+  fechaRegistro?: string;
+  imagenesCuentaPorPagar?: string[];
+  tipo?: string;
 }
 
 interface ModalCuentasPorPagarProps {
@@ -32,58 +34,137 @@ interface ModalCuentasPorPagarProps {
   error: string | null;
 }
 
-const ModalCuentasPorPagar: React.FC<ModalCuentasPorPagarProps> = ({ cuentas, farmaciaNombre, onConfirm, onClose, loading, error }) => {
+const ModalCuentasPorPagar: React.FC<ModalCuentasPorPagarProps> = ({
+  cuentas, farmaciaNombre, onConfirm, onClose, loading, error
+}) => {
+
+  const formatNumber = (num: number) =>
+    new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6 relative border-4 border-blue-700 mx-2">
-        <button className="absolute top-2 right-3 text-2xl text-gray-500 hover:text-red-600 font-bold" onClick={onClose}>&times;</button>
-        <h2 className="text-2xl font-extrabold text-blue-800 mb-4 text-center tracking-wide drop-shadow">Cuentas por Pagar - {farmaciaNombre}</h2>
-        {loading ? (
-          <div className="text-center py-8 text-base">Cargando...</div>
-        ) : error ? (
-          <div className="text-center text-red-600 py-8 text-base">{error}</div>
-        ) : cuentas.length === 0 ? (
-          <div className="text-center text-gray-500 py-8 text-base">No hay cuentas por pagar pendientes para esta farmacia.</div>
-        ) : (
-          <div className="flex flex-col gap-4 max-h-[60vh] overflow-y-auto">
-            {cuentas.map((c) => (
-              <Card key={c._id} className="p-4 border-2 border-blue-300 rounded-xl shadow-lg bg-blue-50 flex flex-col gap-2">
-                <div className="text-lg font-bold text-blue-900">{c.proveedor}</div>
-                <div className="text-base text-gray-700">Factura: <span className="font-semibold">{c.numeroFactura}</span></div>
-                <div className="text-base text-gray-700">Control: <span className="font-semibold">{c.numeroControl}</span></div>
-                <div className="text-base text-gray-700">Descripción: {c.descripcion}</div>
-                <div className="text-base text-gray-700 mb-1">Monto: <span className="font-semibold text-green-700">{c.divisa === 'Bs' && c.tasa ? `Bs ${c.monto.toLocaleString('es-VE', { minimumFractionDigits: 2 })} / Tasa: ${c.tasa} | $${(c.monto / c.tasa).toLocaleString('es-VE', { minimumFractionDigits: 2 })}` : `$${c.monto.toLocaleString('es-VE', { minimumFractionDigits: 2 })}`}</span></div>
-                <div className="text-base text-gray-700 mb-1">Retención: <span className="font-semibold text-blue-700">{c.divisa === 'Bs' && c.tasa ? `Bs ${c.retencion?.toLocaleString('es-VE', { minimumFractionDigits: 2 })} / Tasa: ${c.tasa} | $${(c.retencion / c.tasa).toLocaleString('es-VE', { minimumFractionDigits: 2 })}` : `$${c.retencion?.toLocaleString('es-VE', { minimumFractionDigits: 2 })}`}</span></div>
-                <div className="text-base text-gray-700 mb-1">Fecha Emisión: {c.fechaEmision}</div>
-                <div className="text-base text-gray-700 mb-1">Fecha Recepción: {c.fechaRecepcion}</div>
-                <div className="text-base text-gray-700 mb-1">Fecha Vencimiento: {c.fechaVencimiento}</div>
-                <div className="text-base text-gray-700 mb-1">Días Crédito: {c.diasCredito}</div>
-                {/* Mostrar imágenes si existen */}
-                {Array.isArray(c.imagenesCuentaPorPagar) && c.imagenesCuentaPorPagar.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {c.imagenesCuentaPorPagar.map((img: string, idx: number) => (
-                      <ImageDisplay
-                        key={img + idx}
-                        imageName={img}
-                        alt={`Comprobante ${idx + 1}`}
-                        style={{ maxWidth: 120, maxHeight: 120, borderRadius: 8, border: '1px solid #ccc', boxShadow: '0 1px 4px #0002', cursor: 'pointer' }}
-                      />
-                    ))}
-                  </div>
-                )}
-                <div className="flex gap-3 mt-2">
-                  <Button
-                    onClick={() => onConfirm(c._id, "verified")}
-                    className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-5 rounded-lg shadow-md transition-all duration-300 ease-in-out hover:scale-105"
-                  >
-                    validar
-                  </Button>
-                </div>
-                
-              </Card>
-            ))}
+    <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center z-50 p-2">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl flex flex-col max-h-[95vh] overflow-hidden border border-slate-200">
+
+        {/* Header con estilo Farmacia */}
+        <div className="p-4 border-b border-blue-100 flex justify-between items-center bg-blue-50/50">
+          <div className="flex items-center gap-3">
+            <div className="bg-blue-600 p-2 rounded-lg text-white">
+              <Receipt size={20} />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-slate-800 leading-none">Cuentas por Pagar</h2>
+              <p className="text-sm text-blue-600 font-semibold mt-1 uppercase tracking-wider">{farmaciaNombre}</p>
+            </div>
           </div>
-        )}
+          <button onClick={onClose} className="p-2 hover:bg-red-50 hover:text-red-600 rounded-full transition-colors text-slate-400">
+            <X size={24} />
+          </button>
+        </div>
+
+        {/* Listado de Cuentas */}
+        <div className="p-4 overflow-y-auto bg-slate-50 space-y-4">
+          {loading ? (
+            <div className="text-center py-20 text-slate-500">Cargando registros...</div>
+          ) : error ? (
+            <div className="text-center text-red-600 py-10 bg-red-50 rounded-lg">{error}</div>
+          ) : (
+            cuentas.map((c) => {
+              // Lógica de Tasa: Calculamos ambos valores siempre
+              const tasa = c.tasa || 1;
+              const montoUSD = c.divisa === 'USD' ? c.monto : (c.monto / tasa);
+              const montoBS = c.divisa === 'Bs' ? c.monto : (c.monto * tasa);
+              const retencionUSD = c.divisa === 'USD' ? (c.retencion || 0) : ((c.retencion || 0) / tasa);
+              const retencionBS = c.divisa === 'Bs' ? (c.retencion || 0) : ((c.retencion || 0) * tasa);
+
+              return (
+                <Card key={c._id} className="border-slate-200 shadow-md hover:border-blue-300 transition-all overflow-hidden bg-white">
+                  {/* Título y Badge de Tipo */}
+                  <div className="bg-slate-50 px-4 py-2 border-b border-slate-100 flex justify-between items-center">
+                    <span className="text-sm font-bold text-blue-800 uppercase tracking-tight">Proveedor: {c.proveedor}</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${c.tipo === 'traslado' ? 'bg-blue-600 text-white' :
+                        c.tipo === 'pago_listo' ? 'bg-green-600 text-white' : 'bg-amber-500 text-white'
+                      }`}>
+                      {c.tipo?.replace('_', ' ') || 'Sin clasificar'}
+                    </span>
+                  </div>
+
+                  <div className="p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                      {/* Columna 1: Documentación */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-slate-600">
+                          <FileText size={16} className="text-blue-500" />
+                          <p className="text-lg">Factura: <span className="font-bold text-slate-900">{c.numeroFactura}</span></p>
+                        </div>
+                        <p className="text-md text-slate-500 ml-6">N. Control: {c.numeroControl}</p>
+                        <div className="flex items-center gap-2 text-slate-600">
+                          <Info size={16} className="text-slate-400" />
+                          <p className="text-sm italic text-slate-500 leading-tight">"{c.descripcion}"</p>
+                        </div>
+                      </div>
+
+                      {/* Columna 2: Fechas y Plazos */}
+                      <div className="space-y-1.5 border-l border-slate-100 md:pl-6">
+                        <div className="flex justify-between text-md text-slate-500">
+                          <span>Emisión:</span> <span className="font-medium">{c.fechaEmision}</span>
+                        </div>
+                        <div className="flex justify-between text-md text-slate-500">
+                          <span>Recepción:</span> <span className="font-medium text-blue-700">{c.fechaRecepcion}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-md text-slate-500 pt-1 border-t border-slate-50">
+                          <span>Vencimiento:</span> <span className="font-bold text-red-600">{c.fechaVencimiento?.slice(0, 10) || 'N/A'}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-[10px] text-amber-600 font-bold bg-amber-50 px-2 py-0.5 rounded w-fit">
+                          <Clock size={10} /> {c.diasCredito} Días de crédito
+                        </div>
+                      </div>
+
+                      {/* Columna 3: Montos y Tasas */}
+                      <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 space-y-2">
+                        <div className="text-right">
+                          <p className="text-md text-slate-400 uppercase font-bold">Tasa: {tasa}</p>
+                          <p className="text-xl font-bold text-green-700">Bs. {formatNumber(montoBS)}</p>
+                          <p className="text-xl font-black text-slate-900 tracking-tight">$ {formatNumber(montoUSD)}</p>
+                        </div>
+                        <div className="pt-2 border-t border-slate-200 text-right">
+                          <p className="text-md text-blue-600 font-bold uppercase">Retención</p>
+                          <p className="text-md font-semibold text-slate-600">Bs. {formatNumber(retencionBS)} / $ {formatNumber(retencionUSD)}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Galería de Imágenes */}
+                    {c.imagenesCuentaPorPagar && c.imagenesCuentaPorPagar.length > 0 && (
+                      <div className="mt-4 pt-3 border-t border-slate-100">
+                        <div className="flex flex-wrap gap-2">
+                          {c.imagenesCuentaPorPagar.map((img, idx) => (
+                            <ImageDisplay
+                              key={idx}
+                              imageName={img}
+                              alt="Comprobante"
+                              style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 4, cursor: 'zoom-in' }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Botones de Acción */}
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      <Button
+                        onClick={() => onConfirm(c._id, "verified")}
+                        className="bg-green-600 hover:bg-green-700 text-white font-bold px-6"
+                      >
+                        Validar
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })
+          )}
+        </div>
       </div>
     </div>
   );

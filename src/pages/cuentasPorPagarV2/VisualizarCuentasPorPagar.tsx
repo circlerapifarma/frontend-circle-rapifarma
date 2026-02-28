@@ -16,7 +16,6 @@ import { useCuentasPorPagar } from "../cuentasPorPagar/visualizarCuentas/useCuen
 import { useCuentasSelection } from "./hooks/useCuentasSelection";
 import { formatFecha, calcularDiasRestantes } from "./utils";
 import type { CuentaPorPagar, FarmaciaChip, Pago } from "./type";
-
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const ESTATUS_OPCIONES = ["wait", "activa", "inactiva", "pagada", "abonada", "anulada", "finalizada"];
 
@@ -213,7 +212,6 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
                                     </div>
                                 </div>
                             </div>
-
                             <TablaCuentasPorPagar
                                 cuentasFiltradas={cuentasFiltradas}
                                 pagosAprobadosPorCuenta={pagosData}

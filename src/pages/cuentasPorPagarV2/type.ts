@@ -24,6 +24,7 @@ export interface CuentaPorPagar {
   usuarioCorreo: string;
   farmacia: string;
   estatus: string;
+  tipo?: string;
   [key: string]: any;
 }
 

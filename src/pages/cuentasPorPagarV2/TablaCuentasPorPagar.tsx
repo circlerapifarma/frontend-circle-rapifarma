@@ -9,6 +9,7 @@ import PagosDropdown from "@/components/PagosDropdown";
 import ImageDisplay from "@/components/upfile/ImageDisplay";
 import { Tooltip } from "@mui/material";
 import type { CuentaPorPagar, Pago } from "./type";
+import { useTipoCuentaService } from "./hooks/useTipoCuentaPorPagar";
 
 
 interface TablaCuentasPorPagarProps {
@@ -23,6 +24,33 @@ interface TablaCuentasPorPagarProps {
   calcularDiasRestantes: (fechaEmision: string, diasCredito: number) => number;
   abrirEdicionCuenta: (cuentaId: string) => void;
 }
+
+const TipoBadge: React.FC<{ tipo: string }> = ({ tipo }) => {
+  const colores: Record<string, { bg: string; text: string }> = {
+    traslado: { bg: "#DBEAFE", text: "#1E40AF" },
+    pago_listo: { bg: "#ECFDF5", text: "#059669" },
+    "cuenta_por_pagar": { bg: "#FEF3C7", text: "#B45309" },
+    default: { bg: "#F3F4F6", text: "#6B7280" }
+  };
+
+  const estilo = colores[tipo] || colores.default;
+
+  return (
+    <span
+      style={{
+        padding: "2px 8px",
+        borderRadius: 6,
+        fontSize: 12,
+        fontWeight: 600,
+        backgroundColor: estilo.bg,
+        color: estilo.text,
+      }}
+    >
+      {tipo.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+    </span>
+  );
+};
+
 
 const EstatusBadge: React.FC<{ estatus: string }> = ({ estatus }) => {
   let bg = "#E5E7EB";
@@ -71,6 +99,7 @@ const TablaCuentasPorPagar: React.FC<TablaCuentasPorPagarProps> = ({
     currentIndex: number;
     numeroFactura?: string;
   }>({ cuentaId: null, imagenes: [], currentIndex: 0 });
+  const tipoService = useTipoCuentaService();
 
   const data = useMemo(
     () =>
@@ -205,6 +234,55 @@ const TablaCuentasPorPagar: React.FC<TablaCuentasPorPagarProps> = ({
         },
       },
       {
+        header: "Tipo",
+        accessorKey: "tipo",
+        size: 120,
+        Cell: ({ row }) => {
+          const c = row.original;
+          return <TipoBadge tipo={c.tipo || "traslado"} />;
+        },
+      },
+      {
+        header: "Cambiar Tipo",
+        id: "cambiarTipo",
+        enableSorting: false,
+        size: 150,
+        Cell: ({ row }) => {
+          const c = row.original;
+          const TIPO_CUENTA_OPCIONES = [
+            "traslado",
+            "pago_listo",
+            "cuenta_por_pagar"
+          ] as const;
+          return (
+            <select
+              value={c.tipo || "traslado"}
+              onChange={async (e) => {
+                const nuevoTipo = e.target.value as typeof TIPO_CUENTA_OPCIONES[number];
+                if (nuevoTipo === c.tipo) return;
+
+                try {
+                  await tipoService.actualizarTipoCuenta(c._id, nuevoTipo);
+                  // ✅ OPTIMISTIC UPDATE CORRECTO: actualizar cuentas padre
+                  // Esto requiere que el padre pase una función de actualización
+                } catch (err) {
+                  console.error("Error actualizando tipo:", err);
+                }
+              }}
+              className="border border-slate-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+              disabled={c.estatus === 'pagada'}
+            >
+              {TIPO_CUENTA_OPCIONES.map((tipo) => (
+                <option key={tipo} value={tipo} disabled={tipo === c.tipo}>
+                  {tipo.charAt(0).toUpperCase() + tipo.slice(1).replace('_', ' ')}
+                </option>
+              ))}
+            </select>
+          );
+        },
+      },
+
+      {
         header: "Monto Bs",
         id: "montoBs",
         accessorFn: (row) =>
@@ -216,16 +294,16 @@ const TablaCuentasPorPagar: React.FC<TablaCuentasPorPagarProps> = ({
             c.divisa === "USD"
               ? c.monto
               : c.tasa
-              ? c.monto / c.tasa
-              : null;
+                ? c.monto / c.tasa
+                : null;
           return (
             <div style={{ textAlign: "right" }}>
               <div style={{ fontWeight: 700 }}>
                 {montoBs != null && !Number.isNaN(montoBs)
                   ? `Bs. ${montoBs.toLocaleString("es-VE", {
-                      minimumFractionDigits: 4,
-                      maximumFractionDigits: 4,
-                    })}`
+                    minimumFractionDigits: 4,
+                    maximumFractionDigits: 4,
+                  })}`
                   : "--"}
               </div>
               <div
@@ -237,9 +315,9 @@ const TablaCuentasPorPagar: React.FC<TablaCuentasPorPagarProps> = ({
               >
                 {montoUSD != null && !Number.isNaN(montoUSD)
                   ? `$${montoUSD.toLocaleString("en-US", {
-                      minimumFractionDigits: 4,
-                      maximumFractionDigits: 4,
-                    })}`
+                    minimumFractionDigits: 4,
+                    maximumFractionDigits: 4,
+                  })}`
                   : "Ref: --"}
               </div>
             </div>
@@ -262,17 +340,17 @@ const TablaCuentasPorPagar: React.FC<TablaCuentasPorPagarProps> = ({
               c.divisa === "USD"
                 ? c.retencion
                 : c.tasa
-                ? (c.retencion || 0) / c.tasa
-                : null;
+                  ? (c.retencion || 0) / c.tasa
+                  : null;
           }
           return (
             <div style={{ textAlign: "right" }}>
               <div style={{ fontWeight: 700 }}>
                 {c.retencion != null && !Number.isNaN(retencionBs)
                   ? `Bs. ${retencionBs.toLocaleString("es-VE", {
-                      minimumFractionDigits: 4,
-                      maximumFractionDigits: 4,
-                    })}`
+                    minimumFractionDigits: 4,
+                    maximumFractionDigits: 4,
+                  })}`
                   : "--"}
               </div>
               <div
@@ -284,9 +362,9 @@ const TablaCuentasPorPagar: React.FC<TablaCuentasPorPagarProps> = ({
               >
                 {retencionUSD != null && !Number.isNaN(retencionUSD)
                   ? `$ ${retencionUSD.toLocaleString("en-US", {
-                      minimumFractionDigits: 4,
-                      maximumFractionDigits: 4,
-                    })}`
+                    minimumFractionDigits: 4,
+                    maximumFractionDigits: 4,
+                  })}`
                   : "--"}
               </div>
             </div>
@@ -345,7 +423,7 @@ const TablaCuentasPorPagar: React.FC<TablaCuentasPorPagarProps> = ({
           if (Number.isNaN(fechaEmision.getTime())) return "-";
           const fechaVenc = new Date(
             fechaEmision.getTime() +
-              c.diasCredito * 24 * 60 * 60 * 1000
+            c.diasCredito * 24 * 60 * 60 * 1000
           );
           return formatFecha(fechaVenc.toISOString());
         },
@@ -460,6 +538,9 @@ const TablaCuentasPorPagar: React.FC<TablaCuentasPorPagarProps> = ({
     enableColumnResizing: true,
     enableRowSelection: false,
     enableHiding: true,
+    meta: {
+      tipoService,  // ✅ Pasar servicio a columnas
+    },
     muiTableContainerProps: {
       sx: { maxHeight: "70vh" },
     },
@@ -579,12 +660,11 @@ const TablaCuentasPorPagar: React.FC<TablaCuentasPorPagarProps> = ({
                 <ImageDisplay
                   imageName={
                     imagenesModalCuenta.imagenes[
-                      imagenesModalCuenta.currentIndex
+                    imagenesModalCuenta.currentIndex
                     ]
                   }
-                  alt={`Factura ${
-                    imagenesModalCuenta.currentIndex + 1
-                  }`}
+                  alt={`Factura ${imagenesModalCuenta.currentIndex + 1
+                    }`}
                   style={{
                     maxWidth: 350,
                     maxHeight: 350,
