@@ -5,6 +5,16 @@ import { MaterialReactTable, useMaterialReactTable } from 'material-react-table'
 import { MRT_Localization_ES } from 'material-react-table/locales/es';
 import ImageDisplay2 from "@/components/upfile/ImageDisplay2";
 import { getPresignedUrl } from "@/components/upfile/UpFileGasto";
+import { mkConfig, generateCsv, download } from 'export-to-csv';
+import { Box, Button } from '@mui/material';
+import { FileDownload as FileDownloadIcon } from '@mui/icons-material';
+
+const csvConfig = mkConfig({
+  fieldSeparator: ',',
+  decimalSeparator: '.',
+  useKeysAsHeaders: true,
+  filename: `Reporte_Gastos_${new Date().toISOString().split('T')[0]}`,
+});
 
 interface Gasto {
   _id: string;
@@ -130,6 +140,33 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleExportData = () => {
+    const exportData = gastosFiltrados.map((g) => {
+      const monto = g.monto || 0;
+      const tasa = g.tasa || 1;
+
+      // Calculamos los valores para que el Excel sea informativo
+      const montoBs = g.divisa === 'Bs' ? monto : monto * tasa;
+      const montoUSD = g.divisa === 'USD' ? monto : monto / tasa;
+
+      return {
+        'Fecha Gasto': g.fecha,
+        'Título': g.titulo,
+        'Descripción': g.descripcion,
+        'Farmacia/Localidad': g.localidad,
+        'Monto Original': monto,
+        'Moneda': g.divisa,
+        'Tasa Cambio': tasa,
+        'Equivalente Bs': montoBs.toFixed(2),
+        'Equivalente USD': montoUSD.toFixed(2),
+        'Estado': g.estado === 'verified' ? 'Verificado' : g.estado === 'wait' ? 'Espera' : 'Rechazado',
+      };
+    });
+
+    const csv = generateCsv(csvConfig)(exportData);
+    download(csvConfig)(csv);
   };
 
   const handleEstadoSelect = (gastoId: string, nuevoEstado: string) => {
@@ -323,6 +360,22 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
     localization: MRT_Localization_ES, // Para que esté en español  
     initialState: { density: 'compact' },
 
+
+    renderBottomToolbarCustomActions: () => (
+    <Box sx={{ display: 'flex', gap: '1rem', p: '4px' }}>
+      <Button
+        onClick={handleExportData}
+        startIcon={<FileDownloadIcon />}
+        variant="contained"
+        sx={{
+          backgroundColor: '#b91c1c', // Rojo para combinar con tu diseño
+          '&:hover': { backgroundColor: '#991b1b' }
+        }}
+      >
+        Exportar (csv)
+      </Button>
+    </Box>
+  ),
     // Estilos personalizados para mantener tu estética de "rojo"
     muiTableHeadCellProps: {
       sx: {
