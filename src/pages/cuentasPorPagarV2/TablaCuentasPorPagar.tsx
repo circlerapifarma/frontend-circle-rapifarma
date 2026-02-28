@@ -10,7 +10,9 @@ import ImageDisplay from "@/components/upfile/ImageDisplay";
 import { Tooltip } from "@mui/material";
 import type { CuentaPorPagar, Pago } from "./type";
 import { useTipoCuentaService } from "./hooks/useTipoCuentaPorPagar";
-
+import { mkConfig, generateCsv, download } from 'export-to-csv';
+import { Box, Button } from '@mui/material';
+import { FileDownload as FileDownloadIcon } from '@mui/icons-material';
 
 interface TablaCuentasPorPagarProps {
   cuentasFiltradas: CuentaPorPagar[];
@@ -24,6 +26,13 @@ interface TablaCuentasPorPagarProps {
   calcularDiasRestantes: (fechaEmision: string, diasCredito: number) => number;
   abrirEdicionCuenta: (cuentaId: string) => void;
 }
+const csvConfig = mkConfig({
+  fieldSeparator: ',',
+  decimalSeparator: '.',
+  useKeysAsHeaders: true,
+  filename: 'cuentas-por-pagar',
+});
+
 
 const TipoBadge: React.FC<{ tipo: string }> = ({ tipo }) => {
   const colores: Record<string, { bg: string; text: string }> = {
@@ -100,6 +109,29 @@ const TablaCuentasPorPagar: React.FC<TablaCuentasPorPagarProps> = ({
     numeroFactura?: string;
   }>({ cuentaId: null, imagenes: [], currentIndex: 0 });
   const tipoService = useTipoCuentaService();
+
+  const handleExportData = () => {
+    // Solo exportamos la data actual (la que está filtrada/ordenada)
+    const exportData = data.map((row) => ({
+      Fecha: row.fechaEmision,
+      'fecha recepción': row.fechaRecepcion,
+      'fecha vencimiento': row.fechaVencimiento,
+      Factura: row.numeroFactura,
+      Divisa: row.divisa,
+      'Monto': row.monto,
+      'tasa de cambio': row.tasa,
+      'Monto Divisa': row.divisa === "USD" ? row.monto * row.tasa : row.monto / row.tasa,
+      'Proveedor': row.proveedor,
+      'Estatus': row.estatus.toUpperCase(),
+      'Días Vencimiento': calcularDiasRestantes(row.fechaEmision, row.diasCredito),
+      'tipo': row.tipo,
+      'Descripción': row.descripcion,
+      'Usuario': row.usuarioCorreo,
+      'Farmacia': row.farmacia,
+    }));
+    const csv = generateCsv(csvConfig)(exportData);
+    download(csvConfig)(csv);
+  };
 
   const data = useMemo(
     () =>
@@ -552,6 +584,18 @@ const TablaCuentasPorPagar: React.FC<TablaCuentasPorPagarProps> = ({
         cursor: "pointer",
       },
     },
+    renderBottomToolbarCustomActions: () => (
+      <Box sx={{ display: 'flex', gap: '1rem', p: '4px' }}>
+        <Button
+          color="primary"
+          onClick={handleExportData}
+          startIcon={<FileDownloadIcon />}
+          variant="contained"
+        >
+          Exportar (CSV)
+        </Button>
+      </Box>
+    ),
   });
 
   const closeImagenesModal = () =>
