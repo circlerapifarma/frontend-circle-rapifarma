@@ -25,7 +25,6 @@ import VisualizarCuadresPage from "@/pages/VisualizarCuadresPage";
 import AgregarInventarioPage from "@/pages/AgregarInventarioPage";
 import VisualizarInventariosPage from "@/pages/VisualizarInventariosPage";
 import RetiroPage from "@/pages/RetiroPage";
-import VisualizarCuentasPorPagarPage from "@/pages/cuentasPorPagar/visualizarCuentas/VisualizarCuentasPorPagarPage";
 import VerificacionCuentasPorPagarPage from "@/pages/cuentasPorPagar/verificacionCuentas/VerificacionCuentasPorPagarPage";
 import CuentasPorPagarPage from "@/pages/cuentasPorPagar/agregarCuentas/CuentasPorPagarPage";
 import GastosCuentasCuadresPorFarmaciaPage from "@/pages/GastosCuentasCuadresPorFarmaciaPage";
@@ -43,6 +42,7 @@ import BancosPage from "@/pages/BancosPage";
 import MovimientosBancosPage from "@/pages/MovimientosBancosPage";
 import EstadisticasMensuales from "@/pages/stats/EstadisticasMensuales";
 import { CuadresDenegadosPorUsuario } from "@/pages/cuadresDenegados/CuadresDenegadosPorUsuario";
+import VisualizarCuentasPorPagarPage from "@/pages/cuentasPorPagarV2/VisualizarCuentasPorPagar";
 
 const AppRouter = () => (
   <Routes>
