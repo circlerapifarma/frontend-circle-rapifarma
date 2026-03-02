@@ -253,10 +253,11 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
         {
           accessorKey: 'imagenesGasto', // Podemos usar este o imagenGasto
           header: 'Imagen',
-          size: 120,
-          enableResizing: false,    // <--- No se puede estirar
-          enableColumnFilter: false, // <--- No se puede filtrar
-          enableSorting: false,      // <--- No se puede ordenar
+          size: 100,
+          enableColumnActions: false,
+          enableColumnOrdering: false,
+          enableColumnFilterModes: false,
+          enableSorting: false, 
           // en la definición de columnas
           Cell: ({ row }) => {
             const g = row.original;
@@ -267,22 +268,20 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
             if (imagenes.length === 0) return <span className="text-slate-400 text-xs">Sin imagen</span>;
 
             return (
-              <ImageDisplay2
-                imageName={imagenes[0]}
-                alt="Imagen gasto"
-                style={{ height: 40, width: 40, objectFit: 'cover', borderRadius: 8, cursor: 'pointer' }}
-                onClickImage={() => setImagenAmpliada({ imagenes, index: 0 })}
-                // nueva prop
-                resolveUrl={getImageUrlFor}
-              />
+              <div className="flex flex-col items-center">
+                <ImageDisplay2
+                  imageName={imagenes[0]}
+                  alt="Imagen gasto"
+                  style={{ height: 40, width: 40, objectFit: 'cover', borderRadius: 8, cursor: 'pointer' }}
+                  onClickImage={() => setImagenAmpliada({ imagenes, index: 0 })}
+                  // nueva prop
+                  resolveUrl={getImageUrlFor}
+                />
+                <p>{g.fecha}</p>
+              </div>
             );
           },
 
-        },
-        {
-          accessorKey: 'fecha',
-          header: 'Fecha',
-          Cell: ({ cell }) => formatFecha(cell.getValue<string>()),
         },
         {
           id: 'fechaRegistro',
@@ -292,11 +291,13 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
         {
           accessorKey: 'titulo',
           header: 'Título',
+          size: 400,
           muiTableBodyCellProps: { sx: { fontWeight: 'bold' } },
         },
         {
           accessorKey: 'descripcion',
           header: 'Descripción',
+          size: 300,
           enableTooltip: true, // MRT ya maneja tooltips básicos o puedes personalizar
           Cell: ({ cell }) => (
             <div className="max-w-md truncate" title={cell.getValue<string>()}>
@@ -307,21 +308,34 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
         {
           accessorKey: 'monto',
           header: 'Monto',
+          size: 120,
           muiTableBodyCellProps: { align: 'right' },
-          Cell: ({ cell }) =>
-            cell.getValue<number>().toLocaleString('es-VE', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2
-            }),
-        },
-        {
-          accessorKey: 'divisa',
-          header: 'Moneda',
-          Cell: ({ cell }) => cell.getValue<string>() || '-',
+          enableColumnActions: false,
+          enableColumnOrdering: false,
+          enableColumnFilterModes: false,
+          enableSorting: false,
+          Cell: ({ row }) => {
+            const g = row.original;
+
+            return (
+              <div className="flex flex-row items-center">
+                <p>{g.monto.toLocaleString('es-VE', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2
+                })}</p>
+                <p>{g.divisa}</p>
+              </div>
+            );
+          },
         },
         {
           accessorKey: 'tasa',
           header: 'Tasa',
+          size: 90,
+          enableColumnActions: false,
+          enableColumnOrdering: false,
+          enableColumnFilterModes: false,
+          enableSorting: false,
           Cell: ({ cell }) => cell.getValue<number>() || '-',
         },
         {
@@ -359,23 +373,28 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
     enablePagination: true,
     localization: MRT_Localization_ES, // Para que esté en español  
     initialState: { density: 'compact' },
-
+    enableStickyHeader: true,
+    muiTableContainerProps: {
+      sx: {
+        maxHeight: '600px', // Ajusta esta altura según tu necesidad
+      },
+    },
 
     renderBottomToolbarCustomActions: () => (
-    <Box sx={{ display: 'flex', gap: '1rem', p: '4px' }}>
-      <Button
-        onClick={handleExportData}
-        startIcon={<FileDownloadIcon />}
-        variant="contained"
-        sx={{
-          backgroundColor: '#b91c1c', // Rojo para combinar con tu diseño
-          '&:hover': { backgroundColor: '#991b1b' }
-        }}
-      >
-        Exportar (csv)
-      </Button>
-    </Box>
-  ),
+      <Box sx={{ display: 'flex', gap: '1rem', p: '4px' }}>
+        <Button
+          onClick={handleExportData}
+          startIcon={<FileDownloadIcon />}
+          variant="contained"
+          sx={{
+            backgroundColor: '#b91c1c', // Rojo para combinar con tu diseño
+            '&:hover': { backgroundColor: '#991b1b' }
+          }}
+        >
+          Exportar (csv)
+        </Button>
+      </Box>
+    ),
     // Estilos personalizados para mantener tu estética de "rojo"
     muiTableHeadCellProps: {
       sx: {

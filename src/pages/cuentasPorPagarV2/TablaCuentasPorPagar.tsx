@@ -13,6 +13,7 @@ import { useTipoCuentaService } from "./hooks/useTipoCuentaPorPagar";
 import { mkConfig, generateCsv, download } from 'export-to-csv';
 import { Box, Button } from '@mui/material';
 import { FileDownload as FileDownloadIcon } from '@mui/icons-material';
+import { File } from "lucide-react";
 
 interface TablaCuentasPorPagarProps {
   cuentasFiltradas: CuentaPorPagar[];
@@ -34,31 +35,31 @@ const csvConfig = mkConfig({
 });
 
 
-const TipoBadge: React.FC<{ tipo: string }> = ({ tipo }) => {
-  const colores: Record<string, { bg: string; text: string }> = {
-    traslado: { bg: "#DBEAFE", text: "#1E40AF" },
-    pago_listo: { bg: "#ECFDF5", text: "#059669" },
-    "cuenta_por_pagar": { bg: "#FEF3C7", text: "#B45309" },
-    default: { bg: "#F3F4F6", text: "#6B7280" }
-  };
+// const TipoBadge: React.FC<{ tipo: string }> = ({ tipo }) => {
+//   const colores: Record<string, { bg: string; text: string }> = {
+//     traslado: { bg: "#DBEAFE", text: "#1E40AF" },
+//     pago_listo: { bg: "#ECFDF5", text: "#059669" },
+//     "cuenta_por_pagar": { bg: "#FEF3C7", text: "#B45309" },
+//     default: { bg: "#F3F4F6", text: "#6B7280" }
+//   };
 
-  const estilo = colores[tipo] || colores.default;
+//   const estilo = colores[tipo] || colores.default;
 
-  return (
-    <span
-      style={{
-        padding: "2px 8px",
-        borderRadius: 6,
-        fontSize: 12,
-        fontWeight: 600,
-        backgroundColor: estilo.bg,
-        color: estilo.text,
-      }}
-    >
-      {tipo.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-    </span>
-  );
-};
+//   return (
+//     <span
+//       style={{
+//         padding: "2px 8px",
+//         borderRadius: 6,
+//         fontSize: 12,
+//         fontWeight: 600,
+//         backgroundColor: estilo.bg,
+//         color: estilo.text,
+//       }}
+//     >
+//       {tipo.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+//     </span>
+//   );
+// };
 
 
 const EstatusBadge: React.FC<{ estatus: string }> = ({ estatus }) => {
@@ -161,6 +162,11 @@ const TablaCuentasPorPagar: React.FC<TablaCuentasPorPagarProps> = ({
             (sel) => sel.cuentaPorPagarId === c._id || sel._id === c._id
           );
 
+          const imagenes = Array.isArray(c.imagenesCuentaPorPagar)
+            ? c.imagenesCuentaPorPagar
+            : [];
+          if (!imagenes.length) return null;
+
           return (
             <div
               style={{
@@ -170,6 +176,13 @@ const TablaCuentasPorPagar: React.FC<TablaCuentasPorPagarProps> = ({
                 alignItems: "center",
               }}
             >
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onClick={(e) => e.stopPropagation()}
+                onChange={() => handleToggleCuentaParaPagar(c)}
+                disabled={c.estatus === "pagada"}
+              />
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -191,87 +204,32 @@ const TablaCuentasPorPagar: React.FC<TablaCuentasPorPagarProps> = ({
               >
                 <FaCoins size={16} />
               </button>
-              <input
-                type="checkbox"
-                checked={isSelected}
-                onClick={(e) => e.stopPropagation()}
-                onChange={() => handleToggleCuentaParaPagar(c)}
-                disabled={c.estatus === "pagada"}
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setImagenesModalCuenta({
+                    cuentaId: c._id,
+                    imagenes,
+                    currentIndex: 0,
+                    numeroFactura: c.numeroFactura,
+                  });
+                }}
+                title="Ver imágenes">
+                <File className="text-blue-600" />
+              </button>
+              <PagosDropdown
+                cuentaId={c._id}
+                onOpenChange={(open: boolean) =>
+                  handlePagosDropdownOpen(open, c)
+                }
+                montoTotal={c.monto}
+                monedaCuenta={c.divisa}
+                tasaCuenta={c.tasa}
               />
             </div>
           );
-        },
-      },
-      {
-        header: "Imagen",
-        id: "imagen",
-        enableSorting: false,
-        size: 90,
-        Cell: ({ row }) => {
-          const c = row.original as any;
-          const imagenes = Array.isArray(c.imagenesCuentaPorPagar)
-            ? c.imagenesCuentaPorPagar
-            : [];
-          if (!imagenes.length) return null;
-          return (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setImagenesModalCuenta({
-                  cuentaId: c._id,
-                  imagenes,
-                  currentIndex: 0,
-                  numeroFactura: c.numeroFactura,
-                });
-              }}
-              style={{
-                padding: "4px 8px",
-                borderRadius: 6,
-                background: "#6366F1",
-                color: "white",
-                border: "none",
-                fontSize: 11,
-                fontWeight: 600,
-                boxShadow: "0 1px 3px #0003",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 4,
-              }}
-            >
-              Ver Factura
-            </button>
-          );
-        },
-      },
-      {
-        header: "Pagos",
-        id: "pagos",
-        enableSorting: false,
-        size: 120,
-        Cell: ({ row }) => {
-          const c = row.original;
-          // En tu fila original transformas pagos, pero el dropdown solo necesita onOpen
-          return (
-            <PagosDropdown
-              cuentaId={c._id}
-              onOpenChange={(open: boolean) =>
-                handlePagosDropdownOpen(open, c)
-              }
-              montoTotal={c.monto}
-              monedaCuenta={c.divisa}
-              tasaCuenta={c.tasa}
-            />
-          );
-        },
-      },
-      {
-        header: "Tipo",
-        accessorKey: "tipo",
-        size: 120,
-        Cell: ({ row }) => {
-          const c = row.original;
-          return <TipoBadge tipo={c.tipo || "traslado"} />;
         },
       },
       {
@@ -306,7 +264,7 @@ const TablaCuentasPorPagar: React.FC<TablaCuentasPorPagarProps> = ({
             >
               {TIPO_CUENTA_OPCIONES.map((tipo) => (
                 <option key={tipo} value={tipo} disabled={tipo === c.tipo}>
-                  {tipo.charAt(0).toUpperCase() + tipo.slice(1).replace('_', ' ')}
+                  {tipo.charAt(0).toUpperCase() + tipo.slice(1)}
                 </option>
               ))}
             </select>

@@ -2,6 +2,7 @@ import React from "react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent } from "@/components/ui/dropdown-menu";
 import { animate } from 'animejs';
 import ImageDisplay from "./upfile/ImageDisplay";
+import { BanknoteArrowDown } from "lucide-react";
 
 interface PagosDropdownProps {
   cuentaId: string;
@@ -96,9 +97,7 @@ const PagosDropdown: React.FC<PagosDropdownProps> = ({ cuentaId, onOpenChange, m
   return (
     <DropdownMenu onOpenChange={handleOpenChange}>
       <DropdownMenuTrigger asChild>
-        <button className="px-2 py-1 rounded bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition text-sm font-semibold border border-indigo-200">
-          Ver pagos
-        </button>
+        <BanknoteArrowDown className="text-green-700" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-96 p-4" ref={dropdownRef} role="listbox" aria-label="Pagos registrados">
         <div className="mb-4 p-3 border-b border-slate-200">
