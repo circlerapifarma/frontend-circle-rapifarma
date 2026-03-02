@@ -182,86 +182,82 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
         {/* Resumen Principal */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="col-span-2">
-            <div className="relative overflow-hidden rounded-3xl bg-slate-900 p-1 border border-slate-800 shadow-2xl">
+            {/* Sección de Deducciones (Costos y Gastos) */}
+            <div className="relative overflow-hidden rounded-3xl p-8 border shadow-2xl ">
+              {/* Fondo decorativo sutil */}
+              <div className="absolute right-0 top-0 p-8 opacity-5 group-hover:scale-110 transition-transform duration-700">
+                <Wallet className="w-48 h-48" />
+              </div>
 
-
-              {/* Sección de Deducciones (Costos y Gastos) */}
-              <div className="relative overflow-hidden rounded-3xl bg-slate-900 p-8 border border-slate-800 shadow-2xl text-white">
-                {/* Fondo decorativo sutil */}
-                <div className="absolute right-0 top-0 p-8 opacity-5 group-hover:scale-110 transition-transform duration-700">
-                  <Wallet className="w-48 h-48" />
+              <div className="relative z-10 space-y-6">
+                {/* 1. VENTA BRUTA */}
+                <div className="flex flex-col">
+                  <p className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em] mb-1">
+                    Venta Bruta
+                  </p>
+                  <h2 className="text-4xl font-bold ">
+                    ${formatCurrency(totals.sumaTotalGeneralManual)}
+                  </h2>
                 </div>
 
-                <div className="relative z-10 space-y-6">
-                  {/* 1. VENTA BRUTA */}
-                  <div className="flex flex-col">
-                    <p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.3em] mb-1">
-                      Venta Bruta
+                {/* 2. COSTO DE VENTA */}
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="text-[10px] font-black text-red-500 uppercase tracking-[0.3em]">
+                      Costo de Venta
                     </p>
-                    <h2 className="text-4xl font-bold text-white">
-                      ${formatCurrency(totals.sumaTotalGeneralManual)}
-                    </h2>
+                    <MinusCircle className="w-3 h-3 text-emerald-500/50" />
                   </div>
+                  <h2 className="text-4xl font-bold ">
+                    ${formatCurrency(totals.totalInventario)}
+                  </h2>
+                </div>
 
-                  {/* 2. COSTO DE VENTA */}
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="text-[10px] font-black text-red-400 uppercase tracking-[0.3em]">
-                        Costo de Venta
-                      </p>
-                      <MinusCircle className="w-3 h-3 text-emerald-400/50" />
-                    </div>
-                    <h2 className="text-4xl font-bold text-white">
-                      ${formatCurrency(totals.totalInventario)}
-                    </h2>
-                  </div>
+                {/* 3. VENTAS - COSTO (SUBTOTAL) */}
+                <div className="flex flex-col pt-4 border-t border-white/10">
+                  <p className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em] mb-1">
+                    Venta bruta - Costo de Venta
+                  </p>
+                  <h2 className="text-4xl font-bold ">
+                    ${formatCurrency(totals.totalGeneral - (totals.totalInventario || 0))}
+                  </h2>
+                </div>
 
-                  {/* 3. VENTAS - COSTO (SUBTOTAL) */}
-                  <div className="flex flex-col pt-4 border-t border-white/10">
-                    <p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.3em] mb-1">
-                      Venta bruta - Costo de Venta
+                {/* 4. GASTOS VERIFICADOS */}
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="text-[10px] font-black text-red-500 uppercase tracking-[0.3em]">
+                      Gastos Verificados
                     </p>
-                    <h2 className="text-4xl font-bold text-white">
-                      ${formatCurrency(totals.totalGeneral - (totals.totalInventario || 0))}
-                    </h2>
+                    <MinusCircle className="w-3 h-3 text-emerald-500/50" />
                   </div>
-
-                  {/* 4. GASTOS VERIFICADOS */}
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="text-[10px] font-black text-red-400 uppercase tracking-[0.3em]">
-                        Gastos Verificados
-                      </p>
-                      <MinusCircle className="w-3 h-3 text-emerald-400/50" />
-                    </div>
-                    <div className="flex items-baseline gap-3">
-                      <h2 className="text-4xl font-bold text-white">
-                        ${formatCurrency(totalGastosUsd)}
-                      </h2>
-                      <span className="text-[10px] font-bold text-emerald-400/60 bg-emerald-400/10 px-2 py-0.5 rounded">
-                        {(totalGastosUsd / totals.totalGeneral * 100).toFixed(1)}% IMPACTO
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* 5. UTILIDAD NETA (RESULTADO FINAL) */}
-                  <div className="flex flex-col pt-6 border-t-2 border-emerald-500/20">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.3em]">
-                        Utilidad Neta
-                      </p>
-                    </div>
-                    <h2 className="text-6xl font-black text-white tracking-tighter">
-                      ${formatCurrency(totals.totalGeneral - totalGastosUsd - (totals.totalInventario || 0))}
+                  <div className="flex items-baseline gap-3">
+                    <h2 className="text-4xl font-bold ">
+                      ${formatCurrency(totalGastosUsd)} 
                     </h2>
+                    <span className="text-[10px] font-bold text-emerald-500/60 bg-emerald-400/10 px-2 py-0.5 rounded">
+                      {(totalGastosUsd / totals.totalGeneral * 100).toFixed(1)}% IMPACTO
+                    </span>
+                  </div>
+                </div>
 
-                    <div className="flex items-center gap-2 mt-4 text-emerald-400/80">
-                      <BarChart3 className="w-4 h-4" />
-                      <span className="text-[10px] font-bold uppercase tracking-widest">
-                        Rendimiento Operativo Final
-                      </span>
-                    </div>
+                {/* 5. UTILIDAD NETA (RESULTADO FINAL) */}
+                <div className="flex flex-col pt-6 border-t-2 border-emerald-500/20">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <p className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em]">
+                      Utilidad Neta
+                    </p>
+                  </div>
+                  <h2 className="text-6xl font-black tracking-tighter">
+                    ${formatCurrency(totals.totalGeneral - totalGastosUsd - (totals.totalInventario || 0))}
+                  </h2>
+
+                  <div className="flex items-center gap-2 mt-4 text-emerald-700/80">
+                    <BarChart3 className="w-4 h-4" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest">
+                      Rendimiento Operativo Final
+                    </span>
                   </div>
                 </div>
               </div>
@@ -317,7 +313,6 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
                         {item.icon}
                         <span className="text-sm font-semibold text-slate-600 truncate">{item.label}</span>
                       </div>
-
                       {/* Parte Central: Monto en Bolívares */}
                       <div className="flex-1 text-right pr-4">
                         <span className="font-bold text-slate-900 text-sm">{formatBs(item.bs)}</span>
@@ -350,7 +345,7 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
           </div>
           <div className="space-y-6">
             {/* Cuentas por Pagar (Cartera) */}
-            <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-xl shadow-blue-100 relative overflow-hidden group">
+            <div className=" rounded-[2.5rem] p-8 shadow-xl shadow-blue-100 relative overflow-hidden group">
               <div className="absolute -right-6 -bottom-6 opacity-10 group-hover:rotate-12 transition-transform duration-500"><Receipt className="w-40 h-40" /></div>
               <p className="text-2xl font-black pb-4 uppercase tracking-widest">Cuentas por Pagar</p>
               <div className="space-y-4">
@@ -362,7 +357,7 @@ const TotalGeneralFarmaciasPage: React.FC = () => {
                   <div className="text-2xl font-black">${formatCurrency(cuentasHook.totalActivasUsd)}</div>
                 </div>
 
-                <div className="bg-white/5 border border-white/10 p-4 rounded-2xl backdrop-blur-sm">
+                <div className="bg-white/5 border border-white/10 p-4 rounded-2xl">
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-[10px] font-black text-green-400 uppercase tracking-tighter">pagado en el periodo</span>
                   </div>
