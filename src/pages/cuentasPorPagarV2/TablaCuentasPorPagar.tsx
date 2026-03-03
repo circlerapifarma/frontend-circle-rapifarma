@@ -1,4 +1,6 @@
 import React, { useMemo, useState } from "react";
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 import {
   MaterialReactTable,
   type MRT_ColumnDef,
@@ -8,9 +10,8 @@ import { FaCoins, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import PagosDropdown from "@/components/PagosDropdown";
 import ImageDisplay from "@/components/upfile/ImageDisplay";
 import { Tooltip } from "@mui/material";
-import type { CuentaPorPagar, Pago } from "./type";
+import type { CuentaPorPagar, FarmaciaChip, Pago } from "./type";
 import { useTipoCuentaService } from "./hooks/useTipoCuentaPorPagar";
-import { mkConfig, generateCsv, download } from 'export-to-csv';
 import { Box, Button } from '@mui/material';
 import { FileDownload as FileDownloadIcon } from '@mui/icons-material';
 import { File } from "lucide-react";
@@ -26,41 +27,8 @@ interface TablaCuentasPorPagarProps {
   formatFecha: (fecha: string) => string;
   calcularDiasRestantes: (fechaEmision: string, diasCredito: number) => number;
   abrirEdicionCuenta: (cuentaId: string) => void;
+  farmacias: FarmaciaChip[]
 }
-const csvConfig = mkConfig({
-  fieldSeparator: ',',
-  decimalSeparator: '.',
-  useKeysAsHeaders: true,
-  filename: 'cuentas-por-pagar',
-});
-
-
-// const TipoBadge: React.FC<{ tipo: string }> = ({ tipo }) => {
-//   const colores: Record<string, { bg: string; text: string }> = {
-//     traslado: { bg: "#DBEAFE", text: "#1E40AF" },
-//     pago_listo: { bg: "#ECFDF5", text: "#059669" },
-//     "cuenta_por_pagar": { bg: "#FEF3C7", text: "#B45309" },
-//     default: { bg: "#F3F4F6", text: "#6B7280" }
-//   };
-
-//   const estilo = colores[tipo] || colores.default;
-
-//   return (
-//     <span
-//       style={{
-//         padding: "2px 8px",
-//         borderRadius: 6,
-//         fontSize: 12,
-//         fontWeight: 600,
-//         backgroundColor: estilo.bg,
-//         color: estilo.text,
-//       }}
-//     >
-//       {tipo.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-//     </span>
-//   );
-// };
-
 
 const EstatusBadge: React.FC<{ estatus: string }> = ({ estatus }) => {
   let bg = "#E5E7EB";
@@ -102,6 +70,7 @@ const TablaCuentasPorPagar: React.FC<TablaCuentasPorPagarProps> = ({
   formatFecha,
   calcularDiasRestantes,
   abrirEdicionCuenta,
+  farmacias
 }) => {
   const [imagenesModalCuenta, setImagenesModalCuenta] = useState<{
     cuentaId: string | null;
@@ -121,18 +90,37 @@ const TablaCuentasPorPagar: React.FC<TablaCuentasPorPagarProps> = ({
       Divisa: row.divisa,
       'Monto': row.monto,
       'tasa de cambio': row.tasa,
-      'Monto Divisa': row.divisa === "USD" ? row.monto * row.tasa : row.monto / row.tasa,
+      'Monto Divisa':
+        row.divisa === 'USD'
+          ? row.monto * row.tasa
+          : row.monto / row.tasa,
       'Proveedor': row.proveedor,
       'Estatus': row.estatus.toUpperCase(),
       'Días Vencimiento': calcularDiasRestantes(row.fechaEmision, row.diasCredito),
       'tipo': row.tipo,
       'Descripción': row.descripcion,
       'Usuario': row.usuarioCorreo,
-      'Farmacia': row.farmacia,
+      'Farmacia': farmacias.find(f => f.id === row.farmacia)?.nombre || row.localidad || "Desconocida",
     }));
-    const csv = generateCsv(csvConfig)(exportData);
-    download(csvConfig)(csv);
+
+    // Crear hoja de Excel desde los datos
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+
+    // Crear libro de Excel con una hoja
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Cuentas por Pagar');
+
+    // Generar buffer y descargar
+    const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+
+    // Nombre de archivo dinámico
+    const fileName = `CXP_${new Date().toISOString().split('T')[0]}.xlsx`;
+    saveAs(blob, fileName);
   };
+
 
   const data = useMemo(
     () =>
@@ -550,7 +538,7 @@ const TablaCuentasPorPagar: React.FC<TablaCuentasPorPagarProps> = ({
           startIcon={<FileDownloadIcon />}
           variant="contained"
         >
-          Exportar (CSV)
+          Exportar a excel
         </Button>
       </Box>
     ),

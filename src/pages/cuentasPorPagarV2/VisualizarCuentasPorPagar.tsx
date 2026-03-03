@@ -213,6 +213,7 @@ const VisualizarCuentasPorPagarPage: React.FC = () => {
                                 </div>
                             </div>
                             <TablaCuentasPorPagar
+                                farmacias={farmacias}
                                 cuentasFiltradas={cuentasFiltradas}
                                 pagosAprobadosPorCuenta={pagosData}
                                 cuentasParaPagar={cuentasParaPagar}
