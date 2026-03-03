@@ -26,6 +26,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "export-to-csv": "^1.4.0",
+    "file-saver": "^2.0.5",
     "framer-motion": "^12.12.2",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.511.0",
@@ -42,6 +43,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
+    "@types/file-saver": "^2.0.7",
     "@types/jwt-decode": "^2.2.1",
     "@types/node": "^22.15.18",
     "@types/react": "^19.1.2",

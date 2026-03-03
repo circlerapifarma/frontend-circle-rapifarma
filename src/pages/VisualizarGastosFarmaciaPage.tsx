@@ -5,16 +5,11 @@ import { MaterialReactTable, useMaterialReactTable } from 'material-react-table'
 import { MRT_Localization_ES } from 'material-react-table/locales/es';
 import ImageDisplay2 from "@/components/upfile/ImageDisplay2";
 import { getPresignedUrl } from "@/components/upfile/UpFileGasto";
-import { mkConfig, generateCsv, download } from 'export-to-csv';
 import { Box, Button } from '@mui/material';
 import { FileDownload as FileDownloadIcon } from '@mui/icons-material';
 
-const csvConfig = mkConfig({
-  fieldSeparator: ',',
-  decimalSeparator: '.',
-  useKeysAsHeaders: true,
-  filename: `Reporte_Gastos_${new Date().toISOString().split('T')[0]}`,
-});
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 interface Gasto {
   _id: string;
@@ -38,7 +33,6 @@ interface FarmaciaChip {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const ESTADO_OPCIONES = ["wait", "verified", "denied"];
-
 function formatFecha(fechaISO: string, fechaRegistro?: any) {
   // Si hay fechaRegistro y es un objeto Mongo, usarla para mostrar fecha y hora
   if (fechaRegistro && typeof fechaRegistro === 'object' && fechaRegistro.$date && fechaRegistro.$date.$numberLong) {
@@ -143,11 +137,10 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
   };
 
   const handleExportData = () => {
-    const exportData = gastosFiltrados.map((g) => {
+    const exportData = gastosFiltrados.map((g) => {  // ✅ Ya usa gastosFiltrados (correcto)
       const monto = g.monto || 0;
       const tasa = g.tasa || 1;
 
-      // Calculamos los valores para que el Excel sea informativo
       const montoBs = g.divisa === 'Bs' ? monto : monto * tasa;
       const montoUSD = g.divisa === 'USD' ? monto : monto / tasa;
 
@@ -155,19 +148,29 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
         'Fecha Gasto': g.fecha,
         'Título': g.titulo,
         'Descripción': g.descripcion,
-        'Farmacia/Localidad': g.localidad,
+        'Farmacia/Localidad': farmacias.find(f => f.id === g.localidad)?.nombre || g.localidad || "Desconocida",
         'Monto Original': monto,
         'Moneda': g.divisa,
         'Tasa Cambio': tasa,
-        'Equivalente Bs': montoBs.toFixed(2),
-        'Equivalente USD': montoUSD.toFixed(2),
+        'Equivalente Bs': parseFloat(montoBs.toFixed(2)),
+        'Equivalente USD': parseFloat(montoUSD.toFixed(2)),
         'Estado': g.estado === 'verified' ? 'Verificado' : g.estado === 'wait' ? 'Espera' : 'Rechazado',
       };
     });
 
-    const csv = generateCsv(csvConfig)(exportData);
-    download(csvConfig)(csv);
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Gastos');
+
+    const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+
+    // ✅ CAMBIO: fileSave → saveAs Y nombre dinámico
+    saveAs(blob, `Reporte_Gastos_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
+
 
   const handleEstadoSelect = (gastoId: string, nuevoEstado: string) => {
     setConfirmDialog({ open: true, gastoId, nuevoEstado });
@@ -257,7 +260,7 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
           enableColumnActions: false,
           enableColumnOrdering: false,
           enableColumnFilterModes: false,
-          enableSorting: false, 
+          enableSorting: false,
           // en la definición de columnas
           Cell: ({ row }) => {
             const g = row.original;
@@ -391,7 +394,7 @@ const VisualizarGastosFarmaciaPage: React.FC = () => {
             '&:hover': { backgroundColor: '#991b1b' }
           }}
         >
-          Exportar (csv)
+          Exportar A EXCEL
         </Button>
       </Box>
     ),
