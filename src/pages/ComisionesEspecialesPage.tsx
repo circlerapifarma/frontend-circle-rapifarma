@@ -238,7 +238,7 @@ const ComisionesEspecialesPage: React.FC = () => {
 
           {/* Chips de Filtros */}
           <div className="flex flex-wrap gap-2 mb-6 p-4 bg-white/50 rounded-xl border border-slate-100">
-            {farmaciasUnicas.slice(0, 8).map((f) => (
+            {farmaciasUnicas.map((f) => (
               <Badge
                 key={f}
                 variant={farmaciaFiltro === f ? "default" : "outline"}
