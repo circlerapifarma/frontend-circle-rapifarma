@@ -1,5 +1,7 @@
 import { useEffect, useState, useRef } from "react";
-import { Link, useLocation } from "react-router"; // Ensure react-router-dom is used
+import { Link, useLocation } from "react-router";
+import { AnimatePresence } from "framer-motion";
+
 import {
   Menu,
   X,
@@ -9,6 +11,11 @@ import {
   BarChart,
   DollarSign,
   Users,
+  Settings,
+  Briefcase,
+  CreditCard,
+  ClipboardCheck,
+  ArrowRight,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useProveedores } from "@/hooks/useProveedores";
@@ -29,190 +36,83 @@ interface LinkCategory {
 // Permisos y enlaces agrupados para una mejor organización visual
 const allLinks: LinkCategory[] = [
   {
-    category: "Resumen",
+    category: "Inicio",
+    icon: Home,
+    items: [{ to: "/", label: "Panel de Control", permiso: "acceso_admin" }],
+  },
+  {
+    category: "Análisis y Métricas",
     icon: BarChart,
     items: [
-      {
-        to: "/gastoscxc-cuadres",
-        label: "Gastos, Cuentas y Cuadres",
-        permiso: "agregar_cuadre",
-      },
-      {
-        to: "/resumenfarmacias",
-        label: "Resumen de Ventas",
-        permiso: "ver_resumen_mensual",
-      },
-      {
-        to: "/ventatotal",
-        label: "Venta Total",
-        permiso: "ver_ventas_totales",
-      },
-      {
-        to: "/estadisticas/mensuales",
-        label: "Estadisticas Comparativa",
-        permiso: "estadisticas",
-      },
-      { to: "/metas", label: "Metas", permiso: "ver_about" },
-      { to: "/gestionmetas", label: "Crear Meta", permiso: "metas" },
-      { to: "/metasconf", label: "Metas Configuración", permiso: "ver_about" },
+      { to: "/gastoscxc-cuadres", label: "Balance Consolidado", permiso: "agregar_cuadre" },
+      { to: "/resumenfarmacias", label: "Resumen de Ventas", permiso: "ver_resumen_mensual" },
+      { to: "/ventatotal", label: "Ventas Totales", permiso: "ver_ventas_totales" },
+      { to: "/estadisticas/mensuales", label: "Comparativa Mensual", permiso: "estadisticas" },
+      { to: "/metas", label: "Mis Metas", permiso: "ver_about" },
+      { to: "/gestionmetas", label: "Gestión de Metas", permiso: "metas" },
+      { to: "/metasconf", label: "Configuración de Metas", permiso: "ver_about" },
     ],
   },
   {
     category: "Cuadres",
-    icon: BarChart,
+    icon: ClipboardCheck, // Sugerencia de cambio de icono para diferenciar de Análisis
     items: [
-      {
-        to: "/agregarcuadre",
-        label: "Agregar Cuadre",
-        permiso: "agregar_cuadre",
-      },
-      {
-        to: "/cuadresporfarmacia",
-        label: "Mis Cuadres",
-        permiso: "agregar_cuadre",
-      },
-      {
-        to: "/verificacion-cuadres",
-        label: "Verificación Cuadres",
-        permiso: "verificar_cuadres",
-      },
-      {
-        to: "/ver-cuadres-dia",
-        label: "Cuadres por Día",
-        permiso: "ver_cuadres_dia",
-      },
-      {
-        to: "/visualizarcuadres",
-        label: "Visualizar Cuadres",
-        permiso: "ver_cuadres_dia",
-      },
-      { to: "/cuadres/denegados", label: "Cuadres Denegados", permiso: "" },
-      {
-        to: "/modificar-cuadre",
-        label: "Modificar Cuadre",
-        permiso: "modificar_cuadre",
-      },
+      { to: "/agregarcuadre", label: "Nuevo Cuadre", permiso: "agregar_cuadre" },
+      { to: "/cuadresporfarmacia", label: "Mis Registros", permiso: "agregar_cuadre" },
+      { to: "/verificacion-cuadres", label: "Validación de Cuadres", permiso: "verificar_cuadres" },
+      { to: "/ver-cuadres-dia", label: "Cierres Diarios", permiso: "ver_cuadres_dia" },
+      { to: "/visualizarcuadres", label: "Explorador de Cuadres", permiso: "ver_cuadres_dia" },
+      { to: "/cuadres/denegados", label: "Cuadres Rechazados", permiso: "" },
+      { to: "/modificar-cuadre", label: "Edición de Cuadres", permiso: "modificar_cuadre" },
     ],
   },
   {
     category: "Gastos",
     icon: DollarSign,
     items: [
-      {
-        to: "/agregargastos",
-        label: "Agregar Gasto",
-        permiso: "agregar_cuadre",
-      },
-      {
-        to: "/gastosporusuario",
-        label: "Mis Gastos",
-        permiso: "agregar_cuadre",
-      },
-      {
-        to: "/verificaciongastos",
-        label: "Verificación Gastos",
-        permiso: "verificar_gastos",
-      },
-      {
-        to: "/vergastos",
-        label: "Ver Gastos (Admin)",
-        permiso: "verificar_gastos",
-      },
+      { to: "/agregargastos", label: "Registrar Gasto", permiso: "agregar_cuadre" },
+      { to: "/gastosporusuario", label: "Mis Gastos", permiso: "agregar_cuadre" },
+      { to: "/verificaciongastos", label: "Auditoría de Gastos", permiso: "verificar_gastos" },
+      { to: "/vergastos", label: "Panel General de Gastos", permiso: "verificar_gastos" },
     ],
   },
   {
     category: "Cuentas Por Pagar",
-    icon: Users,
+    icon: CreditCard, // Icono más acorde a pagos que 'Users'
     items: [
-      {
-        to: "/cuentasporpagar",
-        label: "Agregar Cuenta Por Pagar",
-        permiso: "agregar_cuadre",
-      },
-      {
-        to: "/vercuentasporpagar",
-        label: "Ver Cuentas por Pagar",
-        permiso: "verificar_gastos",
-      },
-      {
-        to: "/verificacioncuentasporpagar",
-        label: "Verificación Cuentas por Pagar",
-        permiso: "verificar_gastos",
-      },
-      { to: "/pagoscpp", label: "Ver Pagos CxP", permiso: "verificar_gastos" },
-    ],
-  },
-
-  {
-    category: "RRHH",
-    icon: Users,
-    items: [
-      { to: "/cajeros", label: "Vendedores", permiso: "cajeros" },
-      {
-        to: "/comisiones",
-        label: "Comisiones Por Turno",
-        permiso: "comisiones",
-      },
-      {
-        to: "/comisionesgenerales",
-        label: "Comisiones Generales",
-        permiso: "comisiones",
-      },
+      { to: "/cuentasporpagar", label: "Nueva Cuenta (CxP)", permiso: "agregar_cuadre" },
+      { to: "/vercuentasporpagar", label: "Cartera de Cuentas", permiso: "verificar_gastos" },
+      { to: "/verificacioncuentasporpagar", label: "Validación CxP", permiso: "verificar_gastos" },
+      { to: "/pagoscpp", label: "Historial de Pagos", permiso: "verificar_gastos" },
     ],
   },
   {
-    category: "Administración",
+    category: "Talento Humano",
     icon: Users,
     items: [
-      {
-        to: "/proveedores",
-        label: "Proveedores",
-        permiso: "proveedores",
-        showCount: true,
-      },
-      {
-        to: "/bancos",
-        label: "Bancos",
-        permiso: "bancos",
-      },
-      {
-        to: "/listas-comparativas",
-        label: "Listas Comparativas",
-        permiso: "listas_comparativas",
-      },
-      {
-        to: "/orden-compra",
-        label: "Orden de Compra",
-        permiso: "orden_compra",
-      },
-      {
-        to: "/valesporfarmacia",
-        label: "Vales por Farmacia",
-        permiso: "ver_cuadres_dia",
-      },
-      {
-        to: "/verinventarios",
-        label: "Ver Inventarios",
-        permiso: "ver_inventarios",
-      },
+      { to: "/cajeros", label: "Gestión de Vendedores", permiso: "cajeros" },
+      { to: "/comisiones", label: "Comisiones por Turno", permiso: "comisiones" },
+      { to: "/comisionesgenerales", label: "Reporte de Comisiones", permiso: "comisiones" },
     ],
   },
   {
-    category: "Configuracion",
-    icon: Users,
+    category: "Operaciones",
+    icon: Briefcase,
     items: [
-      {
-        to: "/adminusuarios",
-        label: "Gestionar Usuarios",
-        permiso: "acceso_admin",
-      },
+      { to: "/proveedores", label: "Catálogo de Proveedores", permiso: "proveedores", showCount: true },
+      { to: "/bancos", label: "Entidades Bancarias", permiso: "bancos" },
+      { to: "/listas-comparativas", label: "Listas de Precios", permiso: "listas_comparativas" },
+      { to: "/orden-compra", label: "Órdenes de Compra", permiso: "orden_compra" },
+      { to: "/valesporfarmacia", label: "Control de Vales", permiso: "ver_cuadres_dia" },
+      { to: "/verinventarios", label: "Stock e Inventarios", permiso: "ver_inventarios" },
     ],
   },
-
   {
-    category: "Inicio",
-    icon: Home,
-    items: [{ to: "/admin", label: "Dashboard", permiso: "acceso_admin" }],
+    category: "Configuración",
+    icon: Settings,
+    items: [
+      { to: "/adminusuarios", label: "Gestión de Usuarios", permiso: "acceso_admin" },
+    ],
   },
 ];
 
@@ -356,209 +256,205 @@ const Navbar = () => {
     window.location.href = "/login";
   };
 
+
+  const [activeCategory, setActiveCategory] = useState(accessibleLinks[0]?.category);
+  // Estado para controlar qué categoría está expandida en móvil
+  const [expandedMobileCat, setExpandedMobileCat] = useState(null);
+
+  const toggleMobileCategory = (category: any) => {
+    setExpandedMobileCat(expandedMobileCat === category ? null : category);
+  };
+
   return (
-    <nav className="bg-white text-black shadow-lg px-4 py-3 sticky top-0 z-50">
-      <div className="flex justify-between items-center max-w-7xl mx-auto">
-        {/* Logo / Brand Name */}
-        <Link
-          to="/admin"
-          className="text-2xl font-extrabold tracking-wide flex items-center gap-2 text-black"
-        >
-          {/* Consider placing your actual logo image here */}
-          <img
-            src="/path/to/your/logo.png"
-            alt="Rapifarma Logo"
-            className="h-8 w-auto"
-            onError={(e) => (e.currentTarget.style.display = "none")}
-          />
-          <span>Rapifarma</span>
+    <nav className="bg-white border-b border-gray-100 sticky top-0 z-50 shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
+
+        {/* Logo Section */}
+        <Link to="/admin" className="flex items-center gap-2 group shrink-0">
+          <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-100 transition-transform group-hover:scale-110">
+            <span className="text-white font-black text-xl leading-none">R</span>
+          </div>
+          <span className="text-lg sm:text-xl font-black tracking-tighter text-gray-800 uppercase">
+            Rapifarma
+          </span>
         </Link>
 
-        {/* Hora de Venezuela - Desktop */}
-        <div className="hidden sm:flex items-center gap-4">
-          <div className="text-right">
-            <div className="text-sm font-semibold text-gray-700">{fechaVenezuela}</div>
-            <div className="text-lg font-bold text-blue-600">{horaVenezuela}</div>
-          </div>
+        {/* Reloj - Solo Desktop (MD+) */}
+        <div className="hidden md:flex items-center gap-3 bg-gray-50 px-4 py-1.5 rounded-2xl border border-gray-100">
+          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{fechaVenezuela}</span>
+          <div className="w-[1px] h-3 bg-gray-200" />
+          <span className="text-sm font-black text-blue-600 tabular-nums">{horaVenezuela}</span>
         </div>
 
-        {/* Desktop Menu (Dropdown) */}
-        <div
-          className="hidden sm:flex items-center gap-6 relative"
-          ref={dropdownRef}
-        >
-          <button
-            className="flex items-center gap-2 px-4 text-2xl font-extrabold py-2 rounded-full text-black transition-all duration-200"
-            onClick={() => setIsDropdownOpen((prev) => !prev)}
-            aria-expanded={isDropdownOpen}
-          >
-            MODULOS
-            <ChevronDown
-              className={`w-5 h-5 transition-transform ${isDropdownOpen ? "rotate-180" : "rotate-0"
-                }`}
-            />
-          </button>
+        {/* Controles Derecha */}
+        <div className="flex items-center gap-2">
 
-          {isDropdownOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              transition={{ duration: 0.15 }}
-              className="absolute right-0 top-full mt-3 w-72 bg-white border border-gray-200 rounded-lg shadow-xl z-50 overflow-hidden"
+          {/* DESKTOP DROPDOWN (SM+) */}
+          <div className="hidden sm:block relative" ref={dropdownRef}>
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs transition-all border
+                ${isDropdownOpen ? "bg-gray-900 text-white border-gray-900 shadow-xl" : "bg-white text-gray-700 hover:bg-gray-50 border-gray-200"}`}
             >
-              <div className="py-2 max-h-[80vh] overflow-y-auto custom-scrollbar">
-                {accessibleLinks.map((category) => (
-                  <div key={category.category} className="mb-2">
-                    <h3 className="px-4 pt-3 pb-2 text-xs font-bold uppercase text-gray-700 flex items-center gap-2 border-b border-gray-100">
-                      {category.icon && (
-                        <category.icon className="w-4 h-4 text-gray-700" />
-                      )}{" "}
-                      {/* Icons remain dark */}
+              MÓDULOS
+              <ChevronDown className={`w-4 h-4 transition-transform ${isDropdownOpen ? "rotate-180" : ""}`} />
+            </button>
+
+            <AnimatePresence>
+              {isDropdownOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                  className="absolute right-0 mt-3 w-[650px] bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-gray-100 overflow-hidden flex h-[420px]"
+                >
+                  {/* Selector Lateral Izquierdo */}
+                  <div className="w-1/3 bg-gray-50/50 border-r border-gray-100 p-3 space-y-1">
+                    {accessibleLinks.map((cat) => (
+                      <button
+                        key={cat.category}
+                        onMouseEnter={() => setActiveCategory(cat.category)}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all
+                          ${activeCategory === cat.category
+                            ? "bg-white text-blue-600 shadow-sm border border-gray-100"
+                            : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"}`}
+                      >
+                        {cat.icon && <cat.icon className="w-4 h-4" />}
+                        <span className="truncate">{cat.category}</span>
+                      </button>
+                    ))}
+                    <div className="w-full bg-gray-50/50 border-r border-gray-100 p-3 space-y-1">
+                      <button onClick={handleLogout} className="text-red-500 text-xs font-black hover:underline flex items-center gap-1">
+
+                        <LogOut size={12} /> Salir
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Panel de Enlaces Derecho */}
+                  <div className="w-2/3 p-6 bg-white overflow-y-auto custom-scrollbar flex flex-col">
+                    <div className="mb-4">
+                      <h4 className="text-lg font-black text-gray-900 leading-none">{activeCategory}</h4>
+                      <p className="text-[11px] text-gray-400 mt-1 uppercase tracking-tighter">Accesos directos</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-1 flex-1">
+                      {accessibleLinks.find(c => c.category === activeCategory)?.items.map((link) => (
+                        <Link
+                          key={link.to}
+                          to={link.to}
+                          onClick={() => setIsDropdownOpen(false)}
+                          className="group flex items-center justify-between p-3 rounded-xl hover:bg-blue-50 transition-colors"
+                        >
+                          <span className="text-sm font-bold text-gray-700 group-hover:text-blue-700">{link.label}</span>
+                          <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-blue-400 transition-transform group-hover:translate-x-1" />
+                        </Link>
+                      ))}
+                    </div>
+
+                    {/* Footer Usuario Desktop */}
+
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* MOBILE TOGGLE (Solo visible en < SM) */}
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="sm:hidden p-2.5 bg-gray-900 text-white rounded-xl shadow-lg"
+          >
+            {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
+      </div>
+
+      {/* MOBILE MENU OVERLAY */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="fixed inset-0 top-16 bg-white z-[60] sm:hidden flex flex-col h-[calc(100vh-64px)]"
+          >
+            {/* Reloj en móvil */}
+            <div className="p-4 bg-blue-50 border-b border-blue-100 flex justify-between items-center">
+              <span className="text-xs font-bold text-blue-900">{fechaVenezuela}</span>
+              <span className="text-sm font-black text-blue-600 tabular-nums">{horaVenezuela}</span>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+              {accessibleLinks.map((category) => (
+                <div key={category.category} className="border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
+                  <button
+                    onClick={() => toggleMobileCategory(category.category)}
+                    className={`w-full flex items-center justify-between p-4 text-sm font-black uppercase tracking-tight
+                      ${expandedMobileCat === category.category ? "bg-gray-900 text-white" : "bg-white text-gray-700"}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      {category.icon && <category.icon className="w-4 h-4" />}
                       {category.category}
-                    </h3>
-                    <ul className="pb-1">
-                      {category.items.map((link) => (
-                        <li key={link.to}>
-                          <Link
-                            to={link.to}
-                            onClick={() => setIsDropdownOpen(false)}
-                            className={`block px-4 py-2 text-sm whitespace-nowrap transition-all duration-150 rounded mx-2 my-1
-                                                            ${location.pathname ===
-                                link.to
-                                ? "text-black font-semibold bg-gray-100 hover:bg-gray-200" // Active link black on light gray
-                                : "text-gray-800 hover:text-black hover:bg-gray-50" // Hover link black on very light gray
-                              }`}
-                          >
-                            <span className="flex items-center justify-between">
-                              <span>{link.label}</span>
-                              {link.showCount && link.to === "/proveedores" && (
-                                <span className="ml-2 bg-blue-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                    </div>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${expandedMobileCat === category.category ? "rotate-180" : ""}`} />
+                  </button>
+
+                  <AnimatePresence>
+                    {expandedMobileCat === category.category && (
+                      <motion.div
+                        initial={{ height: 0 }}
+                        animate={{ height: "auto" }}
+                        exit={{ height: 0 }}
+                        className="overflow-hidden bg-gray-50"
+                      >
+                        <div className="p-2 grid grid-cols-1 gap-1">
+                          {category.items.map((link) => (
+                            <Link
+                              key={link.to}
+                              to={link.to}
+                              onClick={() => setIsMobileMenuOpen(false)}
+                              className={`p-3 rounded-xl text-sm font-bold flex items-center justify-between
+                                ${location.pathname === link.to ? "text-blue-600 bg-blue-50" : "text-gray-600"}`}
+                            >
+                              {link.label}
+                              {link.showCount && (
+                                <span className="bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full font-black">
                                   {totalProveedores}
                                 </span>
                               )}
-                            </span>
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-                {usuario && (
-                  <div className="border-t border-gray-200 pt-2 mt-2">
-                    <button
-                      onClick={handleLogout}
-                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded mx-2 my-1 flex items-center gap-2"
-                    >
-                      <LogOut className="w-4 h-4" /> Cerrar sesión
-                    </button>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          )}
-        </div>
-
-        {/* Hora de Venezuela - Mobile */}
-        <div className="sm:hidden flex items-center gap-2 mr-2">
-          <div className="text-right">
-            <div className="text-xs font-semibold text-gray-700">{fechaVenezuela}</div>
-            <div className="text-sm font-bold text-blue-600">{horaVenezuela}</div>
-          </div>
-        </div>
-
-        {/* Mobile Menu Button */}
-        <button
-          className="sm:hidden bg-white text- p-2 rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-colors duration-200"
-          onClick={() => setIsMobileMenuOpen((prev) => !prev)}
-          aria-label="Toggle mobile menu"
-        >
-          {isMobileMenuOpen ? (
-            <X className="w-7 h-7" />
-          ) : (
-            <Menu className="w-7 h-7" />
-          )}
-        </button>
-      </div>
-
-      {/* Mobile Menu Content (Animated Slide-in) */}
-      <motion.div
-        ref={mobileMenuRef}
-        initial={false}
-        animate={isMobileMenuOpen ? "open" : "closed"}
-        variants={{
-          open: { opacity: 1, height: "auto", transition: { duration: 0.3 } },
-          closed: { opacity: 0, height: 0, transition: { duration: 0.3 } },
-        }}
-        className="sm:hidden mt-4 bg-gray-100 rounded-lg shadow-xl overflow-y-auto overflow-x-hidden max-h-[70vh]"
-      >
-        <div className="p-4 custom-scrollbar">
-          {accessibleLinks.map((category) => (
-            <div key={category.category} className="mb-4 last:mb-0">
-              <h3 className="text-sm font-bold uppercase text-gray-600 mb-2 flex items-center gap-2">
-                {category.icon && <category.icon className="w-4 h-4" />}
-                {category.category}
-              </h3>
-              <ul className="space-y-1">
-                {category.items.map((link) => (
-                  <li key={link.to}>
-                    <Link
-                      to={link.to}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className={`block px-3 py-2 text-sm transition-all duration-150 rounded
-                                                ${location.pathname === link.to
-                          ? "text-black font-semibold bg-gray-200" // Active link black on medium gray
-                          : "text-gray-800 hover:text-black hover:bg-gray-50" // Default text gray, hover black on very light gray
-                        }`}
-                    >
-                      <span className="flex items-center justify-between">
-                        <span>{link.label}</span>
-                        {link.showCount && link.to === "/proveedores" && (
-                          <span className="ml-2 bg-blue-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                            {totalProveedores}
-                          </span>
-                        )}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+                            </Link>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ))}
             </div>
-          ))}
-          {/* Categoría Configuracion - siempre visible con Gestionar Usuarios (Mobile) */}
-          <div className="mb-4 last:mb-0">
-            <h3 className="text-sm font-bold uppercase text-gray-600 mb-2 flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              Configuracion
-            </h3>
-            <ul className="space-y-1">
-              <li>
-                <Link
-                  to="/adminusuarios"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className={`block px-3 py-2 text-sm transition-all duration-150 rounded
-                    ${location.pathname === "/adminusuarios"
-                      ? "text-black font-semibold bg-gray-200"
-                      : "text-gray-800 hover:text-black hover:bg-gray-50"
-                    }`}
-                >
-                  Gestionar Usuarios
-                </Link>
-              </li>
-            </ul>
-          </div>
-          {usuario && (
-            <div className="border-t border-gray-200 pt-4 mt-4">
+
+            {/* Footer Móvil */}
+            <div className="p-6 border-t border-gray-100 bg-white">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600">
+                  {usuario?.nombre?.charAt(0)}
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-black text-gray-900">{usuario?.nombre}</span>
+                  <span className="text-xs text-gray-500">{usuario?.email}</span>
+                </div>
+              </div>
               <button
                 onClick={handleLogout}
-                className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded flex items-center gap-2"
+                className="w-full py-4 rounded-2xl bg-red-50 text-red-600 font-black text-sm flex items-center justify-center gap-2"
               >
-                <LogOut className="w-4 h-4" /> Cerrar sesión
+                <LogOut size={18} /> CERRAR SESIÓN
               </button>
             </div>
-          )}
-        </div>
-      </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
   );
 };
