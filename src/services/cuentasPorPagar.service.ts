@@ -58,13 +58,11 @@ export const cuentasPorPagarService = {
      * Total cuentas activas en USD
      */
     getTotalCuentasActivasUsd: async (
-        startDate: string,
-        endDate: string,
         farmacia?: string
     ): Promise<number> => {
         const response = await cuentasPorPagarService.getCuentasPorRango({
-            startDate,
-            endDate,
+            startDate:'2025-01-01',
+            endDate: '2028-01-01',
             farmacia,
             estatus: 'activa'
         });
