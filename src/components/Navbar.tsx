@@ -306,7 +306,7 @@ const Navbar = () => {
                   initial={{ opacity: 0, y: 10, scale: 0.98 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.98 }}
-                  className="absolute right-0 mt-3 w-[650px] bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-gray-100 overflow-hidden flex h-[420px]"
+                  className="absolute right-0 mt-3 w-[650px] bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-gray-100 overflow-hidden flex h-112"
                 >
                   {/* Selector Lateral Izquierdo */}
                   <div className="w-1/3 bg-gray-50/50 border-r border-gray-100 p-3 space-y-1">
@@ -323,11 +323,19 @@ const Navbar = () => {
                         <span className="truncate">{cat.category}</span>
                       </button>
                     ))}
-                    <div className="w-full bg-gray-50/50 border-r border-gray-100 p-3 space-y-1">
-                      <button onClick={handleLogout} className="text-red-500 text-xs font-black hover:underline flex items-center gap-1">
+                    <button
+                      onClick={() => handleLogout()}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all
+                          text-red-600 hover:bg-gray-100`}
+                    >
+                      {<LogOut className="w-4 h-4" />}
+                      <span className="truncate">Salir</span>
+                    </button>
+                    <div className="flex items-center py-2 w-full justify-center">
+                      <span className="text-sm font-black text-gray-900">{usuario?.correo}</span>
+                    </div>
+                    <div className="w-full bg-gray-50/50 border-r border-gray-100 p-3 flex justify-end">
 
-                        <LogOut size={12} /> Salir
-                      </button>
                     </div>
                   </div>
 
@@ -351,9 +359,6 @@ const Navbar = () => {
                         </Link>
                       ))}
                     </div>
-
-                    {/* Footer Usuario Desktop */}
-
                   </div>
                 </motion.div>
               )}
@@ -435,22 +440,16 @@ const Navbar = () => {
             </div>
 
             {/* Footer Móvil */}
-            <div className="p-6 border-t border-gray-100 bg-white">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600">
-                  {usuario?.nombre?.charAt(0)}
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-sm font-black text-gray-900">{usuario?.nombre}</span>
-                  <span className="text-xs text-gray-500">{usuario?.email}</span>
-                </div>
-              </div>
+            <div className="p-2 border-t border-gray-100 bg-white">
               <button
                 onClick={handleLogout}
                 className="w-full py-4 rounded-2xl bg-red-50 text-red-600 font-black text-sm flex items-center justify-center gap-2"
               >
                 <LogOut size={18} /> CERRAR SESIÓN
               </button>
+            </div>
+            <div className="flex items-center mb-2 w-full justify-center">
+              <span className="text-sm font-black text-gray-900">{usuario?.correo}</span>
             </div>
           </motion.div>
         )}
