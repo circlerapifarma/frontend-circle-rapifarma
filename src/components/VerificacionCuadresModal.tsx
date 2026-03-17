@@ -2,6 +2,19 @@ import React, { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import ImageDisplay from "./upfile/ImageDisplay";
+import { 
+  X, 
+  CheckCircle2, 
+  XCircle, 
+  Calendar, 
+  Clock, 
+  User, 
+  Monitor, 
+  CreditCard, 
+  AlertCircle,
+  PackageSearch,
+  Maximize2
+} from "lucide-react";
 
 interface CuadreCaja {
   _id: string;
@@ -29,11 +42,10 @@ interface CuadreCaja {
   estado?: string;
   nombreFarmacia?: string;
   codigoFarmacia?: string;
-  costoInventario?: number; // <-- Agregado para soportar nuevos cuadres
-  fecha?: string; // <-- Para mostrar la fecha de registro
-  hora?: string;  // <-- Para mostrar la hora de registro
-  imagenesCuadre?: string[]; // Nombres de los objetos de imagen en R2 (hasta 3)
-  // imagenCuadre?: string; // DEPRECATED
+  costoInventario?: number;
+  fecha?: string;
+  hora?: string;
+  imagenesCuadre?: string[];
 }
 
 interface Props {
@@ -50,25 +62,20 @@ const VerificacionCuadresModal: React.FC<Props> = ({ open, onClose, farmaciaId, 
   const [cuadres, setCuadres] = useState<CuadreCaja[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Estado para la imagen en pantalla grande
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-useEffect(() => {
-  if (!open || !farmaciaId) return;
-
-  setLoading(true);
-  setError(null);
-
-  const params = new URLSearchParams({
-    estado: "wait" // solo cuadres pendientes
-  });
-
-  fetch(`${API_BASE_URL}/cuadres?farmacia=${farmaciaId}&${params.toString()}`)
-    .then(res => res.json())
-    .then(data => {
-      setCuadres(data); // ya filtrado por backend
-    })
-    .catch(() => setError("Error al cargar cuadres"))
-    .finally(() => setLoading(false));
-}, [open, farmaciaId]);
+  useEffect(() => {
+    if (!open || !farmaciaId) return;
+    setLoading(true);
+    setError(null);
+    fetch(`${API_BASE_URL}/cuadres?farmacia=${farmaciaId}&estado=wait`)
+      .then(res => res.json())
+      .then(data => setCuadres(data))
+      .catch(() => setError("Error al cargar cuadres"))
+      .finally(() => setLoading(false));
+  }, [open, farmaciaId]);
 
   const actualizarEstado = async (cuadre: CuadreCaja, nuevoEstado: "verified" | "denied") => {
     if (!farmaciaId || !cuadre._id) return;
@@ -76,102 +83,170 @@ useEffect(() => {
       const res = await fetch(`${API_BASE_URL}/cuadres/${farmaciaId}/${cuadre._id}/estado`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ estado: nuevoEstado }), // Enviar costo
+        body: JSON.stringify({ estado: nuevoEstado }),
       });
       if (!res.ok) throw new Error();
       setCuadres(prev => prev.filter(c => c._id !== cuadre._id));
     } catch {
-      alert("No se pudo actualizar el estado del cuadre");
+      alert("No se pudo actualizar el estado");
     }
   };
 
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 bg-white bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl p-4 sm:p-8 relative border-4 border-blue-700 mx-2 sm:mx-0">
-        <button className="absolute top-2 right-3 sm:top-3 sm:right-5 text-2xl sm:text-3xl text-gray-500 hover:text-red-600 font-bold" onClick={onClose}>&times;</button>
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-blue-800 mb-4 sm:mb-6 text-center tracking-wide drop-shadow">Verificar Cuadres - {farmaciaNombre}</h2>
-        {loading ? (
-          <div className="text-center py-8 sm:py-10 text-base sm:text-lg">Cargando...</div>
-        ) : error ? (
-          <div className="text-center text-red-600 py-8 sm:py-10 text-base sm:text-lg">{error}</div>
-        ) : cuadres.length === 0 ? (
-          <div className="text-center text-gray-500 py-8 sm:py-10 text-base sm:text-lg">No hay cuadres pendientes de verificación.</div>
-        ) : (
-          <div className="flex flex-col gap-6 sm:gap-8 max-h-[65vh] overflow-y-auto">
-            {cuadres.map((c) => (
-              <Card key={c._id} className="p-4 sm:p-6 flex flex-col gap-2 sm:gap-3 border-2 border-blue-300 rounded-xl shadow-lg bg-blue-50">
-                <div className="flex flex-wrap gap-2 sm:gap-4 mb-2">
-                  <div className="text-base sm:text-lg font-bold text-blue-900">Día: <span className="font-extrabold">{c.dia}</span></div>
-                  <div className="text-base sm:text-lg font-bold text-blue-900">Caja: <span className="font-extrabold">{c.cajaNumero}</span></div>
-                  <div className="text-base sm:text-lg font-bold text-blue-900">Turno: <span className="font-extrabold">{c.turno}</span></div>
-                  <div className="text-base sm:text-lg font-bold text-blue-900">Cajero: <span className="font-extrabold">{c.cajero}</span></div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 sm:gap-x-8 gap-y-1 text-sm sm:text-base">
-                  <div><b>Tasa:</b> {c.tasa}</div>
-                  <div><b>Total Caja Sistema Bs:</b> {c.totalCajaSistemaBs}</div>
-                  <div><b>Recarga Bs:</b> {c.recargaBs}</div>
-                  <div><b>Pago Móvil Bs:</b> {c.pagomovilBs}</div>
-                  <div><b>Efectivo Bs:</b> {c.efectivoBs}</div>
-                  <div><b>Efectivo USD:</b> {c.efectivoUsd}</div>
-                  <div><b>Zelle USD:</b> {c.zelleUsd}</div>
-                  <div><b>Vales USD:</b> {typeof c.valesUsd !== 'undefined' ? c.valesUsd : '-'}</div>
-                  <div><b>Total Bs en USD:</b> {c.totalBsEnUsd}</div>
-                  <div><b>Total General USD:</b> {c.totalGeneralUsd}</div>
-                  <div><b>Diferencia USD:</b> {c.diferenciaUsd}</div>
-                  <div><b>Sobrante USD:</b> <span className="text-green-700 font-bold">{c.sobranteUsd}</span></div>
-                  <div><b>Faltante USD:</b> <span className="text-red-700 font-bold">{c.faltanteUsd}</span></div>
-                  <div><b>Devoluciones:</b> <span className="font-bold text-blue-700">{c.devolucionesBs}</span></div>
-                  <div><b>Estado actual:</b> <span className="font-bold">{c.estado}</span></div>
-                  <div><b>Eliminado:</b> <span className="font-semibold">{c.delete ? 'Sí' : 'No'}</span></div>
-                </div>
-                {c.puntosVenta && c.puntosVenta.length > 0 && (
-                  <div className="text-sm sm:text-base mt-2">
-                    <span className="font-semibold">Puntos de Venta:</span>
-                    <ul className="ml-4 list-disc">
-                      {c.puntosVenta.map((pv, i) => (
-                        <li key={i}>
-                          Banco: <span className="font-semibold">{pv.banco}</span>, Débito: <span className="font-semibold">{pv.puntoDebito}</span>, Crédito: <span className="font-semibold">{pv.puntoCredito}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 sm:gap-x-8 gap-y-1 text-sm sm:text-base">
-                  <div>
-                    <b>Costo Inventario:</b> {typeof c.costoInventario !== 'undefined' ? c.costoInventario : <span className="text-gray-400">No registrado</span>}
-                  </div>
-                  <div>
-                    <b>Fecha registro:</b> {c.fecha ? c.fecha : <span className="text-gray-400">No registrada</span>}
-                  </div>
-                  <div>
-                    <b>Hora registro:</b> {c.hora ? c.hora : <span className="text-gray-400">No registrada</span>}
-                  </div>
-                </div>
-                {/* Mostrar imágenes adjuntas si existen */}
-                {Array.isArray(c.imagenesCuadre) && c.imagenesCuadre.length > 0 && (
-                  <div className="mt-2">
-                    <span className="text-xs text-gray-700">Imágenes adjuntas:</span>
-                    <div className="flex gap-2 mt-1 flex-wrap">
-                      {c.imagenesCuadre.map((img, idx) => (
-                        <ImageDisplay key={img || idx} imageName={img} style={{ maxWidth: 200, maxHeight: 200, borderRadius: 8, marginTop: 8 }} />
-                      ))}
-                    </div>
-                  </div>
-                )}
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mt-4 justify-end">
-                  {!soloDenegar && (
-                    <Button variant="default" size="lg" className="w-full sm:w-auto px-6 py-2 text-base sm:text-lg font-bold" onClick={() => actualizarEstado(c, "verified")}>Verificar</Button>
-                  )}
-                  <Button variant="destructive" size="lg" className="w-full sm:w-auto px-6 py-2 text-base sm:text-lg font-bold" onClick={() => actualizarEstado(c, "denied")}>Denegar</Button>
-                </div>
-              </Card>
-            ))}
+    <>
+      {/* VISOR DE IMAGEN (FULLSCREEN) */}
+      {selectedImage && (
+        <div 
+          className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 transition-all animate-in fade-in duration-200"
+          onClick={() => setSelectedImage(null)}
+        >
+          <button className="absolute top-6 right-6 text-white hover:text-red-500 transition-colors bg-white/10 p-2 rounded-full">
+            <X className="w-8 h-8" />
+          </button>
+          <div className="relative max-w-5xl max-h-[90vh] flex items-center justify-center">
+            <ImageDisplay 
+              imageName={selectedImage} 
+              style={{ 
+                maxWidth: '100%', 
+                maxHeight: '90vh', 
+                objectFit: 'contain',
+                borderRadius: '8px',
+                boxShadow: '0 0 50px rgba(0,0,0,0.5)'
+              }} 
+            />
           </div>
-        )}
+        </div>
+      )}
+
+      {/* MODAL PRINCIPAL */}
+      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
+        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[95vh] border border-slate-200">
+          
+          <div className="bg-blue-700 p-5 flex justify-between items-center text-white">
+            <div>
+              <h2 className="text-xl font-bold flex items-center gap-2 tracking-tight">
+                <CheckCircle2 className="w-6 h-6" /> Verificación de Cuadres
+              </h2>
+              <p className="text-blue-100 text-xs font-medium uppercase tracking-widest">{farmaciaNombre}</p>
+            </div>
+            <button className="p-2 hover:bg-white/20 rounded-full transition-colors" onClick={onClose}>
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+
+          <div className="p-4 sm:p-6 overflow-y-auto bg-slate-50 flex-1">
+            {loading ? (
+              <div className="text-center py-20 animate-pulse text-slate-400 font-medium">Obteniendo registros...</div>
+            ) : error ? (
+              <div className="text-center py-20 text-red-500 font-bold">{error}</div>
+            ) : cuadres.length === 0 ? (
+              <div className="text-center py-20 text-slate-500">No hay cuadres pendientes de verificación.</div>
+            ) : (
+              <div className="grid gap-8">
+                {cuadres.map((c) => (
+                  <Card key={c._id} className="overflow-hidden border-none shadow-sm hover:shadow-md transition-all">
+                    {/* Header Datos */}
+                    <div className="bg-slate-100 px-4 py-3 flex flex-wrap gap-4 border-b border-slate-200 text-[10px] font-bold text-slate-600 uppercase">
+                      <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {c.dia}</span>
+                      <span className="flex items-center gap-1"><Monitor className="w-3 h-3" /> Caja {c.cajaNumero}</span>
+                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {c.turno}</span>
+                      <span className="flex items-center gap-1 ml-auto"><User className="w-3 h-3" /> {c.cajero}</span>
+                    </div>
+
+                    <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {/* Bs */}
+                      <div className="space-y-2">
+                        <h4 className="text-[10px] font-black text-blue-600 uppercase border-b pb-1 mb-2">Bolívares (Bs)</h4>
+                        <div className="flex justify-between text-sm"><span className="text-slate-500">Sistema:</span> <b>{c.totalCajaSistemaBs}</b></div>
+                        <div className="flex justify-between text-sm"><span className="text-slate-500">Pago Móvil:</span> <b>{c.pagomovilBs}</b></div>
+                        <div className="flex justify-between text-sm"><span className="text-slate-500">Recarga:</span> <b>{c.recargaBs}</b></div>
+                        <div className="flex justify-between text-sm border-t pt-1 font-bold"><span>Efectivo:</span> <span>{c.efectivoBs}</span></div>
+                      </div>
+
+                      {/* USD */}
+                      <div className="space-y-2 md:border-x px-0 md:px-4">
+                        <h4 className="text-[10px] font-black text-emerald-600 uppercase border-b pb-1 mb-2">Divisas (USD)</h4>
+                        <div className="flex justify-between text-sm"><span className="text-slate-500">Efectivo:</span> <b className="text-emerald-700">${c.efectivoUsd}</b></div>
+                        <div className="flex justify-between text-sm"><span className="text-slate-500">Zelle:</span> <b className="text-emerald-700">${c.zelleUsd}</b></div>
+                        <div className="flex justify-between text-sm"><span className="text-slate-500">Vales:</span> <b className="text-amber-700">${c.valesUsd ?? '-'}</b></div>
+                        <div className="flex justify-between text-sm border-t pt-1 font-bold"><span>Tasa:</span> <span>{c.tasa}</span></div>
+                      </div>
+
+                      {/* Final */}
+                      <div className="bg-slate-50 p-3 rounded-lg space-y-2">
+                        <h4 className="text-[10px] font-black text-slate-500 uppercase border-b pb-1 mb-2">Resultado</h4>
+                        <div className="flex justify-between text-sm font-bold"><span>Total USD:</span> <span className="text-blue-700">${c.totalGeneralUsd}</span></div>
+                        <div className="flex justify-between text-sm"><span>Diferencia:</span> <span>${c.diferenciaUsd}</span></div>
+                        {c.sobranteUsd! > 0 && <div className="text-[11px] font-bold text-green-700 bg-green-100 p-1 rounded text-center">SOBRANTE: ${c.sobranteUsd}</div>}
+                        {c.faltanteUsd! > 0 && <div className="text-[11px] font-bold text-red-700 bg-red-100 p-1 rounded text-center">FALTANTE: ${c.faltanteUsd}</div>}
+                        <div className="text-[10px] text-slate-400 italic pt-1 text-center">Devoluciones: {c.devolucionesBs} Bs</div>
+                      </div>
+                    </div>
+
+                    {/* Puntos y Metadata */}
+                    <div className="px-5 pb-5">
+                      {c.puntosVenta && c.puntosVenta.length > 0 && (
+                        <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                          <p className="text-[10px] font-bold text-blue-800 uppercase mb-1 flex items-center gap-1"><CreditCard className="w-3 h-3" /> Puntos de Venta</p>
+                          <div className="grid grid-cols-2 gap-x-4 text-[11px]">
+                            {c.puntosVenta.map((pv, i) => (
+                              <div key={i} className="flex justify-between border-b border-blue-100 py-0.5">
+                                <span className="text-slate-500">{pv.banco}</span>
+                                <span className="font-bold">D: {pv.puntoDebito} | C: {pv.puntoCredito}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex flex-wrap gap-4 text-[10px] text-slate-400 mb-4 items-center">
+                        <span className="flex items-center gap-1 bg-white px-2 py-1 rounded border"><PackageSearch className="w-3 h-3" /> Costo: {c.costoInventario ?? 'N/A'}</span>
+                        <span>Registro: {c.fecha} {c.hora}</span>
+                        <span className="font-bold text-blue-600 uppercase">Estado: {c.estado}</span>
+                        <span>Eliminado: {c.delete ? 'Sí' : 'No'}</span>
+                      </div>
+
+                      {/* GALERÍA DE IMÁGENES CON CLICK PARA AGRANDAR */}
+                      {Array.isArray(c.imagenesCuadre) && c.imagenesCuadre.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Soportes (Click para ampliar)</p>
+                          <div className="flex gap-3 overflow-x-auto pb-2">
+                            {c.imagenesCuadre.map((img, idx) => (
+                              <div 
+                                key={img || idx} 
+                                className="relative group cursor-zoom-in min-w-[100px] h-[100px]"
+                                onClick={() => setSelectedImage(img)}
+                              >
+                                <ImageDisplay 
+                                  imageName={img} 
+                                  style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '12px', border: '2px solid #e2e8f0' }} 
+                                />
+                                <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors rounded-xl flex items-center justify-center">
+                                  <Maximize2 className="text-white w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex gap-3 mt-6 border-t pt-5">
+                        {!soloDenegar && (
+                          <Button className="flex-1 bg-blue-600 hover:bg-blue-700 h-11 rounded-xl font-bold shadow-lg shadow-blue-100" onClick={() => actualizarEstado(c, "verified")}>Verificar</Button>
+                        )}
+                        <Button variant="outline" className={`h-11 rounded-xl font-bold text-red-600 border-red-100 hover:bg-red-50 ${soloDenegar ? 'flex-1' : 'w-1/3'}`} onClick={() => actualizarEstado(c, "denied")}>Denegar</Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
