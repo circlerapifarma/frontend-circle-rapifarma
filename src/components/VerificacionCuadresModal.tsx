@@ -5,13 +5,11 @@ import ImageDisplay from "./upfile/ImageDisplay";
 import { 
   X, 
   CheckCircle2, 
-  XCircle, 
   Calendar, 
   Clock, 
   User, 
   Monitor, 
   CreditCard, 
-  AlertCircle,
   PackageSearch,
   Maximize2
 } from "lucide-react";

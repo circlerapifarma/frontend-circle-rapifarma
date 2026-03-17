@@ -11,14 +11,14 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import ImageDisplay from "@/components/upfile/ImageDisplay";
+import { PlusCircle, LayoutDashboard, MapPin } from "lucide-react";
+import ModalDetallesGastos from "@/components/gastos/ModalDetallesGastos";
 
 const ChequeoGastosPage: React.FC = () => {
   const {
     localidades,
     gastos,
     loading,
-    error,
     fetchGastosPorEstado,
     refreshGastosSilently,
     removeGasto,
@@ -29,7 +29,6 @@ const ChequeoGastosPage: React.FC = () => {
   const [gastoAEliminar, setGastoAEliminar] = useState<string | null>(null);
   const apiBase = import.meta.env.VITE_API_BASE_URL;
 
-  // cargar solo gastos con estado wait
   useEffect(() => {
     fetchGastosPorEstado("wait");
   }, [fetchGastosPorEstado]);
@@ -46,257 +45,202 @@ const ChequeoGastosPage: React.FC = () => {
 
   const actualizarEstadoGasto = async (id: string, estado: string) => {
     try {
-      // Actualización optimista: remover el gasto inmediatamente del estado local
-      // Esto hace que desaparezca del modal instantáneamente
       removeGasto(id);
-      
-      // Actualizar el estado en el servidor
       const res = await fetch(`${apiBase}/gastos/estado`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, estado }),
       });
-      
       if (!res.ok) {
-        // Si falla, recargar los gastos para restaurar el estado correcto
         refreshGastosSilently("wait");
-        throw new Error((await res.json()).message);
+        throw new Error("Error en el servidor");
       }
-      
-      // Sincronizar con el servidor en segundo plano para asegurar consistencia
       refreshGastosSilently("wait");
-      
-      // NO cerrar el modal - mantenerlo abierto para seguir verificando
-    } catch (e) {
-      console.error("Error actualizando gasto:", e);
-      alert("Error al actualizar el gasto. Por favor, intenta de nuevo.");
-      // Recargar los gastos para restaurar el estado correcto
+    } catch {
+      alert("No se pudo actualizar el estado.");
       refreshGastosSilently("wait");
     }
   };
 
   const eliminarGasto = async (id: string) => {
     try {
-      // Actualización optimista: remover el gasto inmediatamente del estado local
       removeGasto(id);
       setGastoAEliminar(null);
-      
-      // Eliminar el gasto en el servidor
       const res = await fetch(`${apiBase}/gastos/${id}`, { method: "DELETE" });
-      
-      if (!res.ok) {
-        // Si falla, recargar los gastos para restaurar el estado correcto
-        refreshGastosSilently("wait");
-        throw new Error((await res.json()).message);
-      }
-      
-      // Sincronizar con el servidor en segundo plano
+      if (!res.ok) throw new Error();
       refreshGastosSilently("wait");
-    } catch (e) {
-      console.error("Error al eliminar gasto:", e);
-      alert("Error al eliminar el gasto. Por favor, intenta de nuevo.");
-      // Recargar los gastos para restaurar el estado correcto
+    } catch {
+      alert("Error al eliminar.");
       refreshGastosSilently("wait");
     }
   };
 
-  if (loading)
-    return <p className="text-center py-12 text-xl text-gray-700">Cargando datos...</p>;
-  if (error)
-    return <p className="text-center py-12 text-xl text-red-600">Error: {error}</p>;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 shadow-sm text-slate-600 text-sm">
+          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
+          <span>Cargando panel de gastos...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-100 p-6 sm:p-8">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-5xl font-extrabold text-center mb-12 text-gray-900">
-          Panel de Chequeo de <span className="text-red-600">Gastos</span>
-        </h1>
-
-        <header className="flex justify-between items-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-800">Localidades</h2>
-          <Button
-            onClick={() => setModalAgregar(true)}
-            className="bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg transition-transform hover:scale-105"
-          >
-            + Agregar Gasto
-          </Button>
+    <div className="min-h-screen bg-slate-50 px-4 py-6 sm:px-8 sm:py-10">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white border border-slate-200 shadow-sm">
+              <LayoutDashboard className="text-red-500 w-5 h-5" />
+            </span>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
+                Panel de Gastos
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-500">
+                Gestión de egresos por localidad.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              className="hidden sm:inline-flex border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300 rounded-xl px-3 h-10 text-xs sm:text-sm"
+              onClick={() => fetchGastosPorEstado("wait")}
+            >
+              Actualizar
+            </Button>
+            <Button
+              onClick={() => setModalAgregar(true)}
+              className="bg-red-600 hover:bg-red-700 text-white font-medium h-10 sm:h-11 px-4 sm:px-5 rounded-xl shadow-sm gap-2 text-sm"
+            >
+              <PlusCircle className="w-4 h-4" />
+              Agregar gasto
+            </Button>
+          </div>
         </header>
 
-        {localidades.length === 0 ? (
-          <p className="text-center text-gray-500 text-lg mt-8">
-            No hay localidades disponibles.
-          </p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {/* Localidades */}
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-2 mb-4">
+            <p className="text-xs sm:text-sm text-slate-500">
+              Localidades con gastos en espera.
+            </p>
+            <span className="hidden sm:inline-flex text-[11px] text-slate-400">
+              Seleccione una localidad.
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
             {localidades.map((loc) => {
               const pendientes = (gastosPorLocalidad[loc.id] || []).length;
+              const hasPendientes = pendientes > 0;
+
               return (
                 <Card
                   key={loc.id}
-                  className="relative bg-white p-7 rounded-2xl shadow-lg hover:shadow-2xl transition-transform hover:-translate-y-1 border-l-6 border-red-500"
+                  className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-transform duration-200 hover:-translate-y-0.5"
                 >
-                  <div className="text-center text-2xl font-bold text-gray-800 mb-4">
-                    {loc.nombre}
-                  </div>
-                  {pendientes > 0 && (
-                    <span className="absolute top-4 right-4 bg-red-600 text-white text-md font-bold px-3 py-1 rounded-full animate-bounce">
-                      {pendientes} pendientes
-                    </span>
+                  {hasPendientes && (
+                    <div className="absolute inset-x-4 top-3 flex justify-between items-center text-[11px] text-slate-500">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-red-600">
+                        <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                        Pendientes
+                      </span>
+                      <span className="bg-red-100 text-red-600 font-bold px-2 py-0.5 rounded-full text-[10px]">
+                        {pendientes}
+                      </span>
+                    </div>
                   )}
-                  <Button
-                    onClick={() =>
-                      setModalGastos({ abierto: true, id: loc.id, nombre: loc.nombre })
-                    }
-                    className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-3 mt-4 rounded-lg transition-transform hover:scale-105"
-                  >
-                    Ver Gastos ({pendientes})
-                  </Button>
+
+                  <div className="p-4 pt-7 space-y-4">
+                    <div className="flex items-center justify-start gap-3">
+                      <div className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+                        <MapPin className="w-4 h-4" />
+                      </div>
+                      <h3 className="text-sm sm:text-base font-semibold text-slate-900 truncate">
+                        {loc.nombre}
+                      </h3>
+                    </div>
+
+
+                    <Button
+                      onClick={() =>
+                        setModalGastos({
+                          abierto: true,
+                          id: loc.id,
+                          nombre: loc.nombre,
+                        })
+                      }
+                      className="w-full justify-center rounded-xl text-xs sm:text-sm font-medium bg-slate-900 hover:bg-red-600 text-white py-2 mt-1"
+                    >
+                      Revisar gastos
+                    </Button>
+                  </div>
                 </Card>
               );
             })}
           </div>
-        )}
+        </div>
 
-        <Dialog open={modalGastos.abierto} onOpenChange={(o) => setModalGastos((p) => ({ ...p, abierto: o }))}>
-          <DialogContent className="sm:max-w-[800px] p-8 rounded-3xl shadow-xl border-4 border-red-500">
-            <DialogHeader>
-              <DialogTitle className="text-3xl font-extrabold text-red-600 text-center">
-                Gastos Pendientes - {modalGastos.nombre}
-              </DialogTitle>
-              <DialogDescription className="text-center text-gray-600">
-                Revisa y gestiona los gastos pendientes.
-              </DialogDescription>
-            </DialogHeader>
+        {/* Modal Detalles */}
+        <ModalDetallesGastos
+          open={modalGastos.abierto}
+          onClose={() => setModalGastos((p) => ({ ...p, abierto: false }))}
+          nombreLocalidad={modalGastos.nombre}
+          gastos={gastosPorLocalidad[modalGastos.id] || []}
+          onActualizar={actualizarEstadoGasto}
+          onEliminar={(id) => setGastoAEliminar(id)}
+        />
 
-            {(gastosPorLocalidad[modalGastos.id] || []).length === 0 ? (
-              <p className="text-center text-gray-500 text-xl py-8">
-                Sin gastos pendientes.
-              </p>
-            ) : (
-              <div className="flex flex-col gap-5 max-h-[70vh] overflow-y-auto">
-                {gastosPorLocalidad[modalGastos.id].map((gasto) => {
-                  const tasa = Number(gasto.tasa) || 0;
-                  const isBs = gasto.divisa === "Bs";
-                  const montoBs = isBs ? gasto.monto : gasto.monto * tasa;
-                  const montoUsd = isBs ? gasto.monto / (tasa || 1) : gasto.monto;
-
-                  return (
-                    <Card
-                      key={gasto._id}
-                      className="p-6 border-2 border-red-400 rounded-2xl bg-white/80 flex flex-col gap-4 shadow-md"
-                    >
-                      <div>
-                        <h3 className="text-2xl font-bold text-gray-900">{gasto.titulo}</h3>
-                        <p className="text-gray-600 text-base">{gasto.descripcion}</p>
-                        <p className="text-sm text-gray-500">Fecha: {gasto.fecha}</p>
-                        {gasto.fechaRegistro && (
-                          <p className="text-sm text-gray-500">
-                            Registro: {new Date(gasto.fechaRegistro).toLocaleDateString("es-ES")}
-                          </p>
-                        )}
-                        <div className="flex flex-wrap gap-3 mt-2">
-                          <span className="bg-green-100 text-green-800 font-semibold px-3 py-1 rounded-lg text-lg">
-                            {gasto.monto.toLocaleString("es-VE", { minimumFractionDigits: 2 })}{" "}
-                            {gasto.divisa}
-                          </span>
-                          {tasa > 0 && (
-                            <span className="bg-yellow-100 text-yellow-800 font-semibold px-3 py-1 rounded-lg text-lg">
-                              Tasa: {tasa}
-                            </span>
-                          )}
-                          <span className="bg-blue-100 text-blue-800 font-semibold px-3 py-1 rounded-lg text-lg">
-                            {isBs
-                              ? `≈ ${montoUsd.toLocaleString("en-US", { minimumFractionDigits: 2 })} USD`
-                              : `≈ ${montoBs.toLocaleString("es-VE", { minimumFractionDigits: 2 })} Bs`}
-                          </span>
-                        </div>
-                        {Array.isArray(gasto.imagenesGasto) && gasto.imagenesGasto.length > 0 && (
-                          <div className="flex gap-2 mt-3 flex-wrap">
-                            {gasto.imagenesGasto.map((img:any, i:any) => (
-                              <ImageDisplay
-                                key={i}
-                                imageName={img}
-                                style={{ maxWidth: 100, maxHeight: 100, borderRadius: 8 }}
-                              />
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex flex-wrap gap-3">
-                        <Button
-                          onClick={() => actualizarEstadoGasto(gasto._id, "verified")}
-                          className="bg-green-600 hover:bg-green-700 text-white"
-                        >
-                          ✅ Verificar
-                        </Button>
-                        <Button
-                          onClick={() => actualizarEstadoGasto(gasto._id, "denied")}
-                          className="bg-red-600 hover:bg-red-700 text-white"
-                        >
-                          ❌ Denegar
-                        </Button>
-                        <Button
-                          onClick={() => setGastoAEliminar(gasto._id)}
-                          className="bg-gray-400 hover:bg-gray-500 text-white"
-                        >
-                          🗑️ Eliminar
-                        </Button>
-                      </div>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
-
-            <DialogFooter>
-              <Button
-                onClick={() => setModalGastos((p) => ({ ...p, abierto: false }))}
-                className="bg-gray-700 hover:bg-gray-800 text-white"
-              >
-                Cerrar
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
+        {/* Modal Agregar */}
         <Dialog open={modalAgregar} onOpenChange={setModalAgregar}>
-          <DialogContent className="sm:max-w-[800px] p-8 rounded-3xl shadow-xl border-4 border-green-600">
-            <DialogHeader>
-              <DialogTitle className="text-3xl font-extrabold text-green-700 text-center">
-                Agregar Nuevo Gasto
+          <DialogContent className="sm:max-w-[720px] rounded-2xl border border-slate-200 bg-white p-0 overflow-hidden shadow-lg">
+            <div className="bg-emerald-500 px-5 py-4 text-white">
+              <DialogTitle className="text-lg sm:text-xl font-semibold">
+                Nuevo registro
               </DialogTitle>
-              <DialogDescription className="text-center text-gray-600">
-                Completa los detalles para añadir un nuevo gasto.
+              <DialogDescription className="mt-1 text-xs sm:text-sm text-emerald-50">
+                Ingrese los datos del gasto.
               </DialogDescription>
-            </DialogHeader>
-            <AgregarGastosPage
-              onSubmitSuccess={() => {
-                fetchGastosPorEstado("wait");
-                setModalAgregar(false);
-              }}
-            />
+            </div>
+            <div className="p-5 sm:p-6">
+              <AgregarGastosPage
+                onSubmitSuccess={() => {
+                  fetchGastosPorEstado("wait");
+                  setModalAgregar(false);
+                }}
+              />
+            </div>
           </DialogContent>
         </Dialog>
 
+        {/* Modal Confirmar Eliminación */}
         <Dialog open={!!gastoAEliminar} onOpenChange={() => setGastoAEliminar(null)}>
-          <DialogContent className="sm:max-w-[425px] p-6 rounded-2xl shadow-xl border-2 border-red-500">
+          <DialogContent className="sm:max-w-[380px] rounded-2xl border border-slate-200 bg-white shadow-lg">
             <DialogHeader>
-              <DialogTitle className="text-2xl font-bold text-red-600 text-center">
-                Confirmar Eliminación
+              <DialogTitle className="text-center text-lg font-semibold text-slate-900">
+                ¿Eliminar gasto?
               </DialogTitle>
-              <DialogDescription className="text-center text-gray-700 mt-2">
-                ¿Estás seguro de eliminar este gasto? Esta acción no se puede deshacer.
+              <DialogDescription className="text-center text-sm text-slate-500">
+                Esta acción es permanente.
               </DialogDescription>
             </DialogHeader>
-            <DialogFooter className="flex justify-center gap-4">
-              <Button onClick={() => setGastoAEliminar(null)} className="bg-gray-300 hover:bg-gray-400 text-gray-800">
+            <DialogFooter className="flex gap-2 sm:justify-center pt-3">
+              <Button
+                onClick={() => setGastoAEliminar(null)}
+                variant="outline"
+                className="rounded-xl flex-1 border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 text-sm"
+              >
                 Cancelar
               </Button>
               <Button
                 onClick={() => gastoAEliminar && eliminarGasto(gastoAEliminar)}
-                className="bg-red-600 hover:bg-red-700 text-white"
+                className="bg-red-600 hover:bg-red-700 text-white rounded-xl flex-1 text-sm"
               >
-                Eliminar
+                Confirmar
               </Button>
             </DialogFooter>
           </DialogContent>
