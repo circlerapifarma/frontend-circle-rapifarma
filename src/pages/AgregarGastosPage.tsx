@@ -12,7 +12,7 @@ const AgregarGastos: React.FC<{ onSubmitSuccess?: () => void }> = ({ onSubmitSuc
     tasa: "",
     divisa: "",
   });
-  // Permitir hasta 3 imágenes
+
   const [imagenesGasto, setImagenesGasto] = useState<Array<string | null>>([null, null, null]);
   const [localidades, setLocalidades] = useState<{ id: string; nombre: string }[]>([]);
 
@@ -32,45 +32,52 @@ const AgregarGastos: React.FC<{ onSubmitSuccess?: () => void }> = ({ onSubmitSuc
     fetchLocalidades();
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+  ) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Validación de fecha
+
     if (!formData.fecha) {
       alert("Debe seleccionar una fecha válida.");
       return;
     }
-    // Validar que haya al menos una imagen
+
     const imagenesValidas = imagenesGasto.filter((img): img is string => !!img);
     if (imagenesValidas.length === 0) {
       alert("Debe adjuntar al menos una imagen del comprobante del gasto.");
       return;
     }
+
     const hoy = new Date();
     const fechaSeleccionada = new Date(formData.fecha);
-    hoy.setHours(0,0,0,0);
-    fechaSeleccionada.setHours(0,0,0,0);
+    hoy.setHours(0, 0, 0, 0);
+    fechaSeleccionada.setHours(0, 0, 0, 0);
     if (fechaSeleccionada > hoy) {
       alert("La fecha no puede ser mayor a hoy.");
       return;
     }
+
     const confirmSave = window.confirm("¿Seguro que desea guardar el gasto?");
     if (!confirmSave) return;
 
     alert("Guardando el gasto, por favor espere...");
+
     try {
-      // Enviar la fecha como string YYYY-MM-DD para evitar desfase de zona horaria
-      // Enviar solo la primera imagen si el backend solo acepta una, o el array si acepta varias
-      const dataToSend = { ...formData, fecha: formData.fecha, imagenGasto: imagenesValidas[0], imagenesGasto: imagenesValidas };
+      const dataToSend = {
+        ...formData,
+        fecha: formData.fecha,
+        imagenGasto: imagenesValidas[0],
+        imagenesGasto: imagenesValidas,
+      };
+
       const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/gastos`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dataToSend),
       });
 
@@ -82,7 +89,6 @@ const AgregarGastos: React.FC<{ onSubmitSuccess?: () => void }> = ({ onSubmitSuc
       console.log("Gasto guardado exitosamente:", data);
       alert("Gasto guardado exitosamente");
 
-      // Reiniciar el formulario
       setFormData({
         monto: "",
         titulo: "",
@@ -94,9 +100,7 @@ const AgregarGastos: React.FC<{ onSubmitSuccess?: () => void }> = ({ onSubmitSuc
       });
       setImagenesGasto([null, null, null]);
 
-      if (onSubmitSuccess) {
-        onSubmitSuccess();
-      }
+      if (onSubmitSuccess) onSubmitSuccess();
     } catch (error) {
       console.error(error);
       alert("Hubo un error al guardar el gasto");
@@ -104,42 +108,51 @@ const AgregarGastos: React.FC<{ onSubmitSuccess?: () => void }> = ({ onSubmitSuc
   };
 
   return (
-    <div className="max-w-xl mx-auto bg-white rounded-2xl shadow-lg p-8 sm:p-10">
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label htmlFor="titulo" className="block text-sm font-medium text-gray-700 mb-1">Título</label>
+    <div className="max-w-xl mx-auto bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-7">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Título */}
+        <div className="space-y-1">
+          <label htmlFor="titulo" className="block text-sm font-medium text-slate-700">
+            Título
+          </label>
           <input
             type="text"
             name="titulo"
             id="titulo"
             value={formData.titulo}
             onChange={handleChange}
-            className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm shadow-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none"
             required
           />
         </div>
 
-        <div>
-          <label htmlFor="descripcion" className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+        {/* Descripción */}
+        <div className="space-y-1">
+          <label htmlFor="descripcion" className="block text-sm font-medium text-slate-700">
+            Descripción
+          </label>
           <textarea
             name="descripcion"
             id="descripcion"
-            rows={4}
+            rows={3}
             value={formData.descripcion}
             onChange={handleChange}
-            className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm shadow-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none resize-none"
             required
-          ></textarea>
+          />
         </div>
 
-        <div>
-          <label htmlFor="divisa" className="block text-sm font-medium text-gray-700 mb-1">Moneda</label>
+        {/* Moneda */}
+        <div className="space-y-1">
+          <label htmlFor="divisa" className="block text-sm font-medium text-slate-700">
+            Moneda
+          </label>
           <select
             name="divisa"
             id="divisa"
             value={formData.divisa}
             onChange={handleChange}
-            className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm shadow-sm bg-white focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none"
             required
           >
             <option value="">Seleccione una moneda</option>
@@ -148,73 +161,91 @@ const AgregarGastos: React.FC<{ onSubmitSuccess?: () => void }> = ({ onSubmitSuc
           </select>
         </div>
 
-        <div>
-          <label htmlFor="tasa" className="block text-sm font-medium text-gray-700 mb-1">Tasa (si aplica)</label>
+        {/* Tasa */}
+        <div className="space-y-1">
+          <label htmlFor="tasa" className="block text-sm font-medium text-slate-700">
+            Tasa
+          </label>
           <input
             type="number"
             name="tasa"
+            required
             id="tasa"
             value={formData.tasa}
             onChange={handleChange}
-            className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm shadow-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none"
             step="any"
             min="0"
             placeholder="Ej: 40.5"
           />
         </div>
 
-        <div>
-          <label htmlFor="monto" className="block text-sm font-medium text-gray-700 mb-1">Monto</label>
+        {/* Monto */}
+        <div className="space-y-1">
+          <label htmlFor="monto" className="block text-sm font-medium text-slate-700">
+            Monto
+          </label>
           <input
             type="number"
             name="monto"
             id="monto"
             value={formData.monto}
             onChange={handleChange}
-            className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm shadow-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none"
             required
-            onWheel={e => e.currentTarget.blur()}
+            onWheel={(e) => e.currentTarget.blur()}
           />
         </div>
 
-        <div>
-          <label htmlFor="fecha" className="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
+        {/* Fecha */}
+        <div className="space-y-1">
+          <label htmlFor="fecha" className="block text-sm font-medium text-slate-700">
+            Fecha
+          </label>
           <input
             type="date"
             name="fecha"
             id="fecha"
             value={formData.fecha}
             onChange={handleChange}
-            className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm shadow-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none"
             required
           />
         </div>
 
-        <div>
-          <label htmlFor="localidad" className="block text-sm font-medium text-gray-700 mb-1">Localidad</label>
+        {/* Localidad */}
+        <div className="space-y-1">
+          <label htmlFor="localidad" className="block text-sm font-medium text-slate-700">
+            Localidad
+          </label>
           <select
             name="localidad"
             id="localidad"
             value={formData.localidad}
             onChange={handleChange}
-            className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm shadow-sm bg-white focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none"
             required
           >
             <option value="">Seleccione una opción</option>
-            {localidades.map(loc => (
-              <option key={loc.id} value={loc.id}>{loc.nombre}</option>
+            {localidades.map((loc) => (
+              <option key={loc.id} value={loc.id}>
+                {loc.nombre}
+              </option>
             ))}
           </select>
         </div>
 
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Comprobante(s) del gasto (imagen, máx. 3)</label>
-          <div className="flex flex-col gap-4">
-            {[0, 1, 2].map(idx => (
-              <div key={idx} className="flex flex-col items-start relative group">
+        {/* Imágenes */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-slate-700">
+            Comprobante(s) del gasto (máx. 3)
+          </label>
+          <div className="flex flex-col gap-3">
+            {[0, 1, 2].map((idx) => (
+              <div key={idx} className="flex flex-col gap-2">
                 <UpFileGasto
                   onUploadSuccess={(objectName: string) => {
-                    setImagenesGasto(prev => {
+                    setImagenesGasto((prev) => {
                       const newArr = [...prev];
                       newArr[idx] = objectName;
                       return newArr;
@@ -225,21 +256,38 @@ const AgregarGastos: React.FC<{ onSubmitSuccess?: () => void }> = ({ onSubmitSuc
                   initialFileUrl={imagenesGasto[idx] || undefined}
                 />
                 {imagenesGasto[idx] && (
-                  <div className="mt-1 relative inline-block">
-                    <ImageDisplay imageName={imagenesGasto[idx]!} style={{ maxWidth: 200, maxHeight: 200, borderRadius: 8, marginTop: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }} />
+                  <div className="relative inline-block">
+                    <ImageDisplay
+                      imageName={imagenesGasto[idx]!}
+                      style={{
+                        maxWidth: 180,
+                        maxHeight: 180,
+                        borderRadius: 8,
+                        marginTop: 4,
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                      }}
+                    />
                     <button
                       type="button"
-                      className="absolute top-2 right-2 bg-white bg-opacity-80 rounded-full p-1 shadow-md text-red-600 hover:bg-red-100 hover:text-red-800 transition-colors z-20 opacity-80 group-hover:opacity-100"
+                      className="absolute top-2 right-2 bg-white/90 rounded-full p-1 shadow text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors"
                       title="Eliminar imagen"
                       onClick={() => {
-                        setImagenesGasto(prev => {
+                        setImagenesGasto((prev) => {
                           const newArr = [...prev];
                           newArr[idx] = null;
                           return newArr;
                         });
                       }}
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
                     </button>
                   </div>
                 )}
@@ -248,12 +296,13 @@ const AgregarGastos: React.FC<{ onSubmitSuccess?: () => void }> = ({ onSubmitSuc
           </div>
         </div>
 
-        <div className="pt-4">
+        {/* Botón submit */}
+        <div className="pt-2">
           <button
             type="submit"
-            className="w-full bg-red-500 text-white text-sm font-medium py-2.5 rounded-lg shadow hover:bg-red-600 transition focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-red-500"
+            className="w-full bg-red-600 hover:bg-red-700 text-white text-sm font-medium py-2.5 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-red-500"
           >
-            Guardar Gasto
+            Guardar gasto
           </button>
         </div>
       </form>
