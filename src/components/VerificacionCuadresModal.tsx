@@ -192,7 +192,7 @@ const VerificacionCuadresModal: React.FC<Props> = ({ open, onClose, farmaciaId, 
                             {c.puntosVenta.map((pv, i) => (
                               <div key={i} className="flex justify-between border-b border-blue-100 py-0.5">
                                 <span className="text-slate-500">{pv.banco}</span>
-                                <span className="font-bold">D: {pv.puntoDebito} | C: {pv.puntoCredito}</span>
+                                <span className="font-bold">Debito: {pv.puntoDebito} | Credito: {pv.puntoCredito}</span>
                               </div>
                             ))}
                           </div>
