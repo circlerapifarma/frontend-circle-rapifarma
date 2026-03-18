@@ -57,11 +57,11 @@ const allLinks: LinkCategory[] = [
     category: "Cuadres",
     icon: ClipboardCheck, // Sugerencia de cambio de icono para diferenciar de Análisis
     items: [
-      { to: "/agregarcuadre", label: "Nuevo Cuadre", permiso: "agregar_cuadre" },
+      { to: "/agregarcuadre", label: "Agregar Cuadre", permiso: "agregar_cuadre" },
       { to: "/cuadresporfarmacia", label: "Mis Registros", permiso: "agregar_cuadre" },
       { to: "/verificacion-cuadres", label: "Validación de Cuadres", permiso: "verificar_cuadres" },
       { to: "/ver-cuadres-dia", label: "Cierres Diarios", permiso: "ver_cuadres_dia" },
-      { to: "/visualizarcuadres", label: "Explorador de Cuadres", permiso: "ver_cuadres_dia" },
+      { to: "/visualizarcuadres", label: "Visualizar Cuadres", permiso: "ver_cuadres_dia" },
       { to: "/cuadres/denegados", label: "Cuadres Rechazados", permiso: "" },
       { to: "/modificar-cuadre", label: "Edición de Cuadres", permiso: "modificar_cuadre" },
     ],
@@ -70,19 +70,19 @@ const allLinks: LinkCategory[] = [
     category: "Gastos",
     icon: DollarSign,
     items: [
-      { to: "/agregargastos", label: "Registrar Gasto", permiso: "agregar_cuadre" },
+      { to: "/agregargastos", label: "Agregar Gasto", permiso: "agregar_cuadre" },
       { to: "/gastosporusuario", label: "Mis Gastos", permiso: "agregar_cuadre" },
-      { to: "/verificaciongastos", label: "Auditoría de Gastos", permiso: "verificar_gastos" },
-      { to: "/vergastos", label: "Panel General de Gastos", permiso: "verificar_gastos" },
+      { to: "/verificaciongastos", label: "Verificación de Gastos", permiso: "verificar_gastos" },
+      { to: "/vergastos", label: "Visualizar Gastos", permiso: "verificar_gastos" },
     ],
   },
   {
     category: "Cuentas Por Pagar",
     icon: CreditCard, // Icono más acorde a pagos que 'Users'
     items: [
-      { to: "/cuentasporpagar", label: "Nueva Cuenta (CxP)", permiso: "agregar_cuadre" },
-      { to: "/vercuentasporpagar", label: "Cartera de Cuentas", permiso: "verificar_gastos" },
-      { to: "/verificacioncuentasporpagar", label: "Validación CxP", permiso: "verificar_gastos" },
+      { to: "/cuentasporpagar", label: "Agregar Cuenta Por Pagar", permiso: "agregar_cuadre" },
+      { to: "/vercuentasporpagar", label: "Visualizar Cuentas por Pagar", permiso: "verificar_gastos" },
+      { to: "/verificacioncuentasporpagar", label: "Verificación Cuentas Por Pagar", permiso: "verificar_gastos" },
       { to: "/pagoscpp", label: "Historial de Pagos", permiso: "verificar_gastos" },
     ],
   },
@@ -92,7 +92,7 @@ const allLinks: LinkCategory[] = [
     items: [
       { to: "/cajeros", label: "Gestión de Vendedores", permiso: "cajeros" },
       { to: "/comisiones", label: "Comisiones por Turno", permiso: "comisiones" },
-      { to: "/comisionesgenerales", label: "Reporte de Comisiones", permiso: "comisiones" },
+      { to: "/comisionesgenerales", label: "Comisiones Generales", permiso: "comisiones" },
     ],
   },
   {
