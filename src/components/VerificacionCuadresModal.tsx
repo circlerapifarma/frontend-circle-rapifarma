@@ -179,7 +179,7 @@ const VerificacionCuadresModal: React.FC<Props> = ({ open, onClose, farmaciaId, 
                         <div className="flex justify-between text-sm"><span>Diferencia:</span> <span>${c.diferenciaUsd}</span></div>
                         {c.sobranteUsd! > 0 && <div className="text-[11px] font-bold text-green-700 bg-green-100 p-1 rounded text-center">SOBRANTE: ${c.sobranteUsd}</div>}
                         {c.faltanteUsd! > 0 && <div className="text-[11px] font-bold text-red-700 bg-red-100 p-1 rounded text-center">FALTANTE: ${c.faltanteUsd}</div>}
-                        <div className="text-[10px] text-slate-400 italic pt-1 text-center">Devoluciones: {c.devolucionesBs} Bs</div>
+                        <div className="text-sm text-black pt-1 text-center">Devoluciones: {c.devolucionesBs} Bs</div>
                       </div>
                     </div>
 
@@ -199,11 +199,10 @@ const VerificacionCuadresModal: React.FC<Props> = ({ open, onClose, farmaciaId, 
                         </div>
                       )}
 
-                      <div className="flex flex-wrap gap-4 text-[10px] text-slate-400 mb-4 items-center">
+                      <div className="flex flex-wrap gap-4 text-sm mb-4 items-center">
                         <span className="flex items-center gap-1 bg-white px-2 py-1 rounded border"><PackageSearch className="w-3 h-3" /> Costo: {c.costoInventario ?? 'N/A'}</span>
                         <span>Registro: {c.fecha} {c.hora}</span>
                         <span className="font-bold text-blue-600 uppercase">Estado: {c.estado}</span>
-                        <span>Eliminado: {c.delete ? 'Sí' : 'No'}</span>
                       </div>
 
                       {/* GALERÍA DE IMÁGENES CON CLICK PARA AGRANDAR */}
