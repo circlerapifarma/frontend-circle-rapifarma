@@ -63,7 +63,7 @@ const allLinks: LinkCategory[] = [
       { to: "/ver-cuadres-dia", label: "Cierres Diarios", permiso: "ver_cuadres_dia" },
       { to: "/visualizarcuadres", label: "Visualizar Cuadres", permiso: "ver_cuadres_dia" },
       { to: "/cuadres/denegados", label: "Cuadres Rechazados", permiso: "" },
-      { to: "/modificar-cuadre", label: "Edición de Cuadres", permiso: "modificar_cuadre" },
+      { to: "/modificar-cuadres", label: "Edición de Cuadres", permiso: "verificar_cuadres" },
     ],
   },
   {

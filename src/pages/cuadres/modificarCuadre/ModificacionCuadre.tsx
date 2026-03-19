@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useModificarCuadre, useDetalleCuadres } from './useModificacionCuadre';
 import type { Cuadre } from './useModificacionCuadre';
+import { Save, Ban, Info, CreditCard, } from 'lucide-react';
 
 interface Props {
   id: string;
@@ -10,25 +11,18 @@ interface Props {
 const ModificacionCuadre: React.FC<Props> = ({ id, onCancel }) => {
   const [editData, setEditData] = useState<Cuadre | null>(null);
   const { result, loading: loadingMod, error: errorMod, modificarCuadre } = useModificarCuadre();
-  const { data: detalleData, loading: loadingCuadre, error: errorDetalle, fetchDetalle } = useDetalleCuadres();
+  const { data: detalleData, loading: loadingCuadre, fetchDetalle } = useDetalleCuadres();
 
-  // Obtener detalle del cuadre por id
   useEffect(() => {
-    if (id) {
-      fetchDetalle({ id });
-    }
+    if (id) fetchDetalle({ id });
   }, [id]);
 
-  // Actualizar editData cuando se obtenga el detalle
   useEffect(() => {
     if (detalleData && Array.isArray(detalleData) && detalleData.length > 0) {
       setEditData({ ...detalleData[0] });
-    } else {
-      setEditData(null);
     }
   }, [detalleData]);
 
-  // Actualizar campo editado
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     if (!editData) return;
     const { name, value, type } = e.target;
@@ -38,280 +32,129 @@ const ModificacionCuadre: React.FC<Props> = ({ id, onCancel }) => {
     });
   };
 
-  // Estilo para campos editables
-  const editableStyle: React.CSSProperties = {
-    border: '2px solid #000',
-    background: '#f5f5f5',
-    borderRadius: 6,
-    padding: '0.4rem 0.7rem',
-    fontWeight: 500,
-    fontSize: '1rem',
-    outline: 'none',
-    marginBottom: 2,
-  };
-  // Estilo para campos solo lectura
-  const readonlyStyle: React.CSSProperties = {
-    border: '1px solid #ccc',
-    background: '#fff',
-    borderRadius: 6,
-    padding: '0.4rem 0.7rem',
-    fontWeight: 400,
-    fontSize: '1rem',
-    outline: 'none',
-    marginBottom: 2,
-  };
+  // Clases de Tailwind para inputs
+  const editableClass = "w-full px-4 py-2.5 rounded-xl border-2 border-indigo-100 bg-indigo-50/30 text-slate-900 font-bold focus:border-indigo-500 focus:bg-white transition-all outline-none text-sm";
+  const readonlyClass = "w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-100 text-slate-500 font-medium text-sm cursor-not-allowed";
+  const labelClass = "text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block";
 
-  // Enviar modificación
-  const handleModificar = () => {
-    if (id && editData) {
-      modificarCuadre(id, editData);
-    }
-  };
+  if (loadingCuadre) return (
+    <div className="flex flex-col items-center justify-center py-20 animate-pulse">
+      <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4" />
+      <p className="text-slate-500 font-bold uppercase text-xs tracking-widest">Cargando datos...</p>
+    </div>
+  );
+
+  if (!editData) return null;
 
   return (
-    <div
-      style={{
-        maxWidth: 600,
-        margin: '0 auto',
-        padding: 24,
-        width: '100%',
-        boxSizing: 'border-box',
-      }}
-    >
-      <h2>Modificar Cuadres</h2>
-      {loadingCuadre && <div>Cargando información del cuadre...</div>}
-      {errorDetalle && <div style={{ color: 'red' }}>Error: {errorDetalle}</div>}
-      {!loadingCuadre && editData && (
-        <div style={{ border: '1px solid #ccc', padding: 16 }}>
-          <h3>Editar Cuadre</h3>
-          <form onSubmit={e => { e.preventDefault(); handleModificar(); }}>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: 12,
-                width: '100%',
-                boxSizing: 'border-box',
-                ...(window.innerWidth < 600
-                  ? { gridTemplateColumns: '1fr', gap: 8 }
-                  : {}),
-              }}
-            >
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label>Día:</label>
-                <input
-                  name="dia"
-                  value={editData.dia}
-                  onChange={handleChange}
-                  style={editableStyle}
-                />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label>Turno:</label>
-                <select
-                  name="turno"
-                  value={editData.turno}
-                  onChange={handleChange}
-                  style={editableStyle}
-                >
-                  <option value="Mañana">Mañana</option>
-                  <option value="Tarde">Tarde</option>
-                  <option value="De Turno">De Turno</option>
-                </select>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label>Costo Inventario:</label>
-                <input
-                  name="costoInventario"
-                  type="number"
-                  value={editData.costoInventario}
-                  onChange={handleChange}
-                  style={editableStyle}
-                />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label>Estado:</label>
-                <select
-                  name="estado"
-                  value={editData.estado ?? ''}
-                  onChange={handleChange}
-                  style={editableStyle}
-                >
-                  <option value="wait">wait</option>
-                  <option value="aprobado">aprobado</option>
-                  <option value="rechazado">rechazado</option>
-                </select>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label>Caja #:</label>
-                <input
-                  name="cajaNumero"
-                  type="number"
-                  value={editData.cajaNumero}
-                  onChange={handleChange}
-                  style={editableStyle}
-                />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label>Total Caja Sistema Bs:</label>
-                <input
-                  name="totalCajaSistemaBs"
-                  type="number"
-                  value={editData.totalCajaSistemaBs}
-                  onChange={handleChange}
-                  style={editableStyle}
-                />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label>Tasa:</label>
-                <input name="tasa" type="number" value={editData.tasa} readOnly style={readonlyStyle} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label>Cajero:</label>
-                <input name="cajero" value={editData.cajero} readOnly style={readonlyStyle} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label>Devoluciones Bs:</label>
-                <input name="devolucionesBs" type="number" value={editData.devolucionesBs} readOnly style={readonlyStyle} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label>Recarga Bs:</label>
-                <input name="recargaBs" type="number" value={editData.recargaBs} readOnly style={readonlyStyle} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label>Pago Móvil Bs:</label>
-                <input name="pagomovilBs" type="number" value={editData.pagomovilBs} readOnly style={readonlyStyle} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label>Efectivo Bs:</label>
-                <input name="efectivoBs" type="number" value={editData.efectivoBs} readOnly style={readonlyStyle} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label>Efectivo USD:</label>
-                <input name="efectivoUsd" type="number" value={editData.efectivoUsd} readOnly style={readonlyStyle} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label>Zelle USD:</label>
-                <input name="zelleUsd" type="number" value={editData.zelleUsd} readOnly style={readonlyStyle} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label>Vales USD:</label>
-                <input name="valesUsd" type="number" value={editData.valesUsd ?? 0} readOnly style={readonlyStyle} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label>totalBs:</label>
-                <input name="totalBs" type="number" value={editData.totalBs} readOnly style={readonlyStyle} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label>totalBsEnUsd:</label>
-                <input name="totalBsEnUsd" type="number" value={editData.totalBsEnUsd} readOnly style={readonlyStyle} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label>totalGeneralUsd:</label>
-                <input name="totalGeneralUsd" type="number" value={editData.totalGeneralUsd} readOnly style={readonlyStyle} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label>diferenciaUsd:</label>
-                <input name="diferenciaUsd" type="number" value={editData.diferenciaUsd} readOnly style={readonlyStyle} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label>sobranteUsd:</label>
-                <input name="sobranteUsd" type="number" value={editData.sobranteUsd ?? 0} readOnly style={readonlyStyle} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label>faltanteUsd:</label>
-                <input name="faltanteUsd" type="number" value={editData.faltanteUsd ?? 0} readOnly style={readonlyStyle} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label>nombreFarmacia:</label>
-                <input name="nombreFarmacia" value={editData.nombreFarmacia ?? ''} readOnly style={readonlyStyle} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label>fecha:</label>
-                <input name="fecha" value={editData.fecha ?? ''} readOnly style={readonlyStyle} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label>hora:</label>
-                <input name="hora" value={editData.hora ?? ''} readOnly style={readonlyStyle} />
-              </div>
+    <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
+      <form onSubmit={e => { e.preventDefault(); if (id && editData) modificarCuadre(id, editData); }}>
+        
+        {/* Sección: Datos Generales */}
+        <div className="mb-8">
+          <h3 className="flex items-center gap-2 text-indigo-600 font-black uppercase text-xs tracking-tighter mb-4 pb-2 border-b border-indigo-50">
+            <Info className="w-4 h-4" /> Información Editable
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>Día / Fecha Manual</label>
+              <input name="dia" value={editData.dia} onChange={handleChange} className={editableClass} />
             </div>
-            <div style={{ marginTop: 16 }}>
-              <label>Puntos de Venta:</label>
-              {editData.puntosVenta && editData.puntosVenta.map((pv, idx) => (
-                <div key={idx} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                    <label style={{ fontSize: 13, fontWeight: 500 }}>Banco</label>
-                    <input
-                      value={pv.banco}
-                      readOnly
-                      style={{ marginBottom: 2 }}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                    <label style={{ fontSize: 13, fontWeight: 500 }}>Débito Bs</label>
-                    <input
-                      type="number"
-                      value={pv.puntoDebito}
-                      readOnly
-                      style={{ marginBottom: 2 }}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                    <label style={{ fontSize: 13, fontWeight: 500 }}>Crédito Bs</label>
-                    <input
-                      type="number"
-                      value={pv.puntoCredito}
-                      style={editableStyle}
-                      readOnly={false}
-                    />
-                  </div>
-                </div>
-              ))}
+            <div>
+              <label className={labelClass}>Turno de Trabajo</label>
+              <select name="turno" value={editData.turno} onChange={handleChange} className={editableClass}>
+                <option value="Mañana">Mañana</option>
+                <option value="Tarde">Tarde</option>
+                <option value="De Turno">De Turno</option>
+              </select>
             </div>
-            <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
-              <button
-                type="submit"
-                disabled={loadingMod}
-                style={{
-                  flex: 1,
-                  background: '#000',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 6,
-                  padding: '0.7rem 1.2rem',
-                  fontWeight: 600,
-                  fontSize: '1rem',
-                  cursor: loadingMod ? 'not-allowed' : 'pointer',
-                  transition: 'background 0.2s',
-                  opacity: loadingMod ? 0.7 : 1,
-                }}
-              >
-                Guardar cambios
-              </button>
-              <button
-                type="button"
-                style={{
-                  flex: 1,
-                  background: '#fff',
-                  color: '#000',
-                  border: '2px solid #000',
-                  borderRadius: 6,
-                  padding: '0.7rem 1.2rem',
-                  fontWeight: 600,
-                  fontSize: '1rem',
-                  cursor: 'pointer',
-                  transition: 'background 0.2s',
-                }}
-                onClick={onCancel}
-              >
-                Cancelar
-              </button>
+            <div>
+              <label className={labelClass}>Costo Inventario</label>
+              <input name="costoInventario" type="number" value={editData.costoInventario} onChange={handleChange} className={editableClass} />
             </div>
-            {errorMod && <div style={{ color: 'red' }}>{errorMod}</div>}
-            {result && <div style={{ color: 'green' }}>{result.message}</div>}
-          </form>
+            <div>
+              <label className={labelClass}>Estado del Cuadre</label>
+              <select name="estado" value={editData.estado ?? ''} onChange={handleChange} className={editableClass}>
+                <option value="wait">Pendiente (wait)</option>
+                <option value="aprobado">Aprobado</option>
+                <option value="rechazado">Rechazado</option>
+              </select>
+            </div>
+          </div>
         </div>
-      )}
+
+        {/* Sección: Datos de Solo Lectura */}
+        <div className="mb-8">
+          <h3 className="flex items-center gap-2 text-slate-400 font-black uppercase text-xs tracking-tighter mb-4 pb-2 border-b border-slate-100">
+            <Ban className="w-4 h-4" /> Datos Protegidos (Solo Lectura)
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {[
+              { label: 'Cajero', value: editData.cajero },
+              { label: 'Caja #', value: editData.cajaNumero },
+              { label: 'Tasa', value: editData.tasa },
+              { label: 'Efectivo Bs', value: editData.efectivoBs },
+              { label: 'Efectivo USD', value: editData.efectivoUsd },
+              { label: 'Zelle USD', value: editData.zelleUsd },
+              { label: 'Total Sistema', value: editData.totalCajaSistemaBs },
+              { label: 'Total General USD', value: editData.totalGeneralUsd },
+              { label: 'Diferencia', value: editData.diferenciaUsd },
+            ].map((item, idx) => (
+              <div key={idx}>
+                <label className={labelClass}>{item.label}</label>
+                <input value={item.value} readOnly className={readonlyClass} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Sección: Puntos de Venta */}
+        <div className="mb-8 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+          <h3 className="flex items-center gap-2 text-indigo-600 font-black uppercase text-xs tracking-tighter mb-4">
+            <CreditCard className="w-4 h-4" /> Puntos de Venta (Crédito Editable)
+          </h3>
+          <div className="space-y-3">
+            {editData.puntosVenta?.map((pv, idx) => (
+              <div key={idx} className="bg-white p-3 rounded-xl border border-slate-200 grid grid-cols-3 gap-2 items-center">
+                <div className="text-[11px] font-bold text-slate-700 truncate">{pv.banco}</div>
+                <div className="text-[10px] text-slate-400 font-medium">Deb: {pv.puntoDebito}</div>
+                <input
+                  type="number"
+                  value={pv.puntoCredito}
+                  onChange={(e) => {
+                    const newPuntos = [...(editData.puntosVenta || [])];
+                    newPuntos[idx].puntoCredito = Number(e.target.value);
+                    setEditData({...editData, puntosVenta: newPuntos});
+                  }}
+                  className="px-2 py-1 rounded-lg border-2 border-indigo-50 bg-indigo-50/20 text-indigo-700 font-black text-xs outline-none focus:border-indigo-400"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Botones de Acción */}
+        <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-slate-100">
+          <button
+            type="submit"
+            disabled={loadingMod}
+            className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-2xl shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            <Save className="w-5 h-5" /> {loadingMod ? 'Guardando...' : 'GUARDAR CAMBIOS'}
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 bg-white border-2 border-slate-200 text-slate-500 font-bold py-4 rounded-2xl hover:bg-slate-50 transition-all"
+          >
+            CANCELAR
+          </button>
+        </div>
+
+        {/* Mensajes de Estado */}
+        {errorMod && <div className="mt-4 p-3 bg-red-50 text-red-600 rounded-xl text-xs font-bold text-center border border-red-100">{errorMod}</div>}
+        {result && <div className="mt-4 p-3 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-bold text-center border border-emerald-100">{result.message}</div>}
+      </form>
     </div>
   );
 };
