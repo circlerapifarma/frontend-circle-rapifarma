@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useModificarCuadre, useDetalleCuadres } from './useModificacionCuadre';
 import type { Cuadre } from './useModificacionCuadre';
 import { Save, Ban, Info, CreditCard, } from 'lucide-react';
-import asyncio
+
   
 interface Props {
   id: string;
